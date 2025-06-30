@@ -6,6 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3EA3150E2E13348E0044FB89 /* GoalInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150D2E13348E0044FB89 /* GoalInputView.swift */; };
+		3EA315102E13385E0044FB89 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150F2E13385E0044FB89 /* SampleData.swift */; };
+		3EA315122E1338B30044FB89 /* DayRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315112E1338B30044FB89 /* DayRowView.swift */; };
+		3EA315142E1338FC0044FB89 /* ExerciseRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315132E1338FC0044FB89 /* ExerciseRowView.swift */; };
+		3EA315162E1339240044FB89 /* DayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315152E1339240044FB89 /* DayDetailView.swift */; };
+		3EA315182E1339480044FB89 /* PlanListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315172E1339480044FB89 /* PlanListView.swift */; };
+		3EA315192E133AC70044FB89 /* Exercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315092E1333FE0044FB89 /* Exercise.swift */; };
+		3EA3151A2E133ADD0044FB89 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150A2E13342F0044FB89 /* Day.swift */; };
+		3EA3151B2E133AEB0044FB89 /* WorkoutPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150B2E1334480044FB89 /* WorkoutPlan.swift */; };
+		3EA3151C2E133AF20044FB89 /* UserGoals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150C2E13345D0044FB89 /* UserGoals.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3EA314E42E1332350044FB89 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +40,16 @@
 		3EA314D12E13322C0044FB89 /* Fit14.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fit14.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3EA314E32E1332350044FB89 /* Fit14Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Fit14Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3EA314ED2E1332350044FB89 /* Fit14UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Fit14UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3EA315092E1333FE0044FB89 /* Exercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exercise.swift; sourceTree = "<group>"; };
+		3EA3150A2E13342F0044FB89 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
+		3EA3150B2E1334480044FB89 /* WorkoutPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlan.swift; sourceTree = "<group>"; };
+		3EA3150C2E13345D0044FB89 /* UserGoals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserGoals.swift; sourceTree = "<group>"; };
+		3EA3150D2E13348E0044FB89 /* GoalInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalInputView.swift; sourceTree = "<group>"; };
+		3EA3150F2E13385E0044FB89 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		3EA315112E1338B30044FB89 /* DayRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayRowView.swift; sourceTree = "<group>"; };
+		3EA315132E1338FC0044FB89 /* ExerciseRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseRowView.swift; sourceTree = "<group>"; };
+		3EA315152E1339240044FB89 /* DayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailView.swift; sourceTree = "<group>"; };
+		3EA315172E1339480044FB89 /* PlanListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +98,11 @@
 		3EA314C82E13322C0044FB89 = {
 			isa = PBXGroup;
 			children = (
+				3EA315042E1332F20044FB89 /* Utilities */,
+				3EA315032E1332EB0044FB89 /* Services */,
+				3EA315022E1332E10044FB89 /* ViewModels */,
+				3EA315012E1332D60044FB89 /* Views */,
+				3EA315002E1332CB0044FB89 /* Models */,
 				3EA314D32E13322C0044FB89 /* Fit14 */,
 				3EA314E62E1332350044FB89 /* Fit14Tests */,
 				3EA314F02E1332350044FB89 /* Fit14UITests */,
@@ -90,6 +118,83 @@
 				3EA314ED2E1332350044FB89 /* Fit14UITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3EA315002E1332CB0044FB89 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				3EA3150C2E13345D0044FB89 /* UserGoals.swift */,
+				3EA3150B2E1334480044FB89 /* WorkoutPlan.swift */,
+				3EA3150A2E13342F0044FB89 /* Day.swift */,
+				3EA315092E1333FE0044FB89 /* Exercise.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		3EA315012E1332D60044FB89 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3EA315082E13331E0044FB89 /* Components */,
+				3EA315072E1333150044FB89 /* Progress */,
+				3EA315062E13330F0044FB89 /* PlanList */,
+				3EA315052E1333030044FB89 /* GoalInput */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		3EA315022E1332E10044FB89 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		3EA315032E1332EB0044FB89 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3EA315042E1332F20044FB89 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				3EA3150F2E13385E0044FB89 /* SampleData.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		3EA315052E1333030044FB89 /* GoalInput */ = {
+			isa = PBXGroup;
+			children = (
+				3EA3150D2E13348E0044FB89 /* GoalInputView.swift */,
+			);
+			path = GoalInput;
+			sourceTree = "<group>";
+		};
+		3EA315062E13330F0044FB89 /* PlanList */ = {
+			isa = PBXGroup;
+			children = (
+				3EA315152E1339240044FB89 /* DayDetailView.swift */,
+				3EA315172E1339480044FB89 /* PlanListView.swift */,
+			);
+			path = PlanList;
+			sourceTree = "<group>";
+		};
+		3EA315072E1333150044FB89 /* Progress */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Progress;
+			sourceTree = "<group>";
+		};
+		3EA315082E13331E0044FB89 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				3EA315112E1338B30044FB89 /* DayRowView.swift */,
+				3EA315132E1338FC0044FB89 /* ExerciseRowView.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -236,6 +341,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EA315102E13385E0044FB89 /* SampleData.swift in Sources */,
+				3EA315162E1339240044FB89 /* DayDetailView.swift in Sources */,
+				3EA315122E1338B30044FB89 /* DayRowView.swift in Sources */,
+				3EA3151A2E133ADD0044FB89 /* Day.swift in Sources */,
+				3EA3151C2E133AF20044FB89 /* UserGoals.swift in Sources */,
+				3EA3151B2E133AEB0044FB89 /* WorkoutPlan.swift in Sources */,
+				3EA315192E133AC70044FB89 /* Exercise.swift in Sources */,
+				3EA315142E1338FC0044FB89 /* ExerciseRowView.swift in Sources */,
+				3EA3150E2E13348E0044FB89 /* GoalInputView.swift in Sources */,
+				3EA315182E1339480044FB89 /* PlanListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -399,11 +514,15 @@
 				DEVELOPMENT_TEAM = 79KW5HMNLY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fit14;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIStatusBarStyle = "";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -428,11 +547,15 @@
 				DEVELOPMENT_TEAM = 79KW5HMNLY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fit14;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIStatusBarStyle = "";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
