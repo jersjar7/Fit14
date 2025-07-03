@@ -8,12 +8,14 @@
 import SwiftUI
 
 struct ExerciseRowView: View {
-    @Binding var exercise: Exercise
+    let exercise: Exercise
+    let dayId: UUID
+    let onToggle: (UUID) -> Void
     
     var body: some View {
         HStack {
             Button(action: {
-                exercise.isCompleted.toggle()
+                onToggle(exercise.id)
             }) {
                 Image(systemName: exercise.isCompleted ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(exercise.isCompleted ? .green : .gray)
@@ -45,7 +47,10 @@ struct ExerciseRowView: View {
 }
 
 #Preview {
-    @State var sampleExercise = SampleData.sampleExercises[0]
-    return ExerciseRowView(exercise: $sampleExercise)
-        .padding()
+    ExerciseRowView(
+        exercise: SampleData.sampleExercises[0],
+        dayId: UUID(),
+        onToggle: { _ in }
+    )
+    .padding()
 }

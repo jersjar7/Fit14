@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct DayDetailView: View {
-    @Binding var day: Day
+    let day: Day
+    @ObservedObject var viewModel: WorkoutPlanViewModel
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -45,9 +46,15 @@ struct DayDetailView: View {
                         .padding(.bottom, 8)
                     
                     LazyVStack(spacing: 12) {
-                        ForEach(day.exercises.indices, id: \.self) { index in
-                            ExerciseRowView(exercise: $day.exercises[index])
-                                .padding(.horizontal)
+                        ForEach(day.exercises) { exercise in
+                            ExerciseRowView(
+                                exercise: exercise,
+                                dayId: day.id,
+                                onToggle: { exerciseId in
+                                    viewModel.toggleExerciseCompletion(dayId: day.id, exerciseId: exerciseId)
+                                }
+                            )
+                            .padding(.horizontal)
                         }
                     }
                 }
@@ -58,8 +65,7 @@ struct DayDetailView: View {
                 
                 // Complete Day Button
                 if !day.isCompleted && day.exercises.allSatisfy({ $0.isCompleted }) {
-                    Button("Mark Day Complete") {
-                        // Day automatically becomes complete when all exercises are done
+                    Button("Day Complete! 🎉") {
                         dismiss()
                     }
                     .frame(maxWidth: .infinity)
@@ -84,6 +90,8 @@ struct DayDetailView: View {
 }
 
 #Preview {
-    @State var sampleDay = SampleData.sampleWorkoutPlan.days[0]
-    return DayDetailView(day: $sampleDay)
+    DayDetailView(
+        day: SampleData.sampleWorkoutPlan.days[0],
+        viewModel: WorkoutPlanViewModel()
+    )
 }
