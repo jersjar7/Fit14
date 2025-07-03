@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  GoalInputView.swift
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
@@ -19,20 +19,52 @@ struct GoalInputView: View {
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("Describe what you want to achieve in the next 2 weeks")
+                    Text("For better results, include your personal details below")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 
-                TextEditor(text: $goalsText)
-                    .frame(minHeight: 120)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $goalsText)
+                        .frame(minHeight: 120)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
+                    
+                    // Placeholder text overlay
+                    if goalsText.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("For better results, include:")
+                                .foregroundColor(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("• Your specific goal (lose weight, build muscle, etc.)")
+                                Text("• Age, gender, current weight, height")
+                                Text("• Current activity level")
+                                Text("• Time available for workouts")
+                                Text("• Any exercise preferences or limitations")
+                            }
+                            .foregroundColor(.secondary)
+                            
+                            Text("\nExample:")
+                                .foregroundColor(.secondary)
+                                .padding(.top, 8)
+                            
+                            Text("I want to lose 3 pounds in 2 weeks. I'm 28, female, 140 lbs, 5'4\", and can work out 30 to 60 minutes daily except for Sunday.")
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 30.0)
+                        .padding(.vertical, 25.0)
+                        .allowsHitTesting(false)
+                        .font(.footnote)
+                    }
+                }
+                
+                
                 
                 Button(action: generatePlan) {
                     HStack {

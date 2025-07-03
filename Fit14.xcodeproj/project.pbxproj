@@ -19,6 +19,7 @@
 		3EA3151C2E133AF20044FB89 /* UserGoals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150C2E13345D0044FB89 /* UserGoals.swift */; };
 		3EA3151E2E13426B0044FB89 /* LocalStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */; };
 		3EA315202E1342D70044FB89 /* WorkoutPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3151F2E1342D70044FB89 /* WorkoutPlanViewModel.swift */; };
+		3EA315332E172D690044FB89 /* AIWorkoutGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +55,7 @@
 		3EA315172E1339480044FB89 /* PlanListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanListView.swift; sourceTree = "<group>"; };
 		3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStorageService.swift; sourceTree = "<group>"; };
 		3EA3151F2E1342D70044FB89 /* WorkoutPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanViewModel.swift; sourceTree = "<group>"; };
+		3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWorkoutGenerationService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -158,6 +160,7 @@
 			isa = PBXGroup;
 			children = (
 				3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */,
+				3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -354,6 +357,7 @@
 				3EA3151C2E133AF20044FB89 /* UserGoals.swift in Sources */,
 				3EA3151B2E133AEB0044FB89 /* WorkoutPlan.swift in Sources */,
 				3EA315192E133AC70044FB89 /* Exercise.swift in Sources */,
+				3EA315332E172D690044FB89 /* AIWorkoutGenerationService.swift in Sources */,
 				3EA315142E1338FC0044FB89 /* ExerciseRowView.swift in Sources */,
 				3EA3150E2E13348E0044FB89 /* GoalInputView.swift in Sources */,
 				3EA3151E2E13426B0044FB89 /* LocalStorageService.swift in Sources */,
