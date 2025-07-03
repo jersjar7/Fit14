@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  SampleData.swift
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
@@ -19,9 +19,24 @@ struct SampleData {
         let startDate = Date()
         var days: [Day] = []
         
+        // Pre-defined exercise combinations to avoid shuffled() randomness
+        let exerciseCombinations: [[Exercise]] = [
+            [sampleExercises[0], sampleExercises[1], sampleExercises[2]], // Push-ups, Squats, Plank
+            [sampleExercises[1], sampleExercises[2], sampleExercises[3]], // Squats, Plank, Jumping Jacks
+            [sampleExercises[0], sampleExercises[2], sampleExercises[3]], // Push-ups, Plank, Jumping Jacks
+            [sampleExercises[0], sampleExercises[1], sampleExercises[3]], // Push-ups, Squats, Jumping Jacks
+            [sampleExercises[1], sampleExercises[0], sampleExercises[2]], // Squats, Push-ups, Plank
+            [sampleExercises[2], sampleExercises[3], sampleExercises[0]], // Plank, Jumping Jacks, Push-ups
+            [sampleExercises[3], sampleExercises[1], sampleExercises[2]], // Jumping Jacks, Squats, Plank
+        ]
+        
         for i in 1...14 {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
-            let exercisesForDay = Array(sampleExercises.shuffled().prefix(3))
+            
+            // Cycle through the predefined combinations
+            let combinationIndex = (i - 1) % exerciseCombinations.count
+            let exercisesForDay = exerciseCombinations[combinationIndex]
+            
             let day = Day(dayNumber: i, date: dayDate, exercises: exercisesForDay)
             days.append(day)
         }

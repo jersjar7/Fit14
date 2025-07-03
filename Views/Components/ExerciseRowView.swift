@@ -15,6 +15,7 @@ struct ExerciseRowView: View {
     var body: some View {
         HStack {
             Button(action: {
+                print("🔘 Exercise button tapped: \(exercise.name)")
                 onToggle(exercise.id)
             }) {
                 Image(systemName: exercise.isCompleted ? "checkmark.circle.fill" : "circle")
@@ -43,6 +44,11 @@ struct ExerciseRowView: View {
             }
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle()) // Make the entire row tappable
+        .onTapGesture {
+            print("🔘 Row tapped: \(exercise.name)")
+            onToggle(exercise.id)
+        }
     }
 }
 
@@ -50,7 +56,9 @@ struct ExerciseRowView: View {
     ExerciseRowView(
         exercise: SampleData.sampleExercises[0],
         dayId: UUID(),
-        onToggle: { _ in }
+        onToggle: { exerciseId in
+            print("Preview toggle: \(exerciseId)")
+        }
     )
     .padding()
 }

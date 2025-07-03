@@ -31,21 +31,38 @@ class WorkoutPlanViewModel: ObservableObject {
     
     // Update exercise completion and save
     func toggleExerciseCompletion(dayId: UUID, exerciseId: UUID) {
-        guard let plan = currentPlan else { return }
+        guard var plan = currentPlan else {
+            print("❌ No current plan found")
+            return
+        }
+        
+        print("🔄 Toggling exercise \(exerciseId) in day \(dayId)")
         
         // Update in memory
-        for dayIndex in currentPlan!.days.indices {
-            if currentPlan!.days[dayIndex].id == dayId {
-                for exerciseIndex in currentPlan!.days[dayIndex].exercises.indices {
-                    if currentPlan!.days[dayIndex].exercises[exerciseIndex].id == exerciseId {
-                        currentPlan!.days[dayIndex].exercises[exerciseIndex].isCompleted.toggle()
-                        
-                        // Save to storage
-                        storageService.saveWorkoutPlan(currentPlan!)
-                        return
+        var updated = false
+        for dayIndex in plan.days.indices {
+            if plan.days[dayIndex].id == dayId {
+                for exerciseIndex in plan.days[dayIndex].exercises.indices {
+                    if plan.days[dayIndex].exercises[exerciseIndex].id == exerciseId {
+                        plan.days[dayIndex].exercises[exerciseIndex].isCompleted.toggle()
+                        updated = true
+                        print("✅ Exercise completion toggled to: \(plan.days[dayIndex].exercises[exerciseIndex].isCompleted)")
+                        break
                     }
                 }
+                if updated { break }
             }
+        }
+        
+        if updated {
+            // Update the published property to trigger UI refresh
+            currentPlan = plan
+            
+            // Save to storage
+            storageService.saveWorkoutPlan(plan)
+            print("💾 Plan saved to storage")
+        } else {
+            print("❌ Failed to find exercise to toggle")
         }
     }
     
@@ -60,5 +77,16 @@ class WorkoutPlanViewModel: ObservableObject {
     func startFresh() {
         storageService.clearWorkoutPlan()
         currentPlan = nil
+    }
+    
+    // Helper method to get a specific day
+    func getDay(by id: UUID) -> Day? {
+        return currentPlan?.days.first { $0.id == id }
+    }
+    
+    // Helper method to get a specific exercise
+    func getExercise(dayId: UUID, exerciseId: UUID) -> Exercise? {
+        guard let day = getDay(by: dayId) else { return nil }
+        return day.exercises.first { $0.id == exerciseId }
     }
 }

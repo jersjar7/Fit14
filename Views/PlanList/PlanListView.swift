@@ -9,8 +9,6 @@ import SwiftUI
 
 struct PlanListView: View {
     @StateObject private var viewModel = WorkoutPlanViewModel()
-    @State private var selectedDay: Day?
-    @State private var showingDayDetail = false
     
     var body: some View {
         NavigationView {
@@ -38,14 +36,13 @@ struct PlanListView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(workoutPlan.days) { day in
-                                DayRowView(day: day)
-                                    .background(Color(.systemBackground))
-                                    .cornerRadius(12)
-                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                    .onTapGesture {
-                                        selectedDay = day
-                                        showingDayDetail = true
-                                    }
+                                NavigationLink(destination: DayDetailView(dayId: day.id, viewModel: viewModel)) {
+                                    DayRowView(day: day)
+                                        .background(Color(.systemBackground))
+                                        .cornerRadius(12)
+                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                }
+                                .buttonStyle(PlainButtonStyle()) // Keeps the row styling clean
                             }
                         }
                         .padding(.horizontal)
@@ -59,11 +56,6 @@ struct PlanListView: View {
                             viewModel.startFresh()
                             viewModel.loadSavedPlan()
                         }
-                    }
-                }
-                .sheet(isPresented: $showingDayDetail) {
-                    if let selectedDay = selectedDay {
-                        DayDetailView(day: selectedDay, viewModel: viewModel)
                     }
                 }
             } else {
