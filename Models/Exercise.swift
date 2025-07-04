@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Exercise: Identifiable, Codable {
+struct Exercise: Identifiable, Codable, Equatable {
     let id = UUID()
     let name: String
     let sets: Int
@@ -18,5 +18,14 @@ struct Exercise: Identifiable, Codable {
         self.name = name
         self.sets = sets
         self.reps = reps
+    }
+    
+    // Equatable conformance
+    static func == (lhs: Exercise, rhs: Exercise) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.name == rhs.name &&
+               lhs.sets == rhs.sets &&
+               lhs.reps == rhs.reps &&
+               lhs.isCompleted == rhs.isCompleted
     }
 }

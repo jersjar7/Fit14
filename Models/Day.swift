@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Day: Identifiable, Codable {
+struct Day: Identifiable, Codable, Equatable {
     let id = UUID()
     let dayNumber: Int
     let date: Date
@@ -21,5 +21,13 @@ struct Day: Identifiable, Codable {
         self.dayNumber = dayNumber
         self.date = date
         self.exercises = exercises
+    }
+    
+    // Equatable conformance
+    static func == (lhs: Day, rhs: Day) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.dayNumber == rhs.dayNumber &&
+               lhs.date == rhs.date &&
+               lhs.exercises == rhs.exercises
     }
 }

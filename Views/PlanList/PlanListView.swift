@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct PlanListView: View {
-    @StateObject private var viewModel = WorkoutPlanViewModel()
+    @EnvironmentObject var viewModel: WorkoutPlanViewModel
     
     var body: some View {
         NavigationView {
@@ -27,6 +27,15 @@ struct PlanListView: View {
                         Text("\(workoutPlan.completedDays) of 14 days completed")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                        
+                        // Show user goals
+                        if !workoutPlan.userGoals.isEmpty {
+                            Text("Goal: \(workoutPlan.userGoals)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                        }
                     }
                     .padding()
                     .background(Color(.systemGray6))
@@ -52,19 +61,51 @@ struct PlanListView: View {
                 .navigationTitle("Fit14")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Reset") {
-                            viewModel.startFresh()
-                            viewModel.loadSavedPlan()
+                        Menu {
+                            Button("Start Fresh") {
+                                viewModel.startFresh()
+                            }
+                            
+                            Button("Load Sample Data") {
+                                viewModel.loadSampleData()
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
                     }
                 }
             } else {
-                VStack {
+                // No plan found - show option to create one
+                VStack(spacing: 20) {
+                    Image(systemName: "target")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                    
                     Text("No workout plan found")
-                    Button("Load Sample Plan") {
-                        viewModel.loadSavedPlan()
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("Create your personalized 14-day fitness plan")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    
+                    Button("Create Plan") {
+                        viewModel.startFresh() // This will trigger navigation to GoalInputView
                     }
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    
+                    Button("Load Sample Plan") {
+                        viewModel.loadSampleData()
+                    }
+                    .font(.caption)
+                    .foregroundColor(.blue)
                 }
+                .padding()
             }
         }
     }
@@ -72,4 +113,5 @@ struct PlanListView: View {
 
 #Preview {
     PlanListView()
+        .environmentObject(WorkoutPlanViewModel())
 }

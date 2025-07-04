@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct GoalInputView: View {
+    @EnvironmentObject var viewModel: WorkoutPlanViewModel
     @State private var goalsText = ""
-    @State private var isGenerating = false
+    @State private var showPlanList = false
     
     var body: some View {
         NavigationView {
@@ -34,6 +35,7 @@ struct GoalInputView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color(.systemGray4), lineWidth: 1)
                         )
+                        .disabled(viewModel.isGenerating)
                     
                     // Placeholder text overlay
                     if goalsText.isEmpty {
@@ -64,46 +66,97 @@ struct GoalInputView: View {
                     }
                 }
                 
-                
-                
-                Button(action: generatePlan) {
+                Button(action: {
+                    Task {
+                        await generatePlan()
+                    }
+                }) {
                     HStack {
-                        if isGenerating {
+                        if viewModel.isGenerating {
                             ProgressView()
                                 .scaleEffect(0.8)
                         } else {
                             Image(systemName: "sparkles")
                         }
-                        Text(isGenerating ? "Generating..." : "Generate My Plan")
+                        Text(viewModel.isGenerating ? "Generating..." : "Generate My Plan")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(goalsText.isEmpty ? Color.gray : Color.blue)
+                    .background(goalsText.isEmpty || viewModel.isGenerating ? Color.gray : Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
-                .disabled(goalsText.isEmpty || isGenerating)
+                .disabled(goalsText.isEmpty || viewModel.isGenerating)
+                
+                // Show existing plan if available
+                if viewModel.hasActivePlan && !viewModel.isGenerating {
+                    VStack(spacing: 12) {
+                        Text("You already have an active plan")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 16) {
+                            Button("View Plan") {
+                                showPlanList = true
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                            
+                            Button("Start Fresh") {
+                                viewModel.startFresh()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                }
                 
                 Spacer()
             }
             .padding()
             .navigationTitle("Fit14")
+            .alert("Error", isPresented: $viewModel.showError) {
+                Button("OK") {
+                    viewModel.clearError()
+                }
+            } message: {
+                Text(viewModel.errorMessage ?? "An unexpected error occurred")
+            }
+            .sheet(isPresented: $showPlanList) {
+                PlanListView()
+            }
+            .onChange(of: viewModel.currentPlan) { _, newPlan in
+                // Auto-navigate to plan list when new plan is generated
+                if newPlan != nil && !showPlanList {
+                    showPlanList = true
+                }
+            }
         }
     }
     
-    private func generatePlan() {
-        isGenerating = true
-        // TODO: Implement AI generation
-        print("Generating plan for: \(goalsText)")
+    private func generatePlan() async {
+        print("🎯 Generate Plan button tapped")
+        print("📝 User input: \(goalsText)")
         
-        // Simulate API call
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            isGenerating = false
-            // TODO: Navigate to plan list
+        await viewModel.generatePlanFromGoals(goalsText)
+        
+        // Clear the goals text after successful generation
+        if viewModel.currentPlan != nil {
+            goalsText = ""
         }
     }
 }
 
 #Preview {
     GoalInputView()
+        .environmentObject(WorkoutPlanViewModel())
 }
