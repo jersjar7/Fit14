@@ -104,7 +104,7 @@ struct PlanListViewWrapper: View {
 
 #Preview("Suggested Plan State") {
     let viewModel = WorkoutPlanViewModel()
-    viewModel.suggestedPlan = SampleData.sampleWorkoutPlan
+    viewModel.suggestedPlan = SampleData.sampleSuggestedPlan
     
     return SuggestedPlanView()
         .environmentObject(viewModel)
@@ -112,7 +112,7 @@ struct PlanListViewWrapper: View {
 
 #Preview("Active Plan State") {
     let viewModel = WorkoutPlanViewModel()
-    viewModel.currentPlan = SampleData.sampleWorkoutPlan.makeActive()
+    viewModel.currentPlan = SampleData.sampleActiveWorkoutPlan
     
     return ActivePlanView()
         .environmentObject(viewModel)

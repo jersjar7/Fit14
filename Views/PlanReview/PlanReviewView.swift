@@ -196,8 +196,7 @@ struct PlanReviewView: View {
 #Preview {
     // Create a sample suggested plan for preview
     let viewModel = WorkoutPlanViewModel()
-    let samplePlan = SampleData.sampleWorkoutPlan
-    viewModel.suggestedPlan = samplePlan
+    viewModel.suggestedPlan = SampleData.sampleSuggestedPlan
     
     return PlanReviewView()
         .environmentObject(viewModel)

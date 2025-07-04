@@ -192,8 +192,8 @@ struct DayEditView: View {
 // MARK: - Preview
 #Preview {
     let viewModel = WorkoutPlanViewModel()
-    let sampleDay = SampleData.sampleWorkoutPlan.days[0]
-    viewModel.suggestedPlan = SampleData.sampleWorkoutPlan
+    let sampleDay = SampleData.sampleDay
+    viewModel.suggestedPlan = SampleData.sampleSuggestedPlan
     
     return DayEditView(day: sampleDay, dayId: sampleDay.id)
         .environmentObject(viewModel)

@@ -280,7 +280,7 @@ struct EditExerciseView: View {
 
 // MARK: - Preview
 #Preview {
-    let sampleExercise = Exercise(name: "Push-ups", sets: 3, reps: 12)
+    let sampleExercise = SampleData.sampleExercises[0] // Push-ups
     
     return EditExerciseView(exercise: sampleExercise, dayId: UUID())
         .environmentObject(WorkoutPlanViewModel())

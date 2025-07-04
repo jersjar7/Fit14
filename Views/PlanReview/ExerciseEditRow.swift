@@ -147,19 +147,19 @@ struct ExerciseEditRow: View {
 #Preview {
     VStack(spacing: 12) {
         ExerciseEditRow(
-            exercise: Exercise(name: "Push-ups", sets: 3, reps: 12),
+            exercise: SampleData.sampleExercises[0], // Push-ups
             onTap: { print("Edit push-ups") },
             onDelete: { print("Delete push-ups") }
         )
         
         ExerciseEditRow(
-            exercise: Exercise(name: "Squats", sets: 4, reps: 15),
+            exercise: SampleData.sampleExercises[4], // Squats
             onTap: { print("Edit squats") },
             onDelete: { print("Delete squats") }
         )
         
         ExerciseEditRow(
-            exercise: Exercise(name: "Plank Hold", sets: 1, reps: 60),
+            exercise: SampleData.sampleExercises[9], // Plank
             onTap: { print("Edit plank") },
             onDelete: { print("Delete plank") }
         )

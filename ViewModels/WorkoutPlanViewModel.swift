@@ -204,46 +204,34 @@ class WorkoutPlanViewModel: ObservableObject {
     
     /// Delete an exercise from a day in the suggested plan
     func deleteExerciseFromSuggestedDay(dayId: UUID, exerciseId: UUID) {
-        guard var suggested = suggestedPlan else {
+        guard let suggested = suggestedPlan else {
             print("❌ No suggested plan to update")
             return
         }
         
-        // Find and update the day
-        for dayIndex in suggested.days.indices {
-            if suggested.days[dayIndex].id == dayId {
-                suggested.days[dayIndex].exercises.removeAll { $0.id == exerciseId }
-                
-                // Prevent empty days
-                if suggested.days[dayIndex].exercises.isEmpty {
-                    print("⚠️ Cannot delete last exercise from day")
-                    showErrorMessage("Each day must have at least one exercise")
-                    return
-                }
-                
-                suggestedPlan = suggested
-                print("✅ Deleted exercise from suggested plan")
-                return
-            }
+        // Check if this would leave the day empty
+        if let day = suggested.days.first(where: { $0.id == dayId }),
+           day.exercises.count <= 1 {
+            print("⚠️ Cannot delete last exercise from day")
+            showErrorMessage("Each day must have at least one exercise")
+            return
         }
+        
+        // Remove the exercise using the WorkoutPlan method
+        suggestedPlan = suggested.withExerciseRemoved(from: dayId, exerciseId: exerciseId)
+        print("✅ Deleted exercise from suggested plan")
     }
     
     /// Add an exercise to a day in the suggested plan
     func addExerciseToSuggestedDay(dayId: UUID, exercise: Exercise) {
-        guard var suggested = suggestedPlan else {
+        guard let suggested = suggestedPlan else {
             print("❌ No suggested plan to update")
             return
         }
         
-        // Find and update the day
-        for dayIndex in suggested.days.indices {
-            if suggested.days[dayIndex].id == dayId {
-                suggested.days[dayIndex].exercises.append(exercise)
-                suggestedPlan = suggested
-                print("✅ Added exercise to suggested plan")
-                return
-            }
-        }
+        // Add the exercise using the WorkoutPlan method
+        suggestedPlan = suggested.withExerciseAdded(to: dayId, exercise: exercise)
+        print("✅ Added exercise to suggested plan")
     }
     
     /// Update an exercise in a day in the suggested plan
@@ -258,8 +246,9 @@ class WorkoutPlanViewModel: ObservableObject {
             if suggested.days[dayIndex].id == dayId {
                 for exerciseIndex in suggested.days[dayIndex].exercises.indices {
                     if suggested.days[dayIndex].exercises[exerciseIndex].id == oldExerciseId {
-                        // Replace with new exercise (keeping the same ID would be complex)
-                        suggested.days[dayIndex].exercises[exerciseIndex] = Exercise(
+                        // Update exercise while preserving the original ID
+                        let originalExercise = suggested.days[dayIndex].exercises[exerciseIndex]
+                        suggested.days[dayIndex].exercises[exerciseIndex] = originalExercise.updated(
                             name: newExercise.name,
                             sets: newExercise.sets,
                             reps: newExercise.reps
@@ -285,22 +274,19 @@ class WorkoutPlanViewModel: ObservableObject {
             return
         }
         
-        // Find the corresponding day in the original plan
-        guard let dayIndex = suggested.days.firstIndex(where: { $0.id == dayId }),
-              dayIndex < original.days.count else {
+        // Find the corresponding day in both plans
+        guard let suggestedDayIndex = suggested.days.firstIndex(where: { $0.id == dayId }),
+              suggestedDayIndex < original.days.count else {
             print("❌ Cannot find day to reset")
             showErrorMessage("Cannot find the original version of this day")
             return
         }
         
-        let originalDay = original.days[dayIndex]
+        let originalDay = original.days[suggestedDayIndex]
+        let currentDay = suggested.days[suggestedDayIndex]
         
-        // Create a new day with the original exercises but keeping the same ID
-        let resetDay = Day(
-            dayNumber: originalDay.dayNumber,
-            date: originalDay.date,
-            exercises: originalDay.exercises
-        )
+        // Create reset day preserving the current day's ID and structure
+        let resetDay = currentDay.updated(exercises: originalDay.exercises)
         
         // Update the suggested plan
         suggestedPlan = suggested.withModifiedDay(dayId, newDay: resetDay)

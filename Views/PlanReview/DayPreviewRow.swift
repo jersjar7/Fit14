@@ -83,28 +83,25 @@ struct DayPreviewRow: View {
 // MARK: - Preview
 #Preview {
     VStack(spacing: 12) {
-        DayPreviewRow(day: SampleData.sampleWorkoutPlan.days[0]) {
+        DayPreviewRow(day: SampleData.sampleDay) {
             print("Day 1 tapped")
         }
         
-        DayPreviewRow(day: SampleData.sampleWorkoutPlan.days[1]) {
-            print("Day 2 tapped")
+        DayPreviewRow(day: SampleData.samplePartialDay) {
+            print("Day 3 tapped")
+        }
+        
+        DayPreviewRow(day: SampleData.sampleCompletedDay) {
+            print("Day 5 tapped")
         }
         
         // Example with many exercises
         DayPreviewRow(day: Day(
-            dayNumber: 5,
+            dayNumber: 7,
             date: Date(),
-            exercises: [
-                Exercise(name: "Push-ups", sets: 3, reps: 10),
-                Exercise(name: "Squats", sets: 3, reps: 15),
-                Exercise(name: "Plank", sets: 1, reps: 30),
-                Exercise(name: "Lunges", sets: 2, reps: 12),
-                Exercise(name: "Jumping Jacks", sets: 2, reps: 20),
-                Exercise(name: "Burpees", sets: 1, reps: 8)
-            ]
+            exercises: Array(SampleData.sampleExercises.prefix(6))
         )) {
-            print("Day 5 tapped")
+            print("Day 7 tapped")
         }
     }
     .padding()
