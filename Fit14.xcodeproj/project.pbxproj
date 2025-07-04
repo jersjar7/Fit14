@@ -20,6 +20,12 @@
 		3EA3151E2E13426B0044FB89 /* LocalStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */; };
 		3EA315202E1342D70044FB89 /* WorkoutPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3151F2E1342D70044FB89 /* WorkoutPlanViewModel.swift */; };
 		3EA315332E172D690044FB89 /* AIWorkoutGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */; };
+		3EA315372E175FA40044FB89 /* PlanReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315362E175FA40044FB89 /* PlanReviewView.swift */; };
+		3EA315392E175FB50044FB89 /* DayPreviewRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315382E175FB50044FB89 /* DayPreviewRow.swift */; };
+		3EA3153B2E175FC30044FB89 /* DayEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3153A2E175FC30044FB89 /* DayEditView.swift */; };
+		3EA3153D2E182D3E0044FB89 /* ExerciseEditRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3153C2E182D3E0044FB89 /* ExerciseEditRow.swift */; };
+		3EA3153F2E182D580044FB89 /* AddExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3153E2E182D580044FB89 /* AddExerciseView.swift */; };
+		3EA315412E182D670044FB89 /* EditExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315402E182D670044FB89 /* EditExerciseView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +62,12 @@
 		3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStorageService.swift; sourceTree = "<group>"; };
 		3EA3151F2E1342D70044FB89 /* WorkoutPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanViewModel.swift; sourceTree = "<group>"; };
 		3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWorkoutGenerationService.swift; sourceTree = "<group>"; };
+		3EA315362E175FA40044FB89 /* PlanReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanReviewView.swift; sourceTree = "<group>"; };
+		3EA315382E175FB50044FB89 /* DayPreviewRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPreviewRow.swift; sourceTree = "<group>"; };
+		3EA3153A2E175FC30044FB89 /* DayEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayEditView.swift; sourceTree = "<group>"; };
+		3EA3153C2E182D3E0044FB89 /* ExerciseEditRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseEditRow.swift; sourceTree = "<group>"; };
+		3EA3153E2E182D580044FB89 /* AddExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExerciseView.swift; sourceTree = "<group>"; };
+		3EA315402E182D670044FB89 /* EditExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExerciseView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -140,6 +152,7 @@
 		3EA315012E1332D60044FB89 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3EA315342E175F7F0044FB89 /* PlanReview */,
 				3EA315082E13331E0044FB89 /* Components */,
 				3EA315072E1333150044FB89 /* Progress */,
 				3EA315062E13330F0044FB89 /* PlanList */,
@@ -204,6 +217,19 @@
 				3EA315132E1338FC0044FB89 /* ExerciseRowView.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		3EA315342E175F7F0044FB89 /* PlanReview */ = {
+			isa = PBXGroup;
+			children = (
+				3EA315362E175FA40044FB89 /* PlanReviewView.swift */,
+				3EA315382E175FB50044FB89 /* DayPreviewRow.swift */,
+				3EA3153A2E175FC30044FB89 /* DayEditView.swift */,
+				3EA3153C2E182D3E0044FB89 /* ExerciseEditRow.swift */,
+				3EA3153E2E182D580044FB89 /* AddExerciseView.swift */,
+				3EA315402E182D670044FB89 /* EditExerciseView.swift */,
+			);
+			path = PlanReview;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -351,17 +377,23 @@
 			buildActionMask = 2147483647;
 			files = (
 				3EA315102E13385E0044FB89 /* SampleData.swift in Sources */,
+				3EA315392E175FB50044FB89 /* DayPreviewRow.swift in Sources */,
+				3EA315372E175FA40044FB89 /* PlanReviewView.swift in Sources */,
 				3EA315162E1339240044FB89 /* DayDetailView.swift in Sources */,
 				3EA315122E1338B30044FB89 /* DayRowView.swift in Sources */,
 				3EA3151A2E133ADD0044FB89 /* Day.swift in Sources */,
 				3EA3151C2E133AF20044FB89 /* UserGoals.swift in Sources */,
+				3EA3153F2E182D580044FB89 /* AddExerciseView.swift in Sources */,
 				3EA3151B2E133AEB0044FB89 /* WorkoutPlan.swift in Sources */,
+				3EA315412E182D670044FB89 /* EditExerciseView.swift in Sources */,
 				3EA315192E133AC70044FB89 /* Exercise.swift in Sources */,
 				3EA315332E172D690044FB89 /* AIWorkoutGenerationService.swift in Sources */,
 				3EA315142E1338FC0044FB89 /* ExerciseRowView.swift in Sources */,
 				3EA3150E2E13348E0044FB89 /* GoalInputView.swift in Sources */,
 				3EA3151E2E13426B0044FB89 /* LocalStorageService.swift in Sources */,
 				3EA315202E1342D70044FB89 /* WorkoutPlanViewModel.swift in Sources */,
+				3EA3153B2E175FC30044FB89 /* DayEditView.swift in Sources */,
+				3EA3153D2E182D3E0044FB89 /* ExerciseEditRow.swift in Sources */,
 				3EA315182E1339480044FB89 /* PlanListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

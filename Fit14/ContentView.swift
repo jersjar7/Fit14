@@ -13,21 +13,57 @@ struct ContentView: View {
     var body: some View {
         Group {
             if viewModel.hasActivePlan {
-                // Show plan list if user has an active plan
-                PlanListViewWrapper(viewModel: viewModel)
+                // User has an active plan - show daily tracking interface
+                ActivePlanView()
+                    .environmentObject(viewModel)
+            } else if viewModel.hasSuggestedPlan {
+                // User has a suggested plan - show plan review interface
+                SuggestedPlanView()
+                    .environmentObject(viewModel)
             } else {
-                // Show goal input if no active plan
-                GoalInputViewWrapper(viewModel: viewModel)
+                // No plans - show goal input
+                GoalInputView()
+                    .environmentObject(viewModel)
             }
         }
         .onAppear {
             // Load any saved plan when app starts
             viewModel.loadSavedPlan()
         }
+        .animation(.easeInOut(duration: 0.3), value: viewModel.hasActivePlan)
+        .animation(.easeInOut(duration: 0.3), value: viewModel.hasSuggestedPlan)
     }
 }
 
-// MARK: - Wrapper Views
+// MARK: - Navigation Wrapper Views
+
+struct ActivePlanView: View {
+    @EnvironmentObject var viewModel: WorkoutPlanViewModel
+    
+    var body: some View {
+        PlanListView()
+            .environmentObject(viewModel)
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
+    }
+}
+
+struct SuggestedPlanView: View {
+    @EnvironmentObject var viewModel: WorkoutPlanViewModel
+    
+    var body: some View {
+        PlanReviewView()
+            .environmentObject(viewModel)
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
+    }
+}
+
+// MARK: - Legacy Wrapper Views (Keep for compatibility)
 
 struct GoalInputViewWrapper: View {
     @ObservedObject var viewModel: WorkoutPlanViewModel
@@ -49,4 +85,35 @@ struct PlanListViewWrapper: View {
 
 #Preview {
     ContentView()
+}
+
+// MARK: - Preview Helpers for Testing Different States
+
+#Preview("Goal Input State") {
+    let viewModel = WorkoutPlanViewModel()
+    // No plans - should show GoalInputView
+    
+    return ContentView()
+        .onAppear {
+            // Inject the viewModel for preview (this is a bit hacky but works for preview)
+            if let contentView = ContentView() as? Any {
+                // The real app will use the @StateObject properly
+            }
+        }
+}
+
+#Preview("Suggested Plan State") {
+    let viewModel = WorkoutPlanViewModel()
+    viewModel.suggestedPlan = SampleData.sampleWorkoutPlan
+    
+    return SuggestedPlanView()
+        .environmentObject(viewModel)
+}
+
+#Preview("Active Plan State") {
+    let viewModel = WorkoutPlanViewModel()
+    viewModel.currentPlan = SampleData.sampleWorkoutPlan.makeActive()
+    
+    return ActivePlanView()
+        .environmentObject(viewModel)
 }

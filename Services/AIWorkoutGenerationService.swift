@@ -11,10 +11,14 @@ import Foundation
 struct AIWorkoutRequest: Codable {
     let userGoals: String
     let requestId: String
+    let regeneration: Bool
+    let preservedDays: [Int]? // Day numbers to preserve (for future use)
     
-    init(userGoals: String) {
+    init(userGoals: String, regeneration: Bool = false, preservedDays: [Int]? = nil) {
         self.userGoals = userGoals
         self.requestId = UUID().uuidString
+        self.regeneration = regeneration
+        self.preservedDays = preservedDays
     }
 }
 
@@ -118,6 +122,30 @@ class AIWorkoutGenerationService: ObservableObject {
         return workoutPlan
     }
     
+    /// Regenerate workout plan (potentially preserving certain days)
+    func regenerateWorkoutPlan(from userGoals: String, preservingDayNumbers: [Int] = []) async throws -> WorkoutPlan {
+        print("🔄 Starting AI workout regeneration...")
+        print("📝 User goals: \(userGoals)")
+        print("🔒 Preserving days: \(preservingDayNumbers)")
+        
+        // Validate input
+        guard !userGoals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw AIServiceError.invalidResponse
+        }
+        
+        // Create regeneration request
+        let request = try createRegenerationRequest(for: userGoals, preservingDays: preservingDayNumbers)
+        
+        // Make API call
+        let aiResponse = try await makeAPICall(request: request)
+        
+        // Convert AI response to our models
+        let workoutPlan = try convertToWorkoutPlan(aiResponse: aiResponse, userGoals: userGoals)
+        
+        print("✅ Successfully regenerated workout plan with \(workoutPlan.days.count) days")
+        return workoutPlan
+    }
+    
     // MARK: - Private Methods
     
     private func createRequest(for userGoals: String) throws -> URLRequest {
@@ -131,6 +159,26 @@ class AIWorkoutGenerationService: ObservableObject {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
         let requestBody = AIWorkoutRequest(userGoals: userGoals)
+        request.httpBody = try JSONEncoder().encode(requestBody)
+        
+        return request
+    }
+    
+    private func createRegenerationRequest(for userGoals: String, preservingDays: [Int]) throws -> URLRequest {
+        guard let url = URL(string: "\(baseURL)/regenerate-workout") else {
+            throw AIServiceError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        
+        let requestBody = AIWorkoutRequest(
+            userGoals: userGoals,
+            regeneration: true,
+            preservedDays: preservingDays.isEmpty ? nil : preservingDays
+        )
         request.httpBody = try JSONEncoder().encode(requestBody)
         
         return request
@@ -232,13 +280,18 @@ extension AIWorkoutGenerationService {
     func generateMockWorkoutPlan(from userGoals: String) -> WorkoutPlan {
         print("🧪 Generating mock workout plan for testing...")
         
-        // This is for testing - replace with real AI call
+        // Enhanced mock exercises with more variety
         let mockExercises = [
             Exercise(name: "Push-ups", sets: 3, reps: 12),
             Exercise(name: "Squats", sets: 3, reps: 15),
             Exercise(name: "Plank", sets: 1, reps: 45),
             Exercise(name: "Lunges", sets: 2, reps: 10),
-            Exercise(name: "Jumping Jacks", sets: 3, reps: 20)
+            Exercise(name: "Jumping Jacks", sets: 3, reps: 20),
+            Exercise(name: "Burpees", sets: 2, reps: 8),
+            Exercise(name: "Mountain Climbers", sets: 3, reps: 15),
+            Exercise(name: "Tricep Dips", sets: 2, reps: 12),
+            Exercise(name: "High Knees", sets: 3, reps: 30),
+            Exercise(name: "Wall Sit", sets: 1, reps: 60)
         ]
         
         var days: [Day] = []
@@ -246,11 +299,45 @@ extension AIWorkoutGenerationService {
         
         for i in 1...14 {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
-            let shuffledExercises = Array(mockExercises.shuffled().prefix(3))
-            let day = Day(dayNumber: i, date: dayDate, exercises: shuffledExercises)
+            
+            // Create variety in exercise selection
+            let exerciseCount = i % 7 == 0 ? 2 : (i % 5 == 0 ? 4 : 3) // Rest days have fewer exercises
+            let selectedExercises = Array(mockExercises.shuffled().prefix(exerciseCount))
+            
+            let day = Day(dayNumber: i, date: dayDate, exercises: selectedExercises)
             days.append(day)
         }
         
         return WorkoutPlan(userGoals: userGoals, days: days)
+    }
+    
+    /// Create a mock regenerated workout plan (with some variation)
+    func generateMockRegeneratedPlan(from userGoals: String, preservingDayNumbers: [Int] = []) -> WorkoutPlan {
+        print("🧪 Generating mock regenerated workout plan...")
+        print("🔒 Would preserve days: \(preservingDayNumbers) (mock ignores this)")
+        
+        // For mock, just generate a new plan with slightly different exercises
+        let originalPlan = generateMockWorkoutPlan(from: userGoals)
+        
+        // Add some variation to make it feel like a regeneration
+        var modifiedDays = originalPlan.days
+        for i in 0..<modifiedDays.count {
+            if !preservingDayNumbers.contains(i + 1) {
+                // Modify non-preserved days slightly
+                let exercises = modifiedDays[i].exercises.map { exercise in
+                    // Slightly vary the sets/reps
+                    let newSets = max(1, exercise.sets + Int.random(in: -1...1))
+                    let newReps = max(1, exercise.reps + Int.random(in: -2...2))
+                    return Exercise(name: exercise.name, sets: newSets, reps: newReps)
+                }
+                modifiedDays[i] = Day(
+                    dayNumber: modifiedDays[i].dayNumber,
+                    date: modifiedDays[i].date,
+                    exercises: exercises
+                )
+            }
+        }
+        
+        return WorkoutPlan(userGoals: userGoals, days: modifiedDays)
     }
 }

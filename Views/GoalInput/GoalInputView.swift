@@ -10,7 +10,7 @@ import SwiftUI
 struct GoalInputView: View {
     @EnvironmentObject var viewModel: WorkoutPlanViewModel
     @State private var goalsText = ""
-    @State private var showPlanList = false
+    @State private var showPlanReview = false
     
     var body: some View {
         NavigationView {
@@ -88,7 +88,7 @@ struct GoalInputView: View {
                 }
                 .disabled(goalsText.isEmpty || viewModel.isGenerating)
                 
-                // Show existing plan if available
+                // Show existing plan options if available
                 if viewModel.hasActivePlan && !viewModel.isGenerating {
                     VStack(spacing: 12) {
                         Text("You already have an active plan")
@@ -96,17 +96,17 @@ struct GoalInputView: View {
                             .foregroundColor(.secondary)
                         
                         HStack(spacing: 16) {
-                            Button("View Plan") {
-                                showPlanList = true
+                            NavigationLink(destination: PlanListView().environmentObject(viewModel)) {
+                                Text("View Plan")
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 8)
+                                    .background(Color.green)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
                             
                             Button("Start Fresh") {
-                                viewModel.startFresh()
+                                viewModel.startOver()
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 8)
@@ -131,13 +131,14 @@ struct GoalInputView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "An unexpected error occurred")
             }
-            .sheet(isPresented: $showPlanList) {
-                PlanListView()
+            .sheet(isPresented: $showPlanReview) {
+                PlanReviewView()
+                    .environmentObject(viewModel)
             }
-            .onChange(of: viewModel.currentPlan) { _, newPlan in
-                // Auto-navigate to plan list when new plan is generated
-                if newPlan != nil && !showPlanList {
-                    showPlanList = true
+            .onChange(of: viewModel.suggestedPlan) { _, newSuggestedPlan in
+                // Auto-navigate to plan review when new suggested plan is generated
+                if newSuggestedPlan != nil && !showPlanReview {
+                    showPlanReview = true
                 }
             }
         }
@@ -150,7 +151,7 @@ struct GoalInputView: View {
         await viewModel.generatePlanFromGoals(goalsText)
         
         // Clear the goals text after successful generation
-        if viewModel.currentPlan != nil {
+        if viewModel.suggestedPlan != nil {
             goalsText = ""
         }
     }
