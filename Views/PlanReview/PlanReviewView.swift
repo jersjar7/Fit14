@@ -147,15 +147,8 @@ struct PlanReviewView: View {
                 .padding(.vertical, 16)
                 .background(Color(.systemBackground))
             }
-            .navigationTitle("Review Plan")
+            .navigationTitle("Review Your Plan")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
             .sheet(isPresented: $showDayEdit) {
                 if let dayId = selectedDayId,
                    let day = viewModel.getSuggestedDay(by: dayId) {
