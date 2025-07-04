@@ -51,7 +51,8 @@ struct DayRowView: View {
                     .font(.caption)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
     }
 }
 

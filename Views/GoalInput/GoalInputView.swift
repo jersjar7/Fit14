@@ -10,7 +10,6 @@ import SwiftUI
 struct GoalInputView: View {
     @EnvironmentObject var viewModel: WorkoutPlanViewModel
     @State private var goalsText = ""
-    @State private var showPlanReview = false
     
     var body: some View {
         NavigationView {
@@ -130,16 +129,6 @@ struct GoalInputView: View {
                 }
             } message: {
                 Text(viewModel.errorMessage ?? "An unexpected error occurred")
-            }
-            .sheet(isPresented: $showPlanReview) {
-                PlanReviewView()
-                    .environmentObject(viewModel)
-            }
-            .onChange(of: viewModel.suggestedPlan) { _, newSuggestedPlan in
-                // Auto-navigate to plan review when new suggested plan is generated
-                if newSuggestedPlan != nil && !showPlanReview {
-                    showPlanReview = true
-                }
             }
         }
     }

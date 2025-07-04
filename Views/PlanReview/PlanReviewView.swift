@@ -19,20 +19,6 @@ struct PlanReviewView: View {
             VStack(spacing: 0) {
                 // Header Section
                 VStack(spacing: 16) {
-                    // AI Generated Badge
-                    HStack {
-                        Image(systemName: "sparkles")
-                            .foregroundColor(.blue)
-                        Text("AI Generated Plan")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.blue)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(8)
                     
                     // Plan Info
                     VStack(spacing: 8) {
@@ -48,9 +34,13 @@ struct PlanReviewView: View {
                                 .lineLimit(3)
                         }
                         
-                        Text("Review and customize your plan below")
+                        Divider()
+                            .padding(.bottom, 5.0)
+                            
+                        
+                        Text("Please review and customize your plan below")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.blue)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -94,61 +84,58 @@ struct PlanReviewView: View {
                     .background(Color(.systemGroupedBackground))
                 }
                 
-                // Bottom CTAs
+                // Bottom CTA - Only Accept Plan
                 VStack(spacing: 12) {
                     Divider()
                     
-                    VStack(spacing: 8) {
-                        // Primary CTA - Accept Plan
-                        Button(action: acceptPlan) {
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                Text("Accept Plan")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
+                    // Primary CTA - Accept Plan
+                    Button(action: acceptPlan) {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("Accept Plan")
+                                .fontWeight(.semibold)
                         }
-                        
-                        // Secondary CTAs
-                        HStack(spacing: 12) {
-                            Button(action: {
-                                showRegenerateConfirmation = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "arrow.clockwise")
-                                    Text("Regenerate")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                            }
-                            
-                            Button(action: startOver) {
-                                HStack {
-                                    Image(systemName: "arrow.uturn.left")
-                                    Text("Start Over")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.red)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                            }
-                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
                 .background(Color(.systemBackground))
             }
-            .navigationTitle("Review Your Plan")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.blue)
+                        Text("AI Generated Plan")
+                            .font(.headline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button(action: {
+                            showRegenerateConfirmation = true
+                        }) {
+                            Label("Regenerate Plan", systemImage: "arrow.clockwise")
+                        }
+                        
+                        Button(action: startOver) {
+                            Label("Start Over", systemImage: "arrow.uturn.left")
+                        }
+                        .foregroundColor(.red)
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                }
+            }
             .sheet(isPresented: $showDayEdit) {
                 if let dayId = selectedDayId,
                    let day = viewModel.getSuggestedDay(by: dayId) {
