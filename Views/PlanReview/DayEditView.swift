@@ -16,7 +16,6 @@ struct DayEditView: View {
     
     @State private var showAddExercise = false
     @State private var editingExercise: Exercise?
-    @State private var showEditExercise = false
     
     // Get the current state of the day from the viewModel
     private var currentDay: Day {
@@ -99,7 +98,6 @@ struct DayEditView: View {
                                     exercise: exercise,
                                     onTap: {
                                         editingExercise = exercise
-                                        showEditExercise = true
                                     },
                                     onDelete: {
                                         deleteExercise(exercise.id)
@@ -139,11 +137,11 @@ struct DayEditView: View {
             .navigationTitle("Edit Day")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
+//                ToolbarItem(placement: .navigationBarLeading) {
+//                    Button("Cancel") {
+//                        dismiss()
+//                    }
+//                }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -164,11 +162,9 @@ struct DayEditView: View {
             AddExerciseView(dayId: dayId)
                 .environmentObject(viewModel)
         }
-        .sheet(isPresented: $showEditExercise) {
-            if let exercise = editingExercise {
-                EditExerciseView(exercise: exercise, dayId: dayId)
-                    .environmentObject(viewModel)
-            }
+        .sheet(item: $editingExercise) { exercise in
+            EditExerciseView(exercise: exercise, dayId: dayId)
+                .environmentObject(viewModel)
         }
     }
     

@@ -10,8 +10,7 @@ import SwiftUI
 struct PlanReviewView: View {
     @EnvironmentObject var viewModel: WorkoutPlanViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedDayId: UUID?
-    @State private var showDayEdit = false
+    @State private var selectedDay: Day?
     @State private var showRegenerateConfirmation = false
     
     var body: some View {
@@ -55,8 +54,7 @@ struct PlanReviewView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(suggestedPlan.days) { day in
                                 DayPreviewRow(day: day) {
-                                    selectedDayId = day.id
-                                    showDayEdit = true
+                                    selectedDay = day
                                 }
                                 .padding(.horizontal, 20)
                             }
@@ -136,12 +134,9 @@ struct PlanReviewView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showDayEdit) {
-                if let dayId = selectedDayId,
-                   let day = viewModel.getSuggestedDay(by: dayId) {
-                    DayEditView(day: day, dayId: dayId)
-                        .environmentObject(viewModel)
-                }
+            .sheet(item: $selectedDay) { day in
+                DayEditView(day: day, dayId: day.id)
+                    .environmentObject(viewModel)
             }
             .alert("Regenerate Plan", isPresented: $showRegenerateConfirmation) {
                 Button("Cancel", role: .cancel) { }
