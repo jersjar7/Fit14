@@ -125,8 +125,8 @@ class AIWorkoutGenerationService: ObservableObject {
         print("✅ API Key validation passed")
         print("🔑 Using API key (first 10 chars): \(String(apiKey.prefix(10)))...")
         
-        // Create the workout generation prompt
-        let prompt = createWorkoutPrompt(from: userGoals)
+        // Get the workout generation prompt from AIPrompts
+        let prompt = AIPrompts.workoutPrompt(for: userGoals)
         
         // Make API call to Gemini
         let geminiResponse = try await makeGeminiRequest(prompt: prompt)
@@ -139,100 +139,6 @@ class AIWorkoutGenerationService: ObservableObject {
     }
     
     // MARK: - Private Methods
-    
-    private func createWorkoutPrompt(from userGoals: String) -> String {
-        return """
-        IMPORTANT: You are generating a workout plan for the Fit14 mobile app. This response will be parsed automatically by the app's code, so EXACT JSON formatting is critical for the app to function properly.
-        
-        You are a professional fitness trainer AI creating a personalized 14-day workout plan for a Fit14 app user.
-        
-        USER GOALS: \(userGoals)
-        
-        WORKOUT PLAN REQUIREMENTS:
-        - Create exactly 14 days of workouts
-        - Include 1-2 rest or active recovery days throughout the 14-day period
-        - Regular workout days must have 4-6 exercises
-        - Rest/recovery days should have 1-3 light activities (stretching, walking, yoga, mobility work)
-        - Mix cardio, strength, and/or flexibility exercises specific to achieve user goals
-        - Consider the user's experience level, schedule, and goals
-        - Provide specific sets, reps, or duration for each exercise
-        - Use exercises appropriate for the user's available facilities (home, gym, etc.)
-        - ALL QUANTITY VALUES MUST BE POSITIVE INTEGERS (no text like "AsManyAsPossible")
-        - For "as many as possible" exercises, use a reasonable number like 8-15 reps
-        - Make each day different and progressive throughout the 14 days
-        
-        REST DAY GUIDELINES:
-        - Rest days are important for recovery and should be included
-        - Rest day activities can include: light walking, gentle stretching, yoga, meditation, foam rolling, mobility work, or complete rest
-        - Rest day activities should be 15-30 minutes in duration
-        - Label rest days with focus like "Active Recovery", "Rest and Recovery", "Mobility Day", etc.
-        - Rest days typically have 1-2 activities, maximum 3
-        
-        WORKOUT DAY GUIDELINES:
-        - Regular workout days should have 4-6 exercises
-        - Focus areas can include: Upper Body, Lower Body, Full Body, Cardio, Strength, etc.
-        - Workout days are typically 30-60 minutes total
-        
-        RESPONSE FORMAT (JSON):
-        {
-          "summary": "Brief description of the plan",
-          "days": [
-            {
-              "dayNumber": 1,
-              "focus": "Upper body strength",
-              "exercises": [
-                {
-                  "name": "Push-ups",
-                  "sets": 3,
-                  "quantity": 12,
-                  "unit": "reps",
-                  "instructions": "Keep your body straight, lower chest to floor"
-                },
-                {
-                  "name": "Dumbbell Rows",
-                  "sets": 3,
-                  "quantity": 10,
-                  "unit": "reps",
-                  "instructions": "Pull weight to chest, squeeze shoulder blades"
-                }
-              ]
-            },
-            {
-              "dayNumber": 7,
-              "focus": "Active Recovery",
-              "exercises": [
-                {
-                  "name": "Gentle Walking",
-                  "sets": 1,
-                  "quantity": 20,
-                  "unit": "minutes",
-                  "instructions": "Walk at a comfortable, relaxed pace"
-                },
-                {
-                  "name": "Full Body Stretching",
-                  "sets": 1,
-                  "quantity": 10,
-                  "unit": "minutes",
-                  "instructions": "Focus on major muscle groups, hold each stretch 15-30 seconds"
-                }
-              ]
-            }
-          ]
-        }
-        
-        CRITICAL FOR FIT14 APP - JSON REQUIREMENTS:
-        - "quantity" must ALWAYS be a positive integer (1, 2, 3, etc.) - NEVER text or decimals
-        - "sets" must ALWAYS be a positive integer (1, 2, 3, etc.)
-        - "unit" must be exactly one of: "reps", "seconds", or "minutes"
-        - NEVER use text values for numeric fields
-        - Regular workout days should have 4-6 exercises in the array
-        - Rest/recovery days should have 1-3 activities in the array
-        - Return exactly 14 days
-        - dayNumber must be 1, 2, 3... up to 14
-        
-        CRITICAL: This response is for the Fit14 app's automatic parsing system. You MUST return ONLY valid JSON with no additional text, no explanations, no markdown formatting, no code blocks, no extra characters. The app will break if you add anything other than pure JSON. Start your response with { and end with }.
-        """
-    }
     
     private func makeGeminiRequest(prompt: String) async throws -> String {
         guard let url = URL(string: "\(baseURL)?key=\(apiKey)") else {
@@ -398,8 +304,9 @@ class AIWorkoutGenerationService: ObservableObject {
                     throw AIServiceError.invalidJSONStructure("Exercise '\(exercise.name)' has invalid quantity: \(exercise.quantity)")
                 }
                 
-                guard ["reps", "seconds", "minutes"].contains(exercise.unit.lowercased()) else {
-                    throw AIServiceError.invalidJSONStructure("Exercise '\(exercise.name)' has invalid unit: \(exercise.unit)")
+                // Use AIPrompts validation for allowed units
+                guard AIPrompts.isValidUnit(exercise.unit) else {
+                    throw AIServiceError.invalidJSONStructure("Exercise '\(exercise.name)' has invalid unit: '\(exercise.unit)'. Allowed units: \(AIPrompts.allowedUnits.sorted().joined(separator: ", "))")
                 }
                 
                 guard !exercise.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -409,9 +316,8 @@ class AIWorkoutGenerationService: ObservableObject {
         }
         
         print("✅ Workout plan validation passed - trusting AI fitness expertise")
+        print("📊 Validated \(response.days.count) days with all 11 supported unit types")
     }
-    
-
     
     private func formatDecodingError(_ error: DecodingError) -> String {
         switch error {
@@ -431,7 +337,7 @@ class AIWorkoutGenerationService: ObservableObject {
     private func cleanJSONResponse(_ jsonText: String) -> String {
         var cleaned = jsonText
         
-        // Fix common AI mistakes in JSON
+        // Fix common AI mistakes in JSON for numeric values
         cleaned = cleaned.replacingOccurrences(of: "\"quantity\": AsManyAsPossible", with: "\"quantity\": 10")
         cleaned = cleaned.replacingOccurrences(of: "\"quantity\": AsLongAsPossible", with: "\"quantity\": 30")
         cleaned = cleaned.replacingOccurrences(of: "\"quantity\": \"AsManyAsPossible\"", with: "\"quantity\": 10")
@@ -441,6 +347,29 @@ class AIWorkoutGenerationService: ObservableObject {
         cleaned = cleaned.replacingOccurrences(of: "\"quantity\": \"max\"", with: "\"quantity\": 12")
         cleaned = cleaned.replacingOccurrences(of: "\"quantity\": \"maximum\"", with: "\"quantity\": 12")
         cleaned = cleaned.replacingOccurrences(of: "\"sets\": \"max\"", with: "\"sets\": 3")
+        
+        // Fix common unit abbreviations that AI might use instead of full names
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"sec\"", with: "\"unit\": \"seconds\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"min\"", with: "\"unit\": \"minutes\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"hr\"", with: "\"unit\": \"hours\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"m\"", with: "\"unit\": \"meters\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"km\"", with: "\"unit\": \"kilometers\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"mi\"", with: "\"unit\": \"miles\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"yd\"", with: "\"unit\": \"yards\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"ft\"", with: "\"unit\": \"feet\"")
+        
+        // Fix plural/singular inconsistencies
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"rep\"", with: "\"unit\": \"reps\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"step\"", with: "\"unit\": \"steps\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"lap\"", with: "\"unit\": \"laps\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"second\"", with: "\"unit\": \"seconds\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"minute\"", with: "\"unit\": \"minutes\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"hour\"", with: "\"unit\": \"hours\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"meter\"", with: "\"unit\": \"meters\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"yard\"", with: "\"unit\": \"yards\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"foot\"", with: "\"unit\": \"feet\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"kilometer\"", with: "\"unit\": \"kilometers\"")
+        cleaned = cleaned.replacingOccurrences(of: "\"unit\": \"mile\"", with: "\"unit\": \"miles\"")
         
         // Handle empty exercise arrays by ensuring at least one exercise
         if cleaned.contains("\"exercises\": []") {
@@ -466,9 +395,30 @@ class AIWorkoutGenerationService: ObservableObject {
         let startDate = Date()
         
         for aiDay in aiResponse.days {
-            let exercises = aiDay.exercises.map { aiExercise in
-                // Convert string unit to ExerciseUnit enum
-                let unit = ExerciseUnit(rawValue: aiExercise.unit.lowercased()) ?? .reps
+            let exercises = aiDay.exercises.compactMap { aiExercise -> Exercise? in
+                // Convert string unit to ExerciseUnit enum, with fallback validation
+                guard let unit = ExerciseUnit(rawValue: aiExercise.unit.lowercased()) else {
+                    print("⚠️ Unknown unit '\(aiExercise.unit)' for exercise '\(aiExercise.name)', defaulting to reps")
+                    return Exercise(
+                        name: aiExercise.name,
+                        sets: aiExercise.sets,
+                        quantity: aiExercise.quantity,
+                        unit: .reps
+                    )
+                }
+                
+                // Validate quantity makes sense for the unit
+                guard unit.isValidQuantity(aiExercise.quantity) else {
+                    print("⚠️ Invalid quantity \(aiExercise.quantity) for unit \(unit.displayName) in exercise '\(aiExercise.name)'")
+                    // Use a reasonable default within the suggested range
+                    let reasonableQuantity = max(unit.suggestedRange.lowerBound, min(unit.suggestedRange.upperBound, aiExercise.quantity))
+                    return Exercise(
+                        name: aiExercise.name,
+                        sets: aiExercise.sets,
+                        quantity: reasonableQuantity,
+                        unit: unit
+                    )
+                }
                 
                 return Exercise(
                     name: aiExercise.name,
@@ -490,6 +440,21 @@ class AIWorkoutGenerationService: ObservableObject {
         }
         
         return WorkoutPlan(userGoals: userGoals, days: days)
+    }
+    
+    // MARK: - Debug Helpers
+    
+    /// Get debug information about the current service configuration
+    func getDebugInfo() -> String {
+        return """
+        AI Workout Generation Service Debug Info:
+        \(AIPrompts.debugInfo)
+        
+        Service Configuration:
+        - API Base URL: \(baseURL)
+        - Timeout: \(timeout)s
+        - API Key Status: \(apiKey.isEmpty ? "Missing" : "Present (\(apiKey.prefix(10))...)")
+        """
     }
 }
 

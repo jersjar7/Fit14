@@ -20,6 +20,7 @@ struct EditExerciseView: View {
     @State private var selectedUnit: ExerciseUnit = .reps
     @State private var showValidationError = false
     @State private var errorMessage = ""
+    @State private var hasUserChangedUnit = false
     
     @FocusState private var isNameFieldFocused: Bool
     
@@ -56,6 +57,15 @@ struct EditExerciseView: View {
                             .focused($isNameFieldFocused)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.words)
+                            .onChange(of: exerciseName) { _, newValue in
+                                // Only suggest unit changes if user hasn't manually changed the unit
+                                if !hasUserChangedUnit && !newValue.isEmpty {
+                                    let smartUnit = CategoryUnitPicker.smartDefaultUnit(for: newValue)
+                                    if smartUnit != selectedUnit {
+                                        selectedUnit = smartUnit
+                                    }
+                                }
+                            }
                     }
                     
                     // Sets
@@ -70,19 +80,22 @@ struct EditExerciseView: View {
                             .multilineTextAlignment(.center)
                     }
                     
-                    // Unit Selection
+                    // Unit Selection with CategoryUnitPicker
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Measurement Type")
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Picker("Unit", selection: $selectedUnit) {
-                            ForEach(ExerciseUnit.allCases, id: \.self) { unit in
-                                Text(unit.displayName.capitalized)
-                                    .tag(unit)
+                        CategoryUnitPicker(selectedUnit: $selectedUnit)
+                            .onChange(of: selectedUnit) { _, newUnit in
+                                hasUserChangedUnit = true
+                                // Adjust quantity if it's outside the new unit's valid range
+                                if let currentQuantity = Int(quantity),
+                                   !newUnit.isValidQuantity(currentQuantity) {
+                                    let range = newUnit.suggestedRange
+                                    quantity = String((range.lowerBound + range.upperBound) / 2)
+                                }
                             }
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
                     }
                     
                     // Quantity (context-aware label)
@@ -112,7 +125,7 @@ struct EditExerciseView: View {
                                     .fontWeight(.medium)
                                     .foregroundColor(.secondary)
                                 
-                                Text("\(exercise.name)")
+                                Text(exercise.name)
                                     .font(.caption)
                                     .strikethrough()
                                     .foregroundColor(.secondary)
@@ -150,6 +163,32 @@ struct EditExerciseView: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
+                    
+                    // Smart Tips based on selected unit
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: selectedUnit.systemIcon)
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                            
+                            Text("Tips for \(selectedUnit.displayName):")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(tipsForSelectedUnit, id: \.self) { tip in
+                                Text("• \(tip)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                    .animation(.easeInOut(duration: 0.2), value: selectedUnit)
                 }
                 .padding(.horizontal, 4)
                 
@@ -206,6 +245,9 @@ struct EditExerciseView: View {
                 sets = String(exercise.sets)
                 quantity = String(exercise.quantity)
                 selectedUnit = exercise.unit
+                
+                // Don't auto-suggest units since we're editing existing exercise
+                hasUserChangedUnit = true
             }
         }
     }
@@ -214,12 +256,33 @@ struct EditExerciseView: View {
     
     private var quantityLabel: String {
         switch selectedUnit {
+        // Count-based
         case .reps:
-            return "Reps"
+            return "Repetitions"
+        case .steps:
+            return "Steps"
+        case .laps:
+            return "Laps"
+            
+        // Time-based
         case .seconds:
             return "Seconds"
         case .minutes:
             return "Minutes"
+        case .hours:
+            return "Hours"
+            
+        // Distance-based
+        case .meters:
+            return "Meters"
+        case .yards:
+            return "Yards"
+        case .feet:
+            return "Feet"
+        case .kilometers:
+            return "Kilometers"
+        case .miles:
+            return "Miles"
         }
     }
     
@@ -227,6 +290,82 @@ struct EditExerciseView: View {
         let setsText = sets.isEmpty ? "0" : sets
         let quantityText = quantity.isEmpty ? "0" : quantity
         return "\(setsText) sets × \(quantityText) \(selectedUnit.shortDisplayName)"
+    }
+    
+    private var tipsForSelectedUnit: [String] {
+        switch selectedUnit {
+        // Count-based tips
+        case .reps:
+            return [
+                "8-12 reps for strength building",
+                "12-20 reps for endurance",
+                "Adjust based on your fitness level"
+            ]
+        case .steps:
+            return [
+                "10,000 steps = roughly 5 miles",
+                "2,000 steps = about 1 mile",
+                "Great for active recovery days"
+            ]
+        case .laps:
+            return [
+                "Pool lap = down and back (50m)",
+                "Track lap = 400m around",
+                "Build up gradually for endurance"
+            ]
+            
+        // Time-based tips
+        case .seconds:
+            return [
+                "Perfect for holds and isometric exercises",
+                "30-60 seconds is typical for planks",
+                "Focus on maintaining proper form"
+            ]
+        case .minutes:
+            return [
+                "Great for cardio and longer activities",
+                "5-20 minutes depending on intensity",
+                "Good for stretching and mobility work"
+            ]
+        case .hours:
+            return [
+                "Best for long activities like hiking",
+                "1-4 hours for endurance activities",
+                "Remember to take breaks and stay hydrated"
+            ]
+            
+        // Distance-based tips
+        case .meters:
+            return [
+                "Good for short runs and sprints",
+                "100m sprint = about 10-15 seconds",
+                "Track your progress over time"
+            ]
+        case .yards:
+            return [
+                "Common in American sports training",
+                "100 yards ≈ 91 meters",
+                "Great for agility and speed work"
+            ]
+        case .feet:
+            return [
+                "Perfect for jump distances",
+                "Good for short movement drills",
+                "Focus on consistent technique"
+            ]
+        case .kilometers:
+            return [
+                "Ideal for medium to long runs",
+                "5K = beginner race distance",
+                "10K = intermediate challenge"
+            ]
+        case .miles:
+            return [
+                "Popular for running goals",
+                "1 mile ≈ 1.6 kilometers",
+                "Half marathon = 13.1 miles"
+            ]
+        }
     }
     
     private var isFormValid: Bool {
@@ -291,29 +430,17 @@ struct EditExerciseView: View {
             return false
         }
         
-        // Validate quantity (context-aware validation)
+        // Validate quantity using the ExerciseUnit's validation
         guard let quantityValue = Int(quantity), quantityValue > 0 else {
             showError("Please enter a valid \(selectedUnit.displayName) value (1 or more)")
             return false
         }
         
-        // Unit-specific validation
-        switch selectedUnit {
-        case .reps:
-            if quantityValue > 1000 {
-                showError("Number of reps seems too high (max 1000)")
-                return false
-            }
-        case .seconds:
-            if quantityValue > 3600 { // 1 hour
-                showError("Duration in seconds seems too long (max 3600)")
-                return false
-            }
-        case .minutes:
-            if quantityValue > 180 { // 3 hours
-                showError("Duration in minutes seems too long (max 180)")
-                return false
-            }
+        // Use the unit's built-in validation
+        guard selectedUnit.isValidQuantity(quantityValue) else {
+            let range = selectedUnit.suggestedRange
+            showError("Value for \(selectedUnit.displayName) should be between \(range.lowerBound) and \(range.upperBound)")
+            return false
         }
         
         return true
@@ -330,5 +457,19 @@ struct EditExerciseView: View {
     let sampleExercise = Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps)
     
     return EditExerciseView(exercise: sampleExercise, dayId: UUID())
+        .environmentObject(WorkoutPlanViewModel())
+}
+
+#Preview("Running Exercise") {
+    let runningExercise = Exercise(name: "Morning Run", sets: 1, quantity: 5, unit: .kilometers)
+    
+    return EditExerciseView(exercise: runningExercise, dayId: UUID())
+        .environmentObject(WorkoutPlanViewModel())
+}
+
+#Preview("Time-based Exercise") {
+    let plankExercise = Exercise(name: "Plank Hold", sets: 3, quantity: 45, unit: .seconds)
+    
+    return EditExerciseView(exercise: plankExercise, dayId: UUID())
         .environmentObject(WorkoutPlanViewModel())
 }

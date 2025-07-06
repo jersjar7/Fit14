@@ -25,12 +25,16 @@ struct ExerciseEditRow: View {
                 // Exercise Icon
                 ZStack {
                     Circle()
-                        .fill(Color.blue.opacity(0.1))
+                        .fill(exercise.unit.isTimeBased ? Color.orange.opacity(0.1) :
+                              exercise.unit.isDistanceBased ? Color.green.opacity(0.1) :
+                              Color.blue.opacity(0.1))
                         .frame(width: 40, height: 40)
                     
                     Image(systemName: unitIcon)
                         .font(.system(size: 18))
-                        .foregroundColor(.blue)
+                        .foregroundColor(exercise.unit.isTimeBased ? .orange :
+                                       exercise.unit.isDistanceBased ? .green :
+                                       .blue)
                 }
                 
                 // Exercise Details
@@ -56,6 +60,19 @@ struct ExerciseEditRow: View {
                 }
                 
                 Spacer()
+                
+                // Unit Category Badge
+                Text(exercise.unit.unitCategory)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(exercise.unit.isTimeBased ? Color.orange :
+                               exercise.unit.isDistanceBased ? Color.green :
+                               Color.blue)
+                    .cornerRadius(4)
+                    .opacity(0.8)
                 
                 // Edit Indicator
                 Image(systemName: "pencil")
@@ -150,23 +167,65 @@ struct ExerciseEditRow: View {
     
     private var unitIcon: String {
         switch exercise.unit {
+        // Count-based units
         case .reps:
             return "figure.strengthtraining.traditional"
+        case .steps:
+            return "figure.walk"
+        case .laps:
+            return "arrow.clockwise"
+            
+        // Time-based units
         case .seconds:
             return "timer"
         case .minutes:
             return "clock"
+        case .hours:
+            return "clock.badge"
+            
+        // Distance-based units
+        case .meters:
+            return "ruler"
+        case .yards:
+            return "ruler"
+        case .feet:
+            return "ruler.fill"
+        case .kilometers:
+            return "location"
+        case .miles:
+            return "location.fill"
         }
     }
     
     private var unitSystemImage: String {
         switch exercise.unit {
+        // Count-based units
         case .reps:
             return "number"
+        case .steps:
+            return "figure.walk"
+        case .laps:
+            return "arrow.clockwise"
+            
+        // Time-based units
         case .seconds:
             return "timer"
         case .minutes:
             return "clock"
+        case .hours:
+            return "clock.badge"
+            
+        // Distance-based units
+        case .meters:
+            return "ruler"
+        case .yards:
+            return "ruler"
+        case .feet:
+            return "ruler.fill"
+        case .kilometers:
+            return "location"
+        case .miles:
+            return "location.fill"
         }
     }
 }
@@ -174,6 +233,7 @@ struct ExerciseEditRow: View {
 // MARK: - Preview
 #Preview {
     VStack(spacing: 12) {
+        // Count-based exercises
         ExerciseEditRow(
             exercise: Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
             onTap: { print("Edit push-ups") },
@@ -181,15 +241,53 @@ struct ExerciseEditRow: View {
         )
         
         ExerciseEditRow(
+            exercise: Exercise(name: "Walking", sets: 1, quantity: 5000, unit: .steps),
+            onTap: { print("Edit walking") },
+            onDelete: { print("Delete walking") }
+        )
+        
+        ExerciseEditRow(
+            exercise: Exercise(name: "Swimming", sets: 1, quantity: 10, unit: .laps),
+            onTap: { print("Edit swimming") },
+            onDelete: { print("Delete swimming") }
+        )
+        
+        // Time-based exercises
+        ExerciseEditRow(
             exercise: Exercise(name: "Plank", sets: 1, quantity: 45, unit: .seconds),
             onTap: { print("Edit plank") },
             onDelete: { print("Delete plank") }
         )
         
         ExerciseEditRow(
-            exercise: Exercise(name: "Cardio", sets: 1, quantity: 5, unit: .minutes),
+            exercise: Exercise(name: "Cardio", sets: 1, quantity: 20, unit: .minutes),
             onTap: { print("Edit cardio") },
             onDelete: { print("Delete cardio") }
+        )
+        
+        ExerciseEditRow(
+            exercise: Exercise(name: "Hiking", sets: 1, quantity: 2, unit: .hours),
+            onTap: { print("Edit hiking") },
+            onDelete: { print("Delete hiking") }
+        )
+        
+        // Distance-based exercises
+        ExerciseEditRow(
+            exercise: Exercise(name: "Sprint", sets: 3, quantity: 100, unit: .meters),
+            onTap: { print("Edit sprint") },
+            onDelete: { print("Delete sprint") }
+        )
+        
+        ExerciseEditRow(
+            exercise: Exercise(name: "Running", sets: 1, quantity: 5, unit: .kilometers),
+            onTap: { print("Edit running") },
+            onDelete: { print("Delete running") }
+        )
+        
+        ExerciseEditRow(
+            exercise: Exercise(name: "Long Run", sets: 1, quantity: 3, unit: .miles),
+            onTap: { print("Edit long run") },
+            onDelete: { print("Delete long run") }
         )
     }
     .padding()
