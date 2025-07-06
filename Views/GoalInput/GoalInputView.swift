@@ -15,18 +15,23 @@ struct GoalInputView: View {
         NavigationView {
             VStack(spacing: 30) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("What are your fitness goals?")
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.blue)
+                            .font(.title2)
+                        Text("What are your fitness goals?")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                    }
                     
-                    Text("For better results, include your personal details below")
+                    Text("Tell our AI about your goals for a personalized 14-day workout plan")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 
                 ZStack(alignment: .topLeading) {
                     TextEditor(text: $goalsText)
-                        .frame(minHeight: 120)
+                        .frame(minHeight: 140)
                         .padding()
                         .background(Color(.systemGray6))
                         .cornerRadius(12)
@@ -39,27 +44,31 @@ struct GoalInputView: View {
                     // Placeholder text overlay
                     if goalsText.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("For better results, include:")
+                            Text("For the best AI-generated plan, include:")
                                 .foregroundColor(.secondary)
+                                .fontWeight(.medium)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("• Your specific goal (lose weight, build muscle, etc.)")
+                                Text("• Your specific goal (lose weight, build muscle, get stronger, etc.)")
                                 Text("• Age, gender, current weight, height")
-                                Text("• Current activity level")
+                                Text("• Current fitness level and activity")
                                 Text("• Time available for workouts")
-                                Text("• Any exercise preferences or limitations")
+                                Text("• Equipment access (home, gym, bodyweight only)")
+                                Text("• Any injuries, limitations, or preferences")
                             }
                             .foregroundColor(.secondary)
                             
                             Text("\nExample:")
                                 .foregroundColor(.secondary)
+                                .fontWeight(.medium)
                                 .padding(.top, 8)
                             
-                            Text("I want to lose 3 pounds in 2 weeks. I'm 28, female, 140 lbs, 5'4\", and can work out 30 to 60 minutes daily except for Sunday.")
+                            Text("I want to lose 5 pounds and build endurance in 2 weeks. I'm 28, female, 140 lbs, 5'4\". I'm a beginner and can work out 30-45 minutes daily except Sunday. I have access to a gym with weights and cardio machines.")
                                 .foregroundColor(.secondary)
+                                .italic()
                         }
-                        .padding(.horizontal, 30.0)
-                        .padding(.vertical, 25.0)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 20)
                         .allowsHitTesting(false)
                         .font(.footnote)
                     }
@@ -74,10 +83,12 @@ struct GoalInputView: View {
                         if viewModel.isGenerating {
                             ProgressView()
                                 .scaleEffect(0.8)
+                                .foregroundColor(.white)
                         } else {
                             Image(systemName: "sparkles")
                         }
-                        Text(viewModel.isGenerating ? "Generating..." : "Generate My Plan")
+                        Text(viewModel.isGenerating ? "Creating Your Plan..." : "Generate AI Workout Plan")
+                            .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -90,28 +101,40 @@ struct GoalInputView: View {
                 // Show existing plan options if available
                 if viewModel.hasActivePlan && !viewModel.isGenerating {
                     VStack(spacing: 12) {
-                        Text("You already have an active plan")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        HStack {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.orange)
+                            Text("You already have an active workout plan")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                         
                         HStack(spacing: 16) {
                             NavigationLink(destination: PlanListView().environmentObject(viewModel)) {
-                                Text("View Plan")
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 8)
-                                    .background(Color.green)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
+                                HStack {
+                                    Image(systemName: "list.bullet")
+                                    Text("View Current Plan")
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
                             }
                             
-                            Button("Start Fresh") {
+                            Button(action: {
                                 viewModel.startOver()
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.uturn.left")
+                                    Text("Start Fresh")
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.orange)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-                            .background(Color.red)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
                         }
                     }
                     .padding()
@@ -123,15 +146,66 @@ struct GoalInputView: View {
             }
             .padding()
             .navigationTitle("Fit14")
-            .alert("Error", isPresented: $viewModel.showError) {
-                Button("OK") {
+            .alert(errorAlertTitle, isPresented: $viewModel.showError) {
+                Button("Try Again") {
                     viewModel.clearError()
                 }
+                
+                if shouldShowHelpButton {
+                    Button("Need Help?") {
+                        viewModel.clearError()
+                        // Could open a help view or provide tips
+                    }
+                }
             } message: {
-                Text(viewModel.errorMessage ?? "An unexpected error occurred")
+                Text(errorAlertMessage)
             }
         }
     }
+    
+    // MARK: - Error Handling
+    
+    private var errorAlertTitle: String {
+        guard let errorMessage = viewModel.errorMessage else { return "Error" }
+        
+        // Determine alert title based on error content
+        if errorMessage.contains("network") || errorMessage.contains("connection") {
+            return "Connection Problem"
+        } else if errorMessage.contains("quota") || errorMessage.contains("limit") {
+            return "Daily Limit Reached"
+        } else if errorMessage.contains("API") || errorMessage.contains("service") {
+            return "Service Temporarily Unavailable"
+        } else {
+            return "Plan Generation Failed"
+        }
+    }
+    
+    private var errorAlertMessage: String {
+        guard let errorMessage = viewModel.errorMessage else {
+            return "An unexpected error occurred. Please try again."
+        }
+        
+        // Add helpful context to error messages
+        if errorMessage.contains("network") || errorMessage.contains("connection") {
+            return "\(errorMessage)\n\nTip: Make sure you have a stable internet connection and try again."
+        } else if errorMessage.contains("quota") || errorMessage.contains("limit") {
+            return "\(errorMessage)\n\nDon't worry - your limit will reset tomorrow, or you can try simplifying your goals description."
+        } else if errorMessage.contains("truncated") || errorMessage.contains("cut off") {
+            return "\(errorMessage)\n\nTip: Try using simpler language or fewer details in your goals description."
+        } else {
+            return "\(errorMessage)\n\nTip: Try rewording your goals or check your internet connection."
+        }
+    }
+    
+    private var shouldShowHelpButton: Bool {
+        guard let errorMessage = viewModel.errorMessage else { return false }
+        // Show help button for certain types of errors
+        return errorMessage.contains("truncated") ||
+               errorMessage.contains("invalid") ||
+               errorMessage.contains("format")
+    }
+    
+    // MARK: - Actions
     
     private func generatePlan() async {
         print("🎯 Generate Plan button tapped")

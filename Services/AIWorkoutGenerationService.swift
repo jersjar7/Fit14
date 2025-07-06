@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/3/25.
-//  Updated to use Google Gemini API
+//  Updated to use Google Gemini API with flexible rest day support
 //
 
 import Foundation
@@ -19,7 +19,7 @@ struct GeminiRequest: Codable {
             temperature: 0.7,
             topK: 40,
             topP: 0.8,
-            maxOutputTokens: 2048
+            maxOutputTokens: 8192  // Increased from 2048 to handle full 14-day plans
         )
     }
 }
@@ -63,21 +63,27 @@ enum AIServiceError: Error, LocalizedError {
     case quotaExceeded
     case parseError(String)
     case geminiError(String)
+    case incompleteResponse
+    case invalidJSONStructure(String)
     
     var errorDescription: String? {
         switch self {
         case .invalidAPIKey:
-            return "Invalid API key. Please check your Gemini API configuration."
+            return "Unable to connect to AI service. Please check your internet connection and try again."
         case .networkError(let message):
-            return "Network error: \(message)"
+            return "Network connection failed. Please check your internet and try again.\n\nDetails: \(message)"
         case .invalidResponse:
-            return "Invalid response from Gemini API"
+            return "The AI service returned an unexpected response. Please try again."
         case .quotaExceeded:
-            return "Daily quota exceeded. Try again tomorrow or upgrade to premium."
+            return "You've reached the daily limit for AI-generated workout plans. Please try again tomorrow."
         case .parseError(let message):
-            return "Failed to parse response: \(message)"
+            return "Failed to process the AI response. This might be a temporary issue - please try again.\n\nTechnical details: \(message)"
         case .geminiError(let message):
-            return "Gemini API error: \(message)"
+            return "AI service error: \(message)\n\nPlease try again in a few moments."
+        case .incompleteResponse:
+            return "The AI response was cut off unexpectedly. This usually means the workout plan was too complex. Please try simplifying your goals and try again."
+        case .invalidJSONStructure(let details):
+            return "The AI generated an invalid workout plan format. Please try again with slightly different wording.\n\nTechnical details: \(details)"
         }
     }
 }
@@ -88,7 +94,7 @@ class AIWorkoutGenerationService: ObservableObject {
     // MARK: - Configuration
     private let apiKey = APIKeys.googleGeminiAPIKey
     private let baseURL = APIKeys.geminiBaseURL
-    private let timeout: TimeInterval = 30.0
+    private let timeout: TimeInterval = 45.0  // Increased timeout for larger responses
     
     // MARK: - URLSession
     private lazy var urlSession: URLSession = {
@@ -110,7 +116,7 @@ class AIWorkoutGenerationService: ObservableObject {
             throw AIServiceError.invalidResponse
         }
         
-        // Validate API key - SECURE VERSION
+        // Validate API key
         guard !apiKey.isEmpty && apiKey != "PUT_YOUR_NEW_API_KEY_HERE" else {
             print("❌ API Key validation failed!")
             throw AIServiceError.invalidAPIKey
@@ -142,9 +148,11 @@ class AIWorkoutGenerationService: ObservableObject {
         
         USER GOALS: \(userGoals)
         
-        REQUIREMENTS:
+        WORKOUT PLAN REQUIREMENTS:
         - Create exactly 14 days of workouts
-        - Each day must have exactly 5-6 exercises (NEVER less than 5, NEVER more than 6)
+        - Include 1-2 rest or active recovery days throughout the 14-day period
+        - Regular workout days must have 4-6 exercises
+        - Rest/recovery days should have 1-3 light activities (stretching, walking, yoga, mobility work)
         - Mix cardio, strength, and/or flexibility exercises specific to achieve user goals
         - Consider the user's experience level, schedule, and goals
         - Provide specific sets, reps, or duration for each exercise
@@ -152,6 +160,18 @@ class AIWorkoutGenerationService: ObservableObject {
         - ALL QUANTITY VALUES MUST BE POSITIVE INTEGERS (no text like "AsManyAsPossible")
         - For "as many as possible" exercises, use a reasonable number like 8-15 reps
         - Make each day different and progressive throughout the 14 days
+        
+        REST DAY GUIDELINES:
+        - Rest days are important for recovery and should be included
+        - Rest day activities can include: light walking, gentle stretching, yoga, meditation, foam rolling, mobility work, or complete rest
+        - Rest day activities should be 15-30 minutes in duration
+        - Label rest days with focus like "Active Recovery", "Rest and Recovery", "Mobility Day", etc.
+        - Rest days typically have 1-2 activities, maximum 3
+        
+        WORKOUT DAY GUIDELINES:
+        - Regular workout days should have 4-6 exercises
+        - Focus areas can include: Upper Body, Lower Body, Full Body, Cardio, Strength, etc.
+        - Workout days are typically 30-60 minutes total
         
         RESPONSE FORMAT (JSON):
         {
@@ -176,6 +196,26 @@ class AIWorkoutGenerationService: ObservableObject {
                   "instructions": "Pull weight to chest, squeeze shoulder blades"
                 }
               ]
+            },
+            {
+              "dayNumber": 7,
+              "focus": "Active Recovery",
+              "exercises": [
+                {
+                  "name": "Gentle Walking",
+                  "sets": 1,
+                  "quantity": 20,
+                  "unit": "minutes",
+                  "instructions": "Walk at a comfortable, relaxed pace"
+                },
+                {
+                  "name": "Full Body Stretching",
+                  "sets": 1,
+                  "quantity": 10,
+                  "unit": "minutes",
+                  "instructions": "Focus on major muscle groups, hold each stretch 15-30 seconds"
+                }
+              ]
             }
           ]
         }
@@ -185,7 +225,8 @@ class AIWorkoutGenerationService: ObservableObject {
         - "sets" must ALWAYS be a positive integer (1, 2, 3, etc.)
         - "unit" must be exactly one of: "reps", "seconds", or "minutes"
         - NEVER use text values for numeric fields
-        - Each day must have exactly 5-6 exercises in the array
+        - Regular workout days should have 4-6 exercises in the array
+        - Rest/recovery days should have 1-3 activities in the array
         - Return exactly 14 days
         - dayNumber must be 1, 2, 3... up to 14
         
@@ -194,17 +235,11 @@ class AIWorkoutGenerationService: ObservableObject {
     }
     
     private func makeGeminiRequest(prompt: String) async throws -> String {
-        // FIXED: Construct URL with API key (baseURL already includes the full path)
         guard let url = URL(string: "\(baseURL)?key=\(apiKey)") else {
             print("❌ Failed to create URL")
-            print("🌐 BaseURL: \(baseURL)")
-            print("🔑 API Key length: \(apiKey.count)")
             throw AIServiceError.invalidAPIKey
         }
         
-        print("🔑 API Key length: \(apiKey.count)")
-        print("🔑 API Key starts with: \(apiKey.hasPrefix("AIzaSy") ? "✅ AIzaSy" : "❌ Wrong prefix")")
-        print("🌐 Full URL: \(url.absoluteString)")
         print("🚀 About to make workout generation request...")
         
         // Create request
@@ -219,11 +254,6 @@ class AIWorkoutGenerationService: ObservableObject {
             let requestData = try JSONEncoder().encode(geminiRequest)
             request.httpBody = requestData
             
-            // Debug the request body
-            if let requestString = String(data: requestData, encoding: .utf8) {
-                print("📦 Request body: \(requestString.prefix(200))...")
-            }
-            
         } catch {
             print("❌ Failed to encode request: \(error)")
             throw AIServiceError.invalidResponse
@@ -234,11 +264,6 @@ class AIWorkoutGenerationService: ObservableObject {
             let (data, response) = try await urlSession.data(for: request)
             
             print("📡 Received response, checking...")
-            
-            // Debug the raw response
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("📄 Raw API Response (first 500 chars): \(responseString.prefix(500))...")
-            }
             
             // Check HTTP status
             if let httpResponse = response as? HTTPURLResponse {
@@ -257,9 +282,9 @@ class AIWorkoutGenerationService: ObservableObject {
                     print("❌ 4xx Client Error")
                     throw AIServiceError.invalidResponse
                 case 500...599:
-                    throw AIServiceError.networkError("Server error (\(httpResponse.statusCode))")
+                    throw AIServiceError.networkError("Server error (Code: \(httpResponse.statusCode))")
                 default:
-                    throw AIServiceError.networkError("HTTP \(httpResponse.statusCode)")
+                    throw AIServiceError.networkError("Unexpected response (Code: \(httpResponse.statusCode))")
                 }
             }
             
@@ -269,13 +294,23 @@ class AIWorkoutGenerationService: ObservableObject {
             // Check for API errors
             if let error = geminiResponse.error {
                 print("❌ Gemini API error: \(error.message)")
-                throw AIServiceError.geminiError("\(error.message) (Code: \(error.code))")
+                throw AIServiceError.geminiError("\(error.message)")
             }
             
             // Extract text from response
-            guard let candidate = geminiResponse.candidates?.first,
-                  let text = candidate.content.parts.first?.text else {
-                print("❌ No valid response content")
+            guard let candidate = geminiResponse.candidates?.first else {
+                print("❌ No candidates in response")
+                throw AIServiceError.invalidResponse
+            }
+            
+            // Check if response was truncated
+            if let finishReason = candidate.finishReason, finishReason == "MAX_TOKENS" {
+                print("⚠️ Response was truncated due to token limit")
+                throw AIServiceError.incompleteResponse
+            }
+            
+            guard let text = candidate.content.parts.first?.text else {
+                print("❌ No text content in response")
                 throw AIServiceError.invalidResponse
             }
             
@@ -290,45 +325,6 @@ class AIWorkoutGenerationService: ObservableObject {
         }
     }
     
-    // TEMPORARY: Simple API test
-    func testSimpleAPICall() async {
-        print("🧪 Testing simple Gemini API call...")
-        
-        let testURL = "\(baseURL)?key=\(apiKey)"
-        guard let url = URL(string: testURL) else {
-            print("❌ Invalid test URL")
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        // Minimal test request
-        let testBody = """
-        {
-          "contents": [{
-            "parts": [{"text": "Hello"}]
-          }]
-        }
-        """
-        request.httpBody = testBody.data(using: .utf8)
-        
-        do {
-            let (data, response) = try await urlSession.data(for: request)
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("🧪 Test Status: \(httpResponse.statusCode)")
-            }
-            
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("🧪 Test Response: \(responseString)")
-            }
-        } catch {
-            print("🧪 Test Error: \(error)")
-        }
-    }
-    
     private func parseWorkoutResponse(_ responseText: String, userGoals: String) throws -> WorkoutPlan {
         print("🔍 Parsing Gemini response...")
         
@@ -339,10 +335,16 @@ class AIWorkoutGenerationService: ObservableObject {
             .replacingOccurrences(of: "```", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         
+        // Check if response appears to be truncated
+        if !cleanedText.hasSuffix("}") {
+            print("⚠️ Response appears to be truncated - doesn't end with }")
+            throw AIServiceError.incompleteResponse
+        }
+        
         // Fix common JSON issues that AI might introduce
         cleanedText = cleanJSONResponse(cleanedText)
         
-        print("🧹 Cleaned response (first 200 chars): \(cleanedText.prefix(200))...")
+        print("🧹 Cleaned response length: \(cleanedText.count) characters")
         
         // Parse JSON response
         guard let jsonData = cleanedText.data(using: .utf8) else {
@@ -352,11 +354,77 @@ class AIWorkoutGenerationService: ObservableObject {
         do {
             let aiResponse = try JSONDecoder().decode(GeminiWorkoutResponse.self, from: jsonData)
             print("✅ Successfully parsed JSON response")
+            
+            // Validate the response structure
+            try validateWorkoutResponse(aiResponse)
+            
             return convertToWorkoutPlan(aiResponse: aiResponse, userGoals: userGoals)
+        } catch let decodingError as DecodingError {
+            print("❌ JSON parsing error: \(decodingError)")
+            let errorDetails = formatDecodingError(decodingError)
+            throw AIServiceError.invalidJSONStructure(errorDetails)
+        } catch let validationError as AIServiceError {
+            throw validationError
         } catch {
-            print("❌ JSON parsing error: \(error)")
-            print("📄 Response text: \(cleanedText)")
-            throw AIServiceError.parseError("Invalid JSON format: \(error.localizedDescription)")
+            print("❌ Unexpected parsing error: \(error)")
+            throw AIServiceError.parseError("Unexpected error: \(error.localizedDescription)")
+        }
+    }
+    
+    private func validateWorkoutResponse(_ response: GeminiWorkoutResponse) throws {
+        // Check if we have exactly 14 days
+        guard response.days.count == 14 else {
+            throw AIServiceError.invalidJSONStructure("Expected 14 days, got \(response.days.count) days")
+        }
+        
+        // Validate basic structural integrity
+        for (index, day) in response.days.enumerated() {
+            guard day.dayNumber == index + 1 else {
+                throw AIServiceError.invalidJSONStructure("Day \(index + 1) has incorrect dayNumber: \(day.dayNumber)")
+            }
+            
+            // Ensure each day has at least one exercise/activity
+            guard !day.exercises.isEmpty else {
+                throw AIServiceError.invalidJSONStructure("Day \(day.dayNumber) has no exercises")
+            }
+            
+            // Validate each exercise has valid basic data
+            for exercise in day.exercises {
+                guard exercise.sets > 0 else {
+                    throw AIServiceError.invalidJSONStructure("Exercise '\(exercise.name)' has invalid sets: \(exercise.sets)")
+                }
+                
+                guard exercise.quantity > 0 else {
+                    throw AIServiceError.invalidJSONStructure("Exercise '\(exercise.name)' has invalid quantity: \(exercise.quantity)")
+                }
+                
+                guard ["reps", "seconds", "minutes"].contains(exercise.unit.lowercased()) else {
+                    throw AIServiceError.invalidJSONStructure("Exercise '\(exercise.name)' has invalid unit: \(exercise.unit)")
+                }
+                
+                guard !exercise.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw AIServiceError.invalidJSONStructure("Exercise has empty name on day \(day.dayNumber)")
+                }
+            }
+        }
+        
+        print("✅ Workout plan validation passed - trusting AI fitness expertise")
+    }
+    
+
+    
+    private func formatDecodingError(_ error: DecodingError) -> String {
+        switch error {
+        case .keyNotFound(let key, let context):
+            return "Missing required field '\(key.stringValue)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))"
+        case .typeMismatch(let type, let context):
+            return "Type mismatch for \(type) at path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))"
+        case .valueNotFound(let type, let context):
+            return "Missing value for \(type) at path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))"
+        case .dataCorrupted(let context):
+            return "Data corrupted: \(context.debugDescription)"
+        @unknown default:
+            return "Unknown decoding error: \(error.localizedDescription)"
         }
     }
     
@@ -421,20 +489,7 @@ class AIWorkoutGenerationService: ObservableObject {
             days.append(day)
         }
         
-        // Ensure we have exactly 14 days
-        while days.count < 14 {
-            let dayNumber = days.count + 1
-            let dayDate = Calendar.current.date(byAdding: .day, value: dayNumber - 1, to: startDate) ?? startDate
-            
-            // Create a basic day if AI didn't provide enough
-            let basicExercises = [
-                Exercise(name: "Rest day", sets: 1, quantity: 30, unit: .minutes)
-            ]
-            let day = Day(dayNumber: dayNumber, date: dayDate, exercises: basicExercises)
-            days.append(day)
-        }
-        
-        return WorkoutPlan(userGoals: userGoals, days: Array(days.prefix(14)))
+        return WorkoutPlan(userGoals: userGoals, days: days)
     }
 }
 
@@ -456,38 +511,4 @@ struct GeminiWorkoutExercise: Codable {
     let quantity: Int
     let unit: String
     let instructions: String?
-}
-
-// MARK: - Development Extensions (Keep for testing)
-extension AIWorkoutGenerationService {
-    
-    /// Create a mock workout plan for testing (fallback if API fails)
-    func generateMockWorkoutPlan(from userGoals: String) -> WorkoutPlan {
-        print("🧪 Generating mock workout plan as fallback...")
-        
-        let mockExercises = [
-            Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
-            Exercise(name: "Squats", sets: 3, quantity: 15, unit: .reps),
-            Exercise(name: "Plank", sets: 1, quantity: 45, unit: .seconds),
-            Exercise(name: "Lunges", sets: 2, quantity: 10, unit: .reps),
-            Exercise(name: "Jumping Jacks", sets: 3, quantity: 30, unit: .seconds),
-            Exercise(name: "Burpees", sets: 2, quantity: 8, unit: .reps),
-            Exercise(name: "Mountain Climbers", sets: 3, quantity: 20, unit: .seconds),
-            Exercise(name: "Wall Sit", sets: 1, quantity: 60, unit: .seconds)
-        ]
-        
-        var days: [Day] = []
-        let startDate = Date()
-        
-        for i in 1...14 {
-            let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
-            let exerciseCount = i % 7 == 0 ? 2 : 3 // Rest days have fewer exercises
-            let selectedExercises = Array(mockExercises.shuffled().prefix(exerciseCount))
-            
-            let day = Day(dayNumber: i, date: dayDate, exercises: selectedExercises)
-            days.append(day)
-        }
-        
-        return WorkoutPlan(userGoals: userGoals, days: days)
-    }
 }

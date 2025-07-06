@@ -7,25 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3EA3150E2E13348E0044FB89 /* GoalInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150D2E13348E0044FB89 /* GoalInputView.swift */; };
-		3EA315102E13385E0044FB89 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150F2E13385E0044FB89 /* SampleData.swift */; };
-		3EA315122E1338B30044FB89 /* DayRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315112E1338B30044FB89 /* DayRowView.swift */; };
-		3EA315142E1338FC0044FB89 /* ExerciseRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315132E1338FC0044FB89 /* ExerciseRowView.swift */; };
-		3EA315162E1339240044FB89 /* DayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315152E1339240044FB89 /* DayDetailView.swift */; };
-		3EA315182E1339480044FB89 /* PlanListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315172E1339480044FB89 /* PlanListView.swift */; };
-		3EA315192E133AC70044FB89 /* Exercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315092E1333FE0044FB89 /* Exercise.swift */; };
-		3EA3151A2E133ADD0044FB89 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150A2E13342F0044FB89 /* Day.swift */; };
-		3EA3151B2E133AEB0044FB89 /* WorkoutPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150B2E1334480044FB89 /* WorkoutPlan.swift */; };
-		3EA3151C2E133AF20044FB89 /* UserGoals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3150C2E13345D0044FB89 /* UserGoals.swift */; };
-		3EA3151E2E13426B0044FB89 /* LocalStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */; };
-		3EA315202E1342D70044FB89 /* WorkoutPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3151F2E1342D70044FB89 /* WorkoutPlanViewModel.swift */; };
-		3EA315332E172D690044FB89 /* AIWorkoutGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */; };
-		3EA315372E175FA40044FB89 /* PlanReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315362E175FA40044FB89 /* PlanReviewView.swift */; };
-		3EA315392E175FB50044FB89 /* DayPreviewRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315382E175FB50044FB89 /* DayPreviewRow.swift */; };
-		3EA3153B2E175FC30044FB89 /* DayEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3153A2E175FC30044FB89 /* DayEditView.swift */; };
-		3EA3153D2E182D3E0044FB89 /* ExerciseEditRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3153C2E182D3E0044FB89 /* ExerciseEditRow.swift */; };
-		3EA3153F2E182D580044FB89 /* AddExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA3153E2E182D580044FB89 /* AddExerciseView.swift */; };
-		3EA315412E182D670044FB89 /* EditExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315402E182D670044FB89 /* EditExerciseView.swift */; };
 		3EA315622E1ABD000044FB89 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 3EA315612E1ABD000044FB89 /* .gitignore */; };
 		3EA315682E1AC9A90044FB89 /* APIKeys.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */; };
 /* End PBXBuildFile section */
@@ -51,25 +32,6 @@
 		3EA314D12E13322C0044FB89 /* Fit14.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fit14.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3EA314E32E1332350044FB89 /* Fit14Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Fit14Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3EA314ED2E1332350044FB89 /* Fit14UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Fit14UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		3EA315092E1333FE0044FB89 /* Exercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exercise.swift; sourceTree = "<group>"; };
-		3EA3150A2E13342F0044FB89 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
-		3EA3150B2E1334480044FB89 /* WorkoutPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlan.swift; sourceTree = "<group>"; };
-		3EA3150C2E13345D0044FB89 /* UserGoals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserGoals.swift; sourceTree = "<group>"; };
-		3EA3150D2E13348E0044FB89 /* GoalInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalInputView.swift; sourceTree = "<group>"; };
-		3EA3150F2E13385E0044FB89 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
-		3EA315112E1338B30044FB89 /* DayRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayRowView.swift; sourceTree = "<group>"; };
-		3EA315132E1338FC0044FB89 /* ExerciseRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseRowView.swift; sourceTree = "<group>"; };
-		3EA315152E1339240044FB89 /* DayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailView.swift; sourceTree = "<group>"; };
-		3EA315172E1339480044FB89 /* PlanListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanListView.swift; sourceTree = "<group>"; };
-		3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStorageService.swift; sourceTree = "<group>"; };
-		3EA3151F2E1342D70044FB89 /* WorkoutPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlanViewModel.swift; sourceTree = "<group>"; };
-		3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWorkoutGenerationService.swift; sourceTree = "<group>"; };
-		3EA315362E175FA40044FB89 /* PlanReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanReviewView.swift; sourceTree = "<group>"; };
-		3EA315382E175FB50044FB89 /* DayPreviewRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPreviewRow.swift; sourceTree = "<group>"; };
-		3EA3153A2E175FC30044FB89 /* DayEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayEditView.swift; sourceTree = "<group>"; };
-		3EA3153C2E182D3E0044FB89 /* ExerciseEditRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseEditRow.swift; sourceTree = "<group>"; };
-		3EA3153E2E182D580044FB89 /* AddExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExerciseView.swift; sourceTree = "<group>"; };
-		3EA315402E182D670044FB89 /* EditExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditExerciseView.swift; sourceTree = "<group>"; };
 		3EA3155A2E1A25770044FB89 /* APIKeys.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.xcconfig; sourceTree = "<group>"; };
 		3EA315612E1ABD000044FB89 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.xcconfig; sourceTree = "<group>"; };
@@ -109,6 +71,31 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		3EA315842E1ADCC20044FB89 /* Utilities */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		3EA315882E1ADCC90044FB89 /* Services */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3EA3158C2E1ADCD00044FB89 /* ViewModels */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		3EA3159E2E1ADCD40044FB89 /* Views */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Views;
+			sourceTree = "<group>";
+		};
+		3EA315AE2E1ADCD90044FB89 /* Models */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Models;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -140,11 +127,11 @@
 			isa = PBXGroup;
 			children = (
 				3EA315442E1A01E90044FB89 /* Config */,
-				3EA315042E1332F20044FB89 /* Utilities */,
-				3EA315032E1332EB0044FB89 /* Services */,
-				3EA315022E1332E10044FB89 /* ViewModels */,
-				3EA315012E1332D60044FB89 /* Views */,
-				3EA315002E1332CB0044FB89 /* Models */,
+				3EA315842E1ADCC20044FB89 /* Utilities */,
+				3EA315882E1ADCC90044FB89 /* Services */,
+				3EA3158C2E1ADCD00044FB89 /* ViewModels */,
+				3EA3159E2E1ADCD40044FB89 /* Views */,
+				3EA315AE2E1ADCD90044FB89 /* Models */,
 				3EA314D32E13322C0044FB89 /* Fit14 */,
 				3EA314E62E1332350044FB89 /* Fit14Tests */,
 				3EA314F02E1332350044FB89 /* Fit14UITests */,
@@ -163,100 +150,6 @@
 				3EA314ED2E1332350044FB89 /* Fit14UITests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		3EA315002E1332CB0044FB89 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				3EA3150C2E13345D0044FB89 /* UserGoals.swift */,
-				3EA3150B2E1334480044FB89 /* WorkoutPlan.swift */,
-				3EA3150A2E13342F0044FB89 /* Day.swift */,
-				3EA315092E1333FE0044FB89 /* Exercise.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		3EA315012E1332D60044FB89 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				3EA315342E175F7F0044FB89 /* PlanReview */,
-				3EA315082E13331E0044FB89 /* Components */,
-				3EA315072E1333150044FB89 /* Progress */,
-				3EA315062E13330F0044FB89 /* PlanList */,
-				3EA315052E1333030044FB89 /* GoalInput */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		3EA315022E1332E10044FB89 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				3EA3151F2E1342D70044FB89 /* WorkoutPlanViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		3EA315032E1332EB0044FB89 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				3EA3151D2E13426B0044FB89 /* LocalStorageService.swift */,
-				3EA315322E172D690044FB89 /* AIWorkoutGenerationService.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		3EA315042E1332F20044FB89 /* Utilities */ = {
-			isa = PBXGroup;
-			children = (
-				3EA3150F2E13385E0044FB89 /* SampleData.swift */,
-			);
-			path = Utilities;
-			sourceTree = "<group>";
-		};
-		3EA315052E1333030044FB89 /* GoalInput */ = {
-			isa = PBXGroup;
-			children = (
-				3EA3150D2E13348E0044FB89 /* GoalInputView.swift */,
-			);
-			path = GoalInput;
-			sourceTree = "<group>";
-		};
-		3EA315062E13330F0044FB89 /* PlanList */ = {
-			isa = PBXGroup;
-			children = (
-				3EA315152E1339240044FB89 /* DayDetailView.swift */,
-				3EA315172E1339480044FB89 /* PlanListView.swift */,
-			);
-			path = PlanList;
-			sourceTree = "<group>";
-		};
-		3EA315072E1333150044FB89 /* Progress */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Progress;
-			sourceTree = "<group>";
-		};
-		3EA315082E13331E0044FB89 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				3EA315112E1338B30044FB89 /* DayRowView.swift */,
-				3EA315132E1338FC0044FB89 /* ExerciseRowView.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		3EA315342E175F7F0044FB89 /* PlanReview */ = {
-			isa = PBXGroup;
-			children = (
-				3EA315362E175FA40044FB89 /* PlanReviewView.swift */,
-				3EA315382E175FB50044FB89 /* DayPreviewRow.swift */,
-				3EA3153A2E175FC30044FB89 /* DayEditView.swift */,
-				3EA3153C2E182D3E0044FB89 /* ExerciseEditRow.swift */,
-				3EA3153E2E182D580044FB89 /* AddExerciseView.swift */,
-				3EA315402E182D670044FB89 /* EditExerciseView.swift */,
-			);
-			path = PlanReview;
 			sourceTree = "<group>";
 		};
 		3EA315652E1AC9A90044FB89 /* Recovered References */ = {
@@ -285,6 +178,11 @@
 			fileSystemSynchronizedGroups = (
 				3EA314D32E13322C0044FB89 /* Fit14 */,
 				3EA315442E1A01E90044FB89 /* Config */,
+				3EA315842E1ADCC20044FB89 /* Utilities */,
+				3EA315882E1ADCC90044FB89 /* Services */,
+				3EA3158C2E1ADCD00044FB89 /* ViewModels */,
+				3EA3159E2E1ADCD40044FB89 /* Views */,
+				3EA315AE2E1ADCD90044FB89 /* Models */,
 			);
 			name = Fit14;
 			packageProductDependencies = (
@@ -414,25 +312,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3EA315102E13385E0044FB89 /* SampleData.swift in Sources */,
-				3EA315392E175FB50044FB89 /* DayPreviewRow.swift in Sources */,
-				3EA315372E175FA40044FB89 /* PlanReviewView.swift in Sources */,
-				3EA315162E1339240044FB89 /* DayDetailView.swift in Sources */,
-				3EA315122E1338B30044FB89 /* DayRowView.swift in Sources */,
-				3EA3151A2E133ADD0044FB89 /* Day.swift in Sources */,
-				3EA3151C2E133AF20044FB89 /* UserGoals.swift in Sources */,
-				3EA3153F2E182D580044FB89 /* AddExerciseView.swift in Sources */,
-				3EA3151B2E133AEB0044FB89 /* WorkoutPlan.swift in Sources */,
-				3EA315412E182D670044FB89 /* EditExerciseView.swift in Sources */,
-				3EA315192E133AC70044FB89 /* Exercise.swift in Sources */,
-				3EA315332E172D690044FB89 /* AIWorkoutGenerationService.swift in Sources */,
-				3EA315142E1338FC0044FB89 /* ExerciseRowView.swift in Sources */,
-				3EA3150E2E13348E0044FB89 /* GoalInputView.swift in Sources */,
-				3EA3151E2E13426B0044FB89 /* LocalStorageService.swift in Sources */,
-				3EA315202E1342D70044FB89 /* WorkoutPlanViewModel.swift in Sources */,
-				3EA3153B2E175FC30044FB89 /* DayEditView.swift in Sources */,
-				3EA3153D2E182D3E0044FB89 /* ExerciseEditRow.swift in Sources */,
-				3EA315182E1339480044FB89 /* PlanListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

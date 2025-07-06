@@ -29,14 +29,56 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     var status: PlanStatus
     var days: [Day]
     
+    // MARK: - Progress Calculations (Robust & NaN-Safe)
+    
+    /// Number of completed days (always returns non-negative value)
     var completedDays: Int {
-        days.filter { $0.isCompleted }.count
+        guard !days.isEmpty else { return 0 }
+        let completed = days.filter { $0.isCompleted }.count
+        return max(0, completed) // Ensure never negative
     }
     
-    var progressPercentage: Double {
-        guard !days.isEmpty else { return 0 }
-        return Double(completedDays) / Double(days.count) * 100
+    /// Total number of days in the plan
+    var totalDays: Int {
+        return max(0, days.count)
     }
+    
+    /// Progress percentage (0-100, never NaN or infinite)
+    var progressPercentage: Double {
+        guard totalDays > 0 else { return 0.0 }
+        
+        let completed = Double(completedDays)
+        let total = Double(totalDays)
+        
+        // Ensure we have valid numbers
+        guard completed.isFinite && total.isFinite && total > 0 else { return 0.0 }
+        
+        let percentage = (completed / total) * 100.0
+        
+        // Ensure result is finite and within expected range
+        guard percentage.isFinite else { return 0.0 }
+        
+        // Clamp to 0-100 range
+        return min(max(percentage, 0.0), 100.0)
+    }
+    
+    /// Number of remaining days
+    var remainingDays: Int {
+        return max(0, totalDays - completedDays)
+    }
+    
+    /// Whether the entire plan is completed
+    var isCompleted: Bool {
+        guard totalDays > 0 else { return false }
+        return completedDays >= totalDays
+    }
+    
+    /// Progress as a decimal (0.0 to 1.0) for use with ProgressView
+    var progressDecimal: Double {
+        return progressPercentage / 100.0
+    }
+    
+    // MARK: - Plan Status Properties
     
     var isSuggested: Bool {
         return status == .suggested
@@ -45,6 +87,28 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     var isActive: Bool {
         return status == .active
     }
+    
+    /// Whether the plan has valid data structure
+    var isValid: Bool {
+        guard !userGoals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        guard !days.isEmpty else { return false }
+        
+        // Ensure all days have valid day numbers
+        for (index, day) in days.enumerated() {
+            if day.dayNumber != index + 1 {
+                return false
+            }
+            
+            // Ensure each day has at least one exercise
+            if day.exercises.isEmpty {
+                return false
+            }
+        }
+        
+        return true
+    }
+    
+    // MARK: - Initialization
     
     init(userGoals: String, days: [Day] = [], status: PlanStatus = .suggested) {
         self.userGoals = userGoals
@@ -98,6 +162,57 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
             modifiedPlan.days[dayIndex] = modifiedPlan.days[dayIndex].removingExercise(withId: exerciseId)
         }
         return modifiedPlan
+    }
+    
+    // MARK: - Plan Analysis Methods
+    
+    /// Get days by completion status
+    func getDays(completed: Bool) -> [Day] {
+        return days.filter { $0.isCompleted == completed }
+    }
+    
+    /// Get the next incomplete day (useful for "continue workout" features)
+    func getNextIncompleteDay() -> Day? {
+        return days.first { !$0.isCompleted }
+    }
+    
+    /// Get the current day based on date (if plan started)
+    func getCurrentDay() -> Day? {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        return days.first { day in
+            calendar.isDate(day.date, inSameDayAs: today)
+        }
+    }
+    
+    /// Get total number of exercises across all days
+    var totalExercises: Int {
+        return days.reduce(0) { total, day in
+            total + day.exercises.count
+        }
+    }
+    
+    /// Get total number of completed exercises across all days
+    var completedExercises: Int {
+        return days.reduce(0) { total, day in
+            total + day.exercises.filter { $0.isCompleted }.count
+        }
+    }
+    
+    /// Exercise completion percentage across the entire plan
+    var exerciseCompletionPercentage: Double {
+        guard totalExercises > 0 else { return 0.0 }
+        
+        let completed = Double(completedExercises)
+        let total = Double(totalExercises)
+        
+        guard completed.isFinite && total.isFinite && total > 0 else { return 0.0 }
+        
+        let percentage = (completed / total) * 100.0
+        guard percentage.isFinite else { return 0.0 }
+        
+        return min(max(percentage, 0.0), 100.0)
     }
     
     // MARK: - Equatable Conformance

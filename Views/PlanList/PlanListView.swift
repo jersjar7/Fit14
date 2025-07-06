@@ -67,7 +67,7 @@ struct PlanListView: View {
                                 
                                 Spacer()
                                 
-                                Text("\(14 - workoutPlan.completedDays) days remaining")
+                                Text("\(workoutPlan.remainingDays) days remaining")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
@@ -127,13 +127,6 @@ struct PlanListView: View {
                             }
                             .accessibilityLabel("Start fresh - create a new workout plan")
                             
-                            Button(action: {
-                                viewModel.loadSampleData()
-                            }) {
-                                Label("Load Sample Data", systemImage: "doc.text")
-                            }
-                            .accessibilityLabel("Load sample workout data for testing")
-                            
                             if workoutPlan.completedDays > 0 {
                                 Divider()
                                 
@@ -162,78 +155,119 @@ struct PlanListView: View {
                 // No active plan found - show empty state
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
-                        Image(systemName: "target")
+                        Image(systemName: "sparkles")
                             .font(.system(size: 60))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.blue)
                             .accessibilityHidden(true)
                         
                         VStack(spacing: 8) {
-                            Text("No Active Plan")
+                            Text("Ready to Start Your Fitness Journey?")
                                 .font(.title2)
                                 .fontWeight(.semibold)
+                                .multilineTextAlignment(.center)
                             
-                            Text("Create your personalized 14-day fitness plan to start tracking your workouts")
+                            Text("Get a personalized 14-day workout plan created by AI based on your specific goals and preferences")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                         }
                     }
                     
-                    VStack(spacing: 12) {
-                        Button(action: {
-                            viewModel.startFresh() // This will trigger navigation to GoalInputView
-                        }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Create New Plan")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
+                    // Main CTA Button
+                    Button(action: {
+                        viewModel.startFresh() // This will trigger navigation to GoalInputView
+                    }) {
+                        HStack {
+                            Image(systemName: "sparkles")
+                            Text("Create AI-Powered Plan")
+                                .fontWeight(.semibold)
                         }
-                        .accessibilityLabel("Create new workout plan")
-                        .accessibilityHint("Tap to start creating your personalized fitness plan")
-                        
-                        Button(action: {
-                            viewModel.loadSampleData()
-                        }) {
-                            HStack {
-                                Image(systemName: "doc.text")
-                                Text("Try Sample Plan")
-                            }
-                            .foregroundColor(.blue)
-                        }
-                        .accessibilityLabel("Load sample workout plan")
-                        .accessibilityHint("Load a pre-made plan to explore the app features")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
                     }
+                    .accessibilityLabel("Create AI-powered workout plan")
+                    .accessibilityHint("Tap to start creating your personalized fitness plan using AI")
                     
-                    // Help Text
-                    VStack(spacing: 8) {
+                    // How it works section
+                    VStack(spacing: 12) {
                         Text("How it works:")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
-                        VStack(alignment: .leading, spacing: 4) {
-                            Label("Tell us your fitness goals", systemImage: "1.circle")
-                            Label("AI creates your personalized plan", systemImage: "2.circle")
-                            Label("Review and customize exercises", systemImage: "3.circle")
-                            Label("Track your daily progress", systemImage: "4.circle")
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "1.circle.fill")
+                                    .foregroundColor(.blue)
+                                    .font(.title3)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Share Your Goals")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    Text("Tell us about your fitness goals, experience level, and available time")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                            }
+                            
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "2.circle.fill")
+                                    .foregroundColor(.blue)
+                                    .font(.title3)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("AI Creates Your Plan")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    Text("Our AI analyzes your input and generates a personalized 14-day workout plan")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                            }
+                            
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "3.circle.fill")
+                                    .foregroundColor(.blue)
+                                    .font(.title3)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Review & Customize")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    Text("Review your plan and make any adjustments before starting")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                            }
+                            
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "4.circle.fill")
+                                    .foregroundColor(.blue)
+                                    .font(.title3)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Track Your Progress")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    Text("Follow your daily workouts and track your progress over 14 days")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                            }
                         }
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                     }
                     .padding()
                     .background(Color(.systemGray6))
-                    .cornerRadius(8)
+                    .cornerRadius(12)
                 }
                 .padding()
                 .navigationTitle("Fit14")
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("No active workout plan. Create a new plan to get started.")
+                .accessibilityLabel("No active workout plan. Create an AI-powered plan to get started.")
             }
         }
     }
