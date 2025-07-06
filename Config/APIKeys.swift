@@ -9,9 +9,8 @@ import Foundation
 
 struct APIKeys {
     static let googleGeminiAPIKey: String = {
-        guard let path = Bundle.main.path(forResource: "Info", ofType: "plist"),
-              let plist = NSDictionary(contentsOfFile: path),
-              let key = plist["GoogleGeminiAPIKey"] as? String else {
+        guard let key = Bundle.main.object(forInfoDictionaryKey: "GoogleGeminiAPIKey") as? String,
+              !key.isEmpty else {
             fatalError("Could not find GoogleGeminiAPIKey in Info.plist")
         }
         return key

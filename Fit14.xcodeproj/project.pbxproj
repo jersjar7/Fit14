@@ -28,7 +28,6 @@
 		3EA315412E182D670044FB89 /* EditExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA315402E182D670044FB89 /* EditExerciseView.swift */; };
 		3EA315622E1ABD000044FB89 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 3EA315612E1ABD000044FB89 /* .gitignore */; };
 		3EA315682E1AC9A90044FB89 /* APIKeys.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */; };
-		3EA315802E1ACF4D0044FB89 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3EA3157F2E1ACF4D0044FB89 /* Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,12 +73,24 @@
 		3EA3155A2E1A25770044FB89 /* APIKeys.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.xcconfig; sourceTree = "<group>"; };
 		3EA315612E1ABD000044FB89 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.xcconfig; sourceTree = "<group>"; };
-		3EA3157F2E1ACF4D0044FB89 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3EA315822E1AD8B40044FB89 /* Exceptions for "Fit14" folder in "Fit14" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3EA314D02E13322C0044FB89 /* Fit14 */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3EA314D32E13322C0044FB89 /* Fit14 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3EA315822E1AD8B40044FB89 /* Exceptions for "Fit14" folder in "Fit14" target */,
+			);
 			path = Fit14;
 			sourceTree = "<group>";
 		};
@@ -128,7 +139,6 @@
 		3EA314C82E13322C0044FB89 = {
 			isa = PBXGroup;
 			children = (
-				3EA3157F2E1ACF4D0044FB89 /* Info.plist */,
 				3EA315442E1A01E90044FB89 /* Config */,
 				3EA315042E1332F20044FB89 /* Utilities */,
 				3EA315032E1332EB0044FB89 /* Services */,
@@ -380,7 +390,6 @@
 			files = (
 				3EA315622E1ABD000044FB89 /* .gitignore in Resources */,
 				3EA315682E1AC9A90044FB89 /* APIKeys.xcconfig in Resources */,
-				3EA315802E1ACF4D0044FB89 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -459,7 +468,7 @@
 /* Begin XCBuildConfiguration section */
 		3EA314F52E1332350044FB89 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3EA3155A2E1A25770044FB89 /* APIKeys.xcconfig */;
+			baseConfigurationReference = 3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -523,7 +532,7 @@
 		};
 		3EA314F62E1332350044FB89 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3EA3155A2E1A25770044FB89 /* APIKeys.xcconfig */;
+			baseConfigurationReference = 3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -589,6 +598,7 @@
 				DEVELOPMENT_TEAM = 79KW5HMNLY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				GOOGLE_GEMINI_API_KEY = "$(GOOGLE_GEMINI_API_KEY)";
 				INFOPLIST_FILE = Fit14/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Fit14;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
@@ -623,6 +633,7 @@
 				DEVELOPMENT_TEAM = 79KW5HMNLY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				GOOGLE_GEMINI_API_KEY = "$(GOOGLE_GEMINI_API_KEY) ";
 				INFOPLIST_FILE = Fit14/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Fit14;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
