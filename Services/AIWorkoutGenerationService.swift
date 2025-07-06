@@ -110,15 +110,9 @@ class AIWorkoutGenerationService: ObservableObject {
             throw AIServiceError.invalidResponse
         }
         
-        // Validate API key - FIXED VALIDATION
+        // Validate API key - SECURE VERSION
         guard !apiKey.isEmpty && apiKey != "PUT_YOUR_NEW_API_KEY_HERE" else {
             print("❌ API Key validation failed!")
-            print("🔑 Key is empty: \(apiKey.isEmpty)")
-            print("🔑 Key is placeholder: \(apiKey == "AIzaSyDKJzHzLrBIwxcH2GZA0VCcOD3TA-Ben5w")")
-            
-            // ADD THIS DEBUG LINE:
-            print("🔑 Actual key value: '\(apiKey)'")
-            
             throw AIServiceError.invalidAPIKey
         }
         

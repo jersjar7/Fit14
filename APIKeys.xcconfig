@@ -1,0 +1,12 @@
+//
+//  APIKeys.xcconfig
+//  Fit14
+//
+//  Created by Jerson on 7/5/25.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+// APIKeys.xcconfig
+GOOGLE_GEMINI_API_KEY = AIzaSyDKJzHzLrBIwxcH2GZA0VCcOD3TA-Ben5w

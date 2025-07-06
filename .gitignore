@@ -1,0 +1,8 @@
+# API Keys - NEVER commit these!
+APIKeys.xcconfig
+
+# Xcode files
+*.xcworkspace
+*.xcuserdata
+DerivedData/
+.DS_Store
