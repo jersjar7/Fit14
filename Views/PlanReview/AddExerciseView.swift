@@ -15,7 +15,8 @@ struct AddExerciseView: View {
     
     @State private var exerciseName = ""
     @State private var sets = ""
-    @State private var reps = ""
+    @State private var quantity = ""
+    @State private var selectedUnit: ExerciseUnit = .reps
     @State private var showValidationError = false
     @State private var errorMessage = ""
     
@@ -56,31 +57,43 @@ struct AddExerciseView: View {
                             .textInputAutocapitalization(.words)
                     }
                     
-                    // Sets and Reps
-                    HStack(spacing: 16) {
-                        // Sets
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Sets")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            TextField("3", text: $sets)
-                                .textFieldStyle(.roundedBorder)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.center)
-                        }
+                    // Sets
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Sets")
+                            .font(.headline)
+                            .foregroundColor(.primary)
                         
-                        // Reps
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Reps")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            TextField("10", text: $reps)
-                                .textFieldStyle(.roundedBorder)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.center)
+                        TextField("3", text: $sets)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    // Unit Selection
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Measurement Type")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Picker("Unit", selection: $selectedUnit) {
+                            ForEach(ExerciseUnit.allCases, id: \.self) { unit in
+                                Text(unit.displayName.capitalized)
+                                    .tag(unit)
+                            }
                         }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
+                    
+                    // Quantity (context-aware label)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(quantityLabel)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        TextField(quantityPlaceholder, text: $quantity)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
                     }
                     
                     // Helpful Tips
@@ -91,9 +104,17 @@ struct AddExerciseView: View {
                             .foregroundColor(.secondary)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("• For time-based exercises (like Plank), use seconds in the reps field")
-                            Text("• Common rep ranges: 8-12 for strength, 12-20 for endurance")
-                            Text("• Start with 2-3 sets if you're unsure")
+                            switch selectedUnit {
+                            case .reps:
+                                Text("• Common rep ranges: 8-12 for strength, 12-20 for endurance")
+                                Text("• Start with 2-3 sets if you're unsure")
+                            case .seconds:
+                                Text("• Good for holds like planks, wall sits")
+                                Text("• 30-60 seconds is typical for most holds")
+                            case .minutes:
+                                Text("• Best for longer cardio activities")
+                                Text("• 5-20 minutes depending on intensity")
+                            }
                         }
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -101,6 +122,7 @@ struct AddExerciseView: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
+                    .animation(.easeInOut(duration: 0.2), value: selectedUnit)
                 }
                 .padding(.horizontal, 4)
                 
@@ -162,14 +184,36 @@ struct AddExerciseView: View {
     
     // MARK: - Computed Properties
     
+    private var quantityLabel: String {
+        switch selectedUnit {
+        case .reps:
+            return "Reps"
+        case .seconds:
+            return "Seconds"
+        case .minutes:
+            return "Minutes"
+        }
+    }
+    
+    private var quantityPlaceholder: String {
+        switch selectedUnit {
+        case .reps:
+            return "10"
+        case .seconds:
+            return "30"
+        case .minutes:
+            return "5"
+        }
+    }
+    
     private var isFormValid: Bool {
         !exerciseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !sets.isEmpty &&
-        !reps.isEmpty &&
+        !quantity.isEmpty &&
         Int(sets) != nil &&
-        Int(reps) != nil &&
+        Int(quantity) != nil &&
         Int(sets)! > 0 &&
-        Int(reps)! > 0
+        Int(quantity)! > 0
     }
     
     // MARK: - Actions
@@ -180,13 +224,14 @@ struct AddExerciseView: View {
         let newExercise = Exercise(
             name: exerciseName.trimmingCharacters(in: .whitespacesAndNewlines),
             sets: Int(sets)!,
-            reps: Int(reps)!
+            quantity: Int(quantity)!,
+            unit: selectedUnit
         )
         
         // Add exercise to the suggested plan
         viewModel.addExerciseToSuggestedDay(dayId: dayId, exercise: newExercise)
         
-        print("✅ Added exercise: \(newExercise.name) - \(newExercise.sets) sets × \(newExercise.reps) reps")
+        print("✅ Added exercise: \(newExercise.name) - \(newExercise.formattedDescription)")
         
         dismiss()
     }
@@ -215,15 +260,29 @@ struct AddExerciseView: View {
             return false
         }
         
-        // Validate reps
-        guard let repsValue = Int(reps), repsValue > 0 else {
-            showError("Please enter a valid number of reps (1 or more)")
+        // Validate quantity (context-aware validation)
+        guard let quantityValue = Int(quantity), quantityValue > 0 else {
+            showError("Please enter a valid \(selectedUnit.displayName) value (1 or more)")
             return false
         }
         
-        if repsValue > 1000 {
-            showError("Number of reps seems too high (max 1000)")
-            return false
+        // Unit-specific validation
+        switch selectedUnit {
+        case .reps:
+            if quantityValue > 1000 {
+                showError("Number of reps seems too high (max 1000)")
+                return false
+            }
+        case .seconds:
+            if quantityValue > 3600 { // 1 hour
+                showError("Duration in seconds seems too long (max 3600)")
+                return false
+            }
+        case .minutes:
+            if quantityValue > 180 { // 3 hours
+                showError("Duration in minutes seems too long (max 180)")
+                return false
+            }
         }
         
         return true

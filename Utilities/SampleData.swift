@@ -13,31 +13,35 @@ struct SampleData {
     
     static let sampleExercises: [Exercise] = [
         // Upper Body
-        Exercise(name: "Push-ups", sets: 3, reps: 12),
-        Exercise(name: "Tricep Dips", sets: 2, reps: 10),
-        Exercise(name: "Pike Push-ups", sets: 2, reps: 8),
-        Exercise(name: "Diamond Push-ups", sets: 2, reps: 6),
+        Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
+        Exercise(name: "Tricep Dips", sets: 2, quantity: 10, unit: .reps),
+        Exercise(name: "Pike Push-ups", sets: 2, quantity: 8, unit: .reps),
+        Exercise(name: "Diamond Push-ups", sets: 2, quantity: 6, unit: .reps),
         
         // Lower Body
-        Exercise(name: "Squats", sets: 3, reps: 15),
-        Exercise(name: "Lunges", sets: 2, reps: 12),
-        Exercise(name: "Wall Sit", sets: 1, reps: 45),
-        Exercise(name: "Calf Raises", sets: 3, reps: 20),
-        Exercise(name: "Single Leg Glute Bridges", sets: 2, reps: 10),
+        Exercise(name: "Squats", sets: 3, quantity: 15, unit: .reps),
+        Exercise(name: "Lunges", sets: 2, quantity: 12, unit: .reps),
+        Exercise(name: "Wall Sit", sets: 1, quantity: 45, unit: .seconds),
+        Exercise(name: "Calf Raises", sets: 3, quantity: 20, unit: .reps),
+        Exercise(name: "Single Leg Glute Bridges", sets: 2, quantity: 10, unit: .reps),
         
         // Core
-        Exercise(name: "Plank", sets: 1, reps: 60),
-        Exercise(name: "Side Plank", sets: 2, reps: 30),
-        Exercise(name: "Russian Twists", sets: 3, reps: 20),
-        Exercise(name: "Bicycle Crunches", sets: 3, reps: 15),
-        Exercise(name: "Dead Bug", sets: 2, reps: 10),
+        Exercise(name: "Plank", sets: 1, quantity: 60, unit: .seconds),
+        Exercise(name: "Side Plank", sets: 2, quantity: 30, unit: .seconds),
+        Exercise(name: "Russian Twists", sets: 3, quantity: 20, unit: .reps),
+        Exercise(name: "Bicycle Crunches", sets: 3, quantity: 15, unit: .reps),
+        Exercise(name: "Dead Bug", sets: 2, quantity: 10, unit: .reps),
         
         // Cardio
-        Exercise(name: "Jumping Jacks", sets: 3, reps: 30),
-        Exercise(name: "High Knees", sets: 3, reps: 20),
-        Exercise(name: "Mountain Climbers", sets: 3, reps: 15),
-        Exercise(name: "Burpees", sets: 2, reps: 8),
-        Exercise(name: "Jump Squats", sets: 2, reps: 12)
+        Exercise(name: "Jumping Jacks", sets: 3, quantity: 30, unit: .seconds),
+        Exercise(name: "High Knees", sets: 3, quantity: 20, unit: .seconds),
+        Exercise(name: "Mountain Climbers", sets: 3, quantity: 15, unit: .reps),
+        Exercise(name: "Burpees", sets: 2, quantity: 8, unit: .reps),
+        Exercise(name: "Jump Squats", sets: 2, quantity: 12, unit: .reps),
+        
+        // Additional time-based exercises
+        Exercise(name: "Cardio Intervals", sets: 1, quantity: 5, unit: .minutes),
+        Exercise(name: "Rest and Stretch", sets: 1, quantity: 3, unit: .minutes)
     ]
     
     // MARK: - Exercise Categories for Better Planning
@@ -46,6 +50,7 @@ struct SampleData {
     static let lowerBodyExercises = Array(sampleExercises[4...8])
     static let coreExercises = Array(sampleExercises[9...13])
     static let cardioExercises = Array(sampleExercises[14...18])
+    static let timeBased = Array(sampleExercises[19...20])
     
     // MARK: - Pre-defined Exercise Combinations by Focus
     
@@ -69,7 +74,7 @@ struct SampleData {
         [upperBodyExercises[1], lowerBodyExercises[4], coreExercises[3]], // Tricep Dips, Glute Bridges, Bicycle Crunches
         
         // Day 7: Active Recovery
-        [lowerBodyExercises[2], coreExercises[0]], // Wall Sit, Plank (lighter day)
+        [lowerBodyExercises[2], timeBased[1]], // Wall Sit, Rest and Stretch (lighter day)
         
         // Week 2 variations
         [upperBodyExercises[2], cardioExercises[2], coreExercises[1]], // Pike Push-ups, Mountain Climbers, Side Plank
@@ -78,7 +83,7 @@ struct SampleData {
         [lowerBodyExercises[1], cardioExercises[4], coreExercises[0]], // Lunges, Jump Squats, Plank
         [upperBodyExercises[3], coreExercises[3], lowerBodyExercises[2]], // Diamond Push-ups, Bicycle Crunches, Wall Sit
         [cardioExercises[1], lowerBodyExercises[4], coreExercises[1]], // High Knees, Glute Bridges, Side Plank
-        [upperBodyExercises[1], lowerBodyExercises[0], cardioExercises[0]] // Tricep Dips, Squats, Jumping Jacks
+        [upperBodyExercises[1], lowerBodyExercises[0], timeBased[0]] // Tricep Dips, Squats, Cardio Intervals
     ]
     
     // MARK: - Sample Workout Plans
@@ -192,10 +197,10 @@ struct SampleData {
         
         // More cardio-heavy combinations for weight loss
         let weightLossCombinations = [
-            [cardioExercises[0], cardioExercises[1], coreExercises[0]], // High cardio
-            [cardioExercises[2], lowerBodyExercises[0], cardioExercises[3]], // More cardio
-            [upperBodyExercises[0], cardioExercises[0], coreExercises[2]], // Mixed
-            [cardioExercises[1], cardioExercises[4], coreExercises[1]], // Cardio focus
+            [cardioExercises[0], cardioExercises[1], coreExercises[0]], // High cardio + core
+            [cardioExercises[2], lowerBodyExercises[0], cardioExercises[3]], // More cardio + squats
+            [upperBodyExercises[0], timeBased[0], coreExercises[2]], // Mixed with cardio intervals
+            [cardioExercises[1], cardioExercises[4], coreExercises[1]], // Cardio focus + core
         ]
         
         for i in 1...14 {
@@ -221,10 +226,10 @@ struct SampleData {
         
         // More strength-focused combinations
         let strengthCombinations = [
-            [upperBodyExercises[0], upperBodyExercises[1], coreExercises[0]], // Upper strength
-            [lowerBodyExercises[0], lowerBodyExercises[1], lowerBodyExercises[4]], // Lower strength
-            [upperBodyExercises[2], coreExercises[2], upperBodyExercises[3]], // Upper + core
-            [lowerBodyExercises[2], lowerBodyExercises[3], coreExercises[3]], // Lower + core
+            [upperBodyExercises[0], upperBodyExercises[1], coreExercises[0]], // Upper strength + core holds
+            [lowerBodyExercises[0], lowerBodyExercises[1], lowerBodyExercises[4]], // Lower strength focus
+            [upperBodyExercises[2], coreExercises[2], upperBodyExercises[3]], // Upper + core variety
+            [lowerBodyExercises[2], lowerBodyExercises[3], coreExercises[3]], // Lower + core holds
         ]
         
         for i in 1...14 {
@@ -269,6 +274,16 @@ struct SampleData {
         return Day(dayNumber: 3, date: Date(), exercises: exercises)
     }()
     
+    /// Sample day with mixed units for preview
+    static let sampleMixedUnitsDay: Day = {
+        let exercises = [
+            Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
+            Exercise(name: "Plank Hold", sets: 1, quantity: 45, unit: .seconds),
+            Exercise(name: "Cardio Walk", sets: 1, quantity: 10, unit: .minutes)
+        ]
+        return Day(dayNumber: 8, date: Date(), exercises: exercises)
+    }()
+    
     // MARK: - Preview Helpers
     
     /// Get a sample plan by type for previews
@@ -284,9 +299,16 @@ struct SampleData {
     /// Get sample days with different completion states
     static var sampleDaysVariety: [Day] {
         return [
-            sampleDay,           // Not started
-            samplePartialDay,    // Partially complete
-            sampleCompletedDay   // Fully complete
+            sampleDay,              // Not started
+            samplePartialDay,       // Partially complete
+            sampleCompletedDay,     // Fully complete
+            sampleMixedUnitsDay     // Mixed unit types
         ]
+    }
+    
+    /// Get exercises by unit type for testing
+    static var exercisesByUnit: [ExerciseUnit: [Exercise]] {
+        let groupedExercises = Dictionary(grouping: sampleExercises) { $0.unit }
+        return groupedExercises
     }
 }

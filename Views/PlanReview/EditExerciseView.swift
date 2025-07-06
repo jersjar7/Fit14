@@ -16,7 +16,8 @@ struct EditExerciseView: View {
     
     @State private var exerciseName = ""
     @State private var sets = ""
-    @State private var reps = ""
+    @State private var quantity = ""
+    @State private var selectedUnit: ExerciseUnit = .reps
     @State private var showValidationError = false
     @State private var errorMessage = ""
     
@@ -57,31 +58,43 @@ struct EditExerciseView: View {
                             .textInputAutocapitalization(.words)
                     }
                     
-                    // Sets and Reps
-                    HStack(spacing: 16) {
-                        // Sets
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Sets")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            TextField("Sets", text: $sets)
-                                .textFieldStyle(.roundedBorder)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.center)
-                        }
+                    // Sets
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Sets")
+                            .font(.headline)
+                            .foregroundColor(.primary)
                         
-                        // Reps
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Reps")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            TextField("Reps", text: $reps)
-                                .textFieldStyle(.roundedBorder)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.center)
+                        TextField("Sets", text: $sets)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    // Unit Selection
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Measurement Type")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Picker("Unit", selection: $selectedUnit) {
+                            ForEach(ExerciseUnit.allCases, id: \.self) { unit in
+                                Text(unit.displayName.capitalized)
+                                    .tag(unit)
+                            }
                         }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
+                    
+                    // Quantity (context-aware label)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(quantityLabel)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        TextField(quantityLabel, text: $quantity)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
                     }
                     
                     // Current vs New Preview
@@ -104,7 +117,7 @@ struct EditExerciseView: View {
                                     .strikethrough()
                                     .foregroundColor(.secondary)
                                 
-                                Text("\(exercise.sets) sets × \(exercise.reps) reps")
+                                Text(exercise.formattedDescription)
                                     .font(.caption)
                                     .strikethrough()
                                     .foregroundColor(.secondary)
@@ -126,9 +139,9 @@ struct EditExerciseView: View {
                                     .font(.caption)
                                     .foregroundColor(exerciseName.isEmpty ? .secondary : .primary)
                                 
-                                Text("\(sets.isEmpty ? "0" : sets) sets × \(reps.isEmpty ? "0" : reps) reps")
+                                Text(updatedDescription)
                                     .font(.caption)
-                                    .foregroundColor(sets.isEmpty || reps.isEmpty ? .secondary : .primary)
+                                    .foregroundColor(sets.isEmpty || quantity.isEmpty ? .secondary : .primary)
                             }
                             
                             Spacer()
@@ -191,28 +204,47 @@ struct EditExerciseView: View {
                 // Pre-fill with existing exercise data
                 exerciseName = exercise.name
                 sets = String(exercise.sets)
-                reps = String(exercise.reps)
+                quantity = String(exercise.quantity)
+                selectedUnit = exercise.unit
             }
         }
     }
     
     // MARK: - Computed Properties
     
+    private var quantityLabel: String {
+        switch selectedUnit {
+        case .reps:
+            return "Reps"
+        case .seconds:
+            return "Seconds"
+        case .minutes:
+            return "Minutes"
+        }
+    }
+    
+    private var updatedDescription: String {
+        let setsText = sets.isEmpty ? "0" : sets
+        let quantityText = quantity.isEmpty ? "0" : quantity
+        return "\(setsText) sets × \(quantityText) \(selectedUnit.shortDisplayName)"
+    }
+    
     private var isFormValid: Bool {
         !exerciseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !sets.isEmpty &&
-        !reps.isEmpty &&
+        !quantity.isEmpty &&
         Int(sets) != nil &&
-        Int(reps) != nil &&
+        Int(quantity) != nil &&
         Int(sets)! > 0 &&
-        Int(reps)! > 0
+        Int(quantity)! > 0
     }
     
     private var hasChanges: Bool {
         let trimmedName = exerciseName.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedName != exercise.name ||
                sets != String(exercise.sets) ||
-               reps != String(exercise.reps)
+               quantity != String(exercise.quantity) ||
+               selectedUnit != exercise.unit
     }
     
     // MARK: - Actions
@@ -223,13 +255,14 @@ struct EditExerciseView: View {
         let updatedExercise = Exercise(
             name: exerciseName.trimmingCharacters(in: .whitespacesAndNewlines),
             sets: Int(sets)!,
-            reps: Int(reps)!
+            quantity: Int(quantity)!,
+            unit: selectedUnit
         )
         
         // Update exercise in the suggested plan
         viewModel.updateExerciseInSuggestedDay(dayId: dayId, oldExerciseId: exercise.id, newExercise: updatedExercise)
         
-        print("✅ Updated exercise: \(updatedExercise.name) - \(updatedExercise.sets) sets × \(updatedExercise.reps) reps")
+        print("✅ Updated exercise: \(updatedExercise.name) - \(updatedExercise.formattedDescription)")
         
         dismiss()
     }
@@ -258,15 +291,29 @@ struct EditExerciseView: View {
             return false
         }
         
-        // Validate reps
-        guard let repsValue = Int(reps), repsValue > 0 else {
-            showError("Please enter a valid number of reps (1 or more)")
+        // Validate quantity (context-aware validation)
+        guard let quantityValue = Int(quantity), quantityValue > 0 else {
+            showError("Please enter a valid \(selectedUnit.displayName) value (1 or more)")
             return false
         }
         
-        if repsValue > 1000 {
-            showError("Number of reps seems too high (max 1000)")
-            return false
+        // Unit-specific validation
+        switch selectedUnit {
+        case .reps:
+            if quantityValue > 1000 {
+                showError("Number of reps seems too high (max 1000)")
+                return false
+            }
+        case .seconds:
+            if quantityValue > 3600 { // 1 hour
+                showError("Duration in seconds seems too long (max 3600)")
+                return false
+            }
+        case .minutes:
+            if quantityValue > 180 { // 3 hours
+                showError("Duration in minutes seems too long (max 180)")
+                return false
+            }
         }
         
         return true
@@ -280,7 +327,7 @@ struct EditExerciseView: View {
 
 // MARK: - Preview
 #Preview {
-    let sampleExercise = SampleData.sampleExercises[0] // Push-ups
+    let sampleExercise = Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps)
     
     return EditExerciseView(exercise: sampleExercise, dayId: UUID())
         .environmentObject(WorkoutPlanViewModel())

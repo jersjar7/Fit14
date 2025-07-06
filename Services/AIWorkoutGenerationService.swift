@@ -46,7 +46,8 @@ struct AIGeneratedDay: Codable {
 struct AIGeneratedExercise: Codable {
     let name: String
     let sets: Int
-    let reps: Int
+    let quantity: Int
+    let unit: String // Will be converted to ExerciseUnit enum
     let instructions: String?
     let difficulty: String?
 }
@@ -240,10 +241,14 @@ class AIWorkoutGenerationService: ObservableObject {
         
         for aiDay in aiPlan.days {
             let exercises = aiDay.exercises.map { aiExercise in
-                Exercise(
+                // Convert string unit to ExerciseUnit enum
+                let unit = ExerciseUnit(rawValue: aiExercise.unit.lowercased()) ?? .reps
+                
+                return Exercise(
                     name: aiExercise.name,
                     sets: aiExercise.sets,
-                    reps: aiExercise.reps
+                    quantity: aiExercise.quantity,
+                    unit: unit
                 )
             }
             
@@ -280,18 +285,20 @@ extension AIWorkoutGenerationService {
     func generateMockWorkoutPlan(from userGoals: String) -> WorkoutPlan {
         print("🧪 Generating mock workout plan for testing...")
         
-        // Enhanced mock exercises with more variety
+        // Enhanced mock exercises with more variety and different units
         let mockExercises = [
-            Exercise(name: "Push-ups", sets: 3, reps: 12),
-            Exercise(name: "Squats", sets: 3, reps: 15),
-            Exercise(name: "Plank", sets: 1, reps: 45),
-            Exercise(name: "Lunges", sets: 2, reps: 10),
-            Exercise(name: "Jumping Jacks", sets: 3, reps: 20),
-            Exercise(name: "Burpees", sets: 2, reps: 8),
-            Exercise(name: "Mountain Climbers", sets: 3, reps: 15),
-            Exercise(name: "Tricep Dips", sets: 2, reps: 12),
-            Exercise(name: "High Knees", sets: 3, reps: 30),
-            Exercise(name: "Wall Sit", sets: 1, reps: 60)
+            Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
+            Exercise(name: "Squats", sets: 3, quantity: 15, unit: .reps),
+            Exercise(name: "Plank", sets: 1, quantity: 45, unit: .seconds),
+            Exercise(name: "Lunges", sets: 2, quantity: 10, unit: .reps),
+            Exercise(name: "Jumping Jacks", sets: 3, quantity: 20, unit: .reps),
+            Exercise(name: "Burpees", sets: 2, quantity: 8, unit: .reps),
+            Exercise(name: "Mountain Climbers", sets: 3, quantity: 15, unit: .reps),
+            Exercise(name: "Tricep Dips", sets: 2, quantity: 12, unit: .reps),
+            Exercise(name: "High Knees", sets: 3, quantity: 30, unit: .seconds),
+            Exercise(name: "Wall Sit", sets: 1, quantity: 60, unit: .seconds),
+            Exercise(name: "Side Plank", sets: 2, quantity: 30, unit: .seconds),
+            Exercise(name: "Cardio Intervals", sets: 1, quantity: 5, unit: .minutes)
         ]
         
         var days: [Day] = []
@@ -325,10 +332,10 @@ extension AIWorkoutGenerationService {
             if !preservingDayNumbers.contains(i + 1) {
                 // Modify non-preserved days slightly
                 let exercises = modifiedDays[i].exercises.map { exercise in
-                    // Slightly vary the sets/reps
+                    // Slightly vary the sets/quantity
                     let newSets = max(1, exercise.sets + Int.random(in: -1...1))
-                    let newReps = max(1, exercise.reps + Int.random(in: -2...2))
-                    return Exercise(name: exercise.name, sets: newSets, reps: newReps)
+                    let newQuantity = max(1, exercise.quantity + Int.random(in: -2...2))
+                    return Exercise(name: exercise.name, sets: newSets, quantity: newQuantity, unit: exercise.unit)
                 }
                 modifiedDays[i] = Day(
                     dayNumber: modifiedDays[i].dayNumber,

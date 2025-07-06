@@ -251,7 +251,8 @@ class WorkoutPlanViewModel: ObservableObject {
                         suggested.days[dayIndex].exercises[exerciseIndex] = originalExercise.updated(
                             name: newExercise.name,
                             sets: newExercise.sets,
-                            reps: newExercise.reps
+                            quantity: newExercise.quantity,
+                            unit: newExercise.unit
                         )
                         
                         suggestedPlan = suggested
@@ -414,7 +415,8 @@ class WorkoutPlanViewModel: ObservableObject {
             let exercise2 = day2.exercises[index]
             if exercise1.name != exercise2.name ||
                exercise1.sets != exercise2.sets ||
-               exercise1.reps != exercise2.reps {
+               exercise1.quantity != exercise2.quantity ||
+               exercise1.unit != exercise2.unit {
                 return false
             }
         }

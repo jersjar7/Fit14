@@ -28,7 +28,7 @@ struct ExerciseEditRow: View {
                         .fill(Color.blue.opacity(0.1))
                         .frame(width: 40, height: 40)
                     
-                    Image(systemName: "figure.strengthtraining.traditional")
+                    Image(systemName: unitIcon)
                         .font(.system(size: 18))
                         .foregroundColor(.blue)
                 }
@@ -45,7 +45,11 @@ struct ExerciseEditRow: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Label("\(exercise.reps)", systemImage: "number")
+                        Label("\(exercise.quantity)", systemImage: unitSystemImage)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(exercise.unit.shortDisplayName)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -141,27 +145,51 @@ struct ExerciseEditRow: View {
         }
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
+    
+    // MARK: - Computed Properties
+    
+    private var unitIcon: String {
+        switch exercise.unit {
+        case .reps:
+            return "figure.strengthtraining.traditional"
+        case .seconds:
+            return "timer"
+        case .minutes:
+            return "clock"
+        }
+    }
+    
+    private var unitSystemImage: String {
+        switch exercise.unit {
+        case .reps:
+            return "number"
+        case .seconds:
+            return "timer"
+        case .minutes:
+            return "clock"
+        }
+    }
 }
 
 // MARK: - Preview
 #Preview {
     VStack(spacing: 12) {
         ExerciseEditRow(
-            exercise: SampleData.sampleExercises[0], // Push-ups
+            exercise: Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
             onTap: { print("Edit push-ups") },
             onDelete: { print("Delete push-ups") }
         )
         
         ExerciseEditRow(
-            exercise: SampleData.sampleExercises[4], // Squats
-            onTap: { print("Edit squats") },
-            onDelete: { print("Delete squats") }
+            exercise: Exercise(name: "Plank", sets: 1, quantity: 45, unit: .seconds),
+            onTap: { print("Edit plank") },
+            onDelete: { print("Delete plank") }
         )
         
         ExerciseEditRow(
-            exercise: SampleData.sampleExercises[9], // Plank
-            onTap: { print("Edit plank") },
-            onDelete: { print("Delete plank") }
+            exercise: Exercise(name: "Cardio", sets: 1, quantity: 5, unit: .minutes),
+            onTap: { print("Edit cardio") },
+            onDelete: { print("Delete cardio") }
         )
     }
     .padding()

@@ -30,7 +30,7 @@ struct ExerciseRowView: View {
                     .strikethrough(exercise.isCompleted)
                     .foregroundColor(exercise.isCompleted ? .secondary : .primary)
                 
-                Text("\(exercise.sets) sets × \(exercise.reps) reps")
+                Text(exercise.formattedDescription)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -53,12 +53,30 @@ struct ExerciseRowView: View {
 }
 
 #Preview {
-    ExerciseRowView(
-        exercise: SampleData.sampleExercises[0],
-        dayId: UUID(),
-        onToggle: { exerciseId in
-            print("Preview toggle: \(exerciseId)")
-        }
-    )
+    VStack(spacing: 12) {
+        ExerciseRowView(
+            exercise: Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
+            dayId: UUID(),
+            onToggle: { exerciseId in
+                print("Preview toggle: \(exerciseId)")
+            }
+        )
+        
+        ExerciseRowView(
+            exercise: Exercise(name: "Plank", sets: 1, quantity: 45, unit: .seconds),
+            dayId: UUID(),
+            onToggle: { exerciseId in
+                print("Preview toggle: \(exerciseId)")
+            }
+        )
+        
+        ExerciseRowView(
+            exercise: Exercise(name: "Cardio", sets: 1, quantity: 5, unit: .minutes),
+            dayId: UUID(),
+            onToggle: { exerciseId in
+                print("Preview toggle: \(exerciseId)")
+            }
+        )
+    }
     .padding()
 }
