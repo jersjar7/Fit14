@@ -3,91 +3,91 @@
 //  Fit14
 //
 //  Created by Jerson on 7/3/25.
+//  Updated to use Google Gemini API
 //
 
 import Foundation
 
-// MARK: - Request/Response Models
-struct AIWorkoutRequest: Codable {
-    let userGoals: String
-    let requestId: String
-    let regeneration: Bool
-    let preservedDays: [Int]? // Day numbers to preserve (for future use)
+// MARK: - Gemini API Models
+struct GeminiRequest: Codable {
+    let contents: [GeminiContent]
+    let generationConfig: GeminiGenerationConfig?
     
-    init(userGoals: String, regeneration: Bool = false, preservedDays: [Int]? = nil) {
-        self.userGoals = userGoals
-        self.requestId = UUID().uuidString
-        self.regeneration = regeneration
-        self.preservedDays = preservedDays
+    init(prompt: String) {
+        self.contents = [GeminiContent(parts: [GeminiPart(text: prompt)])]
+        self.generationConfig = GeminiGenerationConfig(
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.8,
+            maxOutputTokens: 2048
+        )
     }
 }
 
-struct AIWorkoutResponse: Codable {
-    let success: Bool
-    let message: String?
-    let workoutPlan: AIGeneratedPlan?
-    let error: String?
+struct GeminiContent: Codable {
+    let parts: [GeminiPart]
 }
 
-struct AIGeneratedPlan: Codable {
-    let summary: String
-    let totalDays: Int
-    let estimatedCaloriesBurn: Int?
-    let recommendations: String?
-    let days: [AIGeneratedDay]
+struct GeminiPart: Codable {
+    let text: String
 }
 
-struct AIGeneratedDay: Codable {
-    let dayNumber: Int
-    let focus: String
-    let exercises: [AIGeneratedExercise]
+struct GeminiGenerationConfig: Codable {
+    let temperature: Double
+    let topK: Int
+    let topP: Double
+    let maxOutputTokens: Int
 }
 
-struct AIGeneratedExercise: Codable {
-    let name: String
-    let sets: Int
-    let quantity: Int
-    let unit: String // Will be converted to ExerciseUnit enum
-    let instructions: String?
-    let difficulty: String?
+struct GeminiResponse: Codable {
+    let candidates: [GeminiCandidate]?
+    let error: GeminiError?
+}
+
+struct GeminiCandidate: Codable {
+    let content: GeminiContent
+    let finishReason: String?
+}
+
+struct GeminiError: Codable {
+    let code: Int
+    let message: String
+    let status: String
 }
 
 // MARK: - Service Errors
 enum AIServiceError: Error, LocalizedError {
-    case invalidURL
-    case noInternetConnection
+    case invalidAPIKey
+    case networkError(String)
     case invalidResponse
-    case decodingError(String)
-    case serverError(String)
-    case rateLimitExceeded
-    case unknown(String)
+    case quotaExceeded
+    case parseError(String)
+    case geminiError(String)
     
     var errorDescription: String? {
         switch self {
-        case .invalidURL:
-            return "Invalid API URL configuration"
-        case .noInternetConnection:
-            return "Please check your internet connection"
+        case .invalidAPIKey:
+            return "Invalid API key. Please check your Gemini API configuration."
+        case .networkError(let message):
+            return "Network error: \(message)"
         case .invalidResponse:
-            return "Received invalid response from server"
-        case .decodingError(let detail):
-            return "Failed to process server response: \(detail)"
-        case .serverError(let message):
-            return "Server error: \(message)"
-        case .rateLimitExceeded:
-            return "Too many requests. Please try again later"
-        case .unknown(let message):
-            return "Unexpected error: \(message)"
+            return "Invalid response from Gemini API"
+        case .quotaExceeded:
+            return "Daily quota exceeded. Try again tomorrow or upgrade to premium."
+        case .parseError(let message):
+            return "Failed to parse response: \(message)"
+        case .geminiError(let message):
+            return "Gemini API error: \(message)"
         }
     }
 }
 
-// MARK: - AI Workout Generation Service
+// MARK: - Google Gemini Service
 class AIWorkoutGenerationService: ObservableObject {
     
     // MARK: - Configuration
-    private let baseURL = "https://api.8n8.ai" // Replace with actual 8n8 API URL
-    private let apiKey = "your-8n8-api-key" // Replace with actual API key
+    private let apiKey = APIKeys.googleGeminiAPIKey
+    private let baseURL = APIKeys.geminiBaseURL
     private let timeout: TimeInterval = 30.0
     
     // MARK: - URLSession
@@ -100,9 +100,9 @@ class AIWorkoutGenerationService: ObservableObject {
     
     // MARK: - Public Methods
     
-    /// Generate workout plan from user goals
+    /// Generate workout plan from user goals using Google Gemini
     func generateWorkoutPlan(from userGoals: String) async throws -> WorkoutPlan {
-        print("🤖 Starting AI workout generation...")
+        print("🤖 Starting Gemini workout generation...")
         print("📝 User goals: \(userGoals)")
         
         // Validate input
@@ -110,136 +110,300 @@ class AIWorkoutGenerationService: ObservableObject {
             throw AIServiceError.invalidResponse
         }
         
-        // Create request
-        let request = try createRequest(for: userGoals)
+        // Validate API key - FIXED VALIDATION
+        guard !apiKey.isEmpty && apiKey != "PUT_YOUR_NEW_API_KEY_HERE" else {
+            print("❌ API Key validation failed!")
+            print("🔑 Key is empty: \(apiKey.isEmpty)")
+            print("🔑 Key is placeholder: \(apiKey == "AIzaSyDKJzHzLrBIwxcH2GZA0VCcOD3TA-Ben5w")")
+            
+            // ADD THIS DEBUG LINE:
+            print("🔑 Actual key value: '\(apiKey)'")
+            
+            throw AIServiceError.invalidAPIKey
+        }
         
-        // Make API call
-        let aiResponse = try await makeAPICall(request: request)
+        print("✅ API Key validation passed")
+        print("🔑 Using API key (first 10 chars): \(String(apiKey.prefix(10)))...")
         
-        // Convert AI response to our models
-        let workoutPlan = try convertToWorkoutPlan(aiResponse: aiResponse, userGoals: userGoals)
+        // Create the workout generation prompt
+        let prompt = createWorkoutPrompt(from: userGoals)
+        
+        // Make API call to Gemini
+        let geminiResponse = try await makeGeminiRequest(prompt: prompt)
+        
+        // Parse and convert to WorkoutPlan
+        let workoutPlan = try parseWorkoutResponse(geminiResponse, userGoals: userGoals)
         
         print("✅ Successfully generated workout plan with \(workoutPlan.days.count) days")
         return workoutPlan
     }
     
-    /// Regenerate workout plan (potentially preserving certain days)
-    func regenerateWorkoutPlan(from userGoals: String, preservingDayNumbers: [Int] = []) async throws -> WorkoutPlan {
-        print("🔄 Starting AI workout regeneration...")
-        print("📝 User goals: \(userGoals)")
-        print("🔒 Preserving days: \(preservingDayNumbers)")
+    // MARK: - Private Methods
+    
+    private func createWorkoutPrompt(from userGoals: String) -> String {
+        return """
+        IMPORTANT: You are generating a workout plan for the Fit14 mobile app. This response will be parsed automatically by the app's code, so EXACT JSON formatting is critical for the app to function properly.
         
-        // Validate input
-        guard !userGoals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        You are a professional fitness trainer AI creating a personalized 14-day workout plan for a Fit14 app user.
+        
+        USER GOALS: \(userGoals)
+        
+        REQUIREMENTS:
+        - Create exactly 14 days of workouts
+        - Each day must have exactly 5-6 exercises (NEVER less than 5, NEVER more than 6)
+        - Mix cardio, strength, and/or flexibility exercises specific to achieve user goals
+        - Consider the user's experience level, schedule, and goals
+        - Provide specific sets, reps, or duration for each exercise
+        - Use exercises appropriate for the user's available facilities (home, gym, etc.)
+        - ALL QUANTITY VALUES MUST BE POSITIVE INTEGERS (no text like "AsManyAsPossible")
+        - For "as many as possible" exercises, use a reasonable number like 8-15 reps
+        - Make each day different and progressive throughout the 14 days
+        
+        RESPONSE FORMAT (JSON):
+        {
+          "summary": "Brief description of the plan",
+          "days": [
+            {
+              "dayNumber": 1,
+              "focus": "Upper body strength",
+              "exercises": [
+                {
+                  "name": "Push-ups",
+                  "sets": 3,
+                  "quantity": 12,
+                  "unit": "reps",
+                  "instructions": "Keep your body straight, lower chest to floor"
+                },
+                {
+                  "name": "Dumbbell Rows",
+                  "sets": 3,
+                  "quantity": 10,
+                  "unit": "reps",
+                  "instructions": "Pull weight to chest, squeeze shoulder blades"
+                }
+              ]
+            }
+          ]
+        }
+        
+        CRITICAL FOR FIT14 APP - JSON REQUIREMENTS:
+        - "quantity" must ALWAYS be a positive integer (1, 2, 3, etc.) - NEVER text or decimals
+        - "sets" must ALWAYS be a positive integer (1, 2, 3, etc.)
+        - "unit" must be exactly one of: "reps", "seconds", or "minutes"
+        - NEVER use text values for numeric fields
+        - Each day must have exactly 5-6 exercises in the array
+        - Return exactly 14 days
+        - dayNumber must be 1, 2, 3... up to 14
+        
+        CRITICAL: This response is for the Fit14 app's automatic parsing system. You MUST return ONLY valid JSON with no additional text, no explanations, no markdown formatting, no code blocks, no extra characters. The app will break if you add anything other than pure JSON. Start your response with { and end with }.
+        """
+    }
+    
+    private func makeGeminiRequest(prompt: String) async throws -> String {
+        // FIXED: Construct URL with API key (baseURL already includes the full path)
+        guard let url = URL(string: "\(baseURL)?key=\(apiKey)") else {
+            print("❌ Failed to create URL")
+            print("🌐 BaseURL: \(baseURL)")
+            print("🔑 API Key length: \(apiKey.count)")
+            throw AIServiceError.invalidAPIKey
+        }
+        
+        print("🔑 API Key length: \(apiKey.count)")
+        print("🔑 API Key starts with: \(apiKey.hasPrefix("AIzaSy") ? "✅ AIzaSy" : "❌ Wrong prefix")")
+        print("🌐 Full URL: \(url.absoluteString)")
+        print("🚀 About to make workout generation request...")
+        
+        // Create request
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Create request body
+        let geminiRequest = GeminiRequest(prompt: prompt)
+        
+        do {
+            let requestData = try JSONEncoder().encode(geminiRequest)
+            request.httpBody = requestData
+            
+            // Debug the request body
+            if let requestString = String(data: requestData, encoding: .utf8) {
+                print("📦 Request body: \(requestString.prefix(200))...")
+            }
+            
+        } catch {
+            print("❌ Failed to encode request: \(error)")
             throw AIServiceError.invalidResponse
         }
         
-        // Create regeneration request
-        let request = try createRegenerationRequest(for: userGoals, preservingDays: preservingDayNumbers)
-        
-        // Make API call
-        let aiResponse = try await makeAPICall(request: request)
-        
-        // Convert AI response to our models
-        let workoutPlan = try convertToWorkoutPlan(aiResponse: aiResponse, userGoals: userGoals)
-        
-        print("✅ Successfully regenerated workout plan with \(workoutPlan.days.count) days")
-        return workoutPlan
-    }
-    
-    // MARK: - Private Methods
-    
-    private func createRequest(for userGoals: String) throws -> URLRequest {
-        guard let url = URL(string: "\(baseURL)/generate-workout") else {
-            throw AIServiceError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
-        let requestBody = AIWorkoutRequest(userGoals: userGoals)
-        request.httpBody = try JSONEncoder().encode(requestBody)
-        
-        return request
-    }
-    
-    private func createRegenerationRequest(for userGoals: String, preservingDays: [Int]) throws -> URLRequest {
-        guard let url = URL(string: "\(baseURL)/regenerate-workout") else {
-            throw AIServiceError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        
-        let requestBody = AIWorkoutRequest(
-            userGoals: userGoals,
-            regeneration: true,
-            preservedDays: preservingDays.isEmpty ? nil : preservingDays
-        )
-        request.httpBody = try JSONEncoder().encode(requestBody)
-        
-        return request
-    }
-    
-    private func makeAPICall(request: URLRequest) async throws -> AIWorkoutResponse {
         do {
+            // Make the request
             let (data, response) = try await urlSession.data(for: request)
+            
+            print("📡 Received response, checking...")
+            
+            // Debug the raw response
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📄 Raw API Response (first 500 chars): \(responseString.prefix(500))...")
+            }
             
             // Check HTTP status
             if let httpResponse = response as? HTTPURLResponse {
-                print("📡 API Response Status: \(httpResponse.statusCode)")
+                print("📡 Gemini API Response Status: \(httpResponse.statusCode)")
                 
                 switch httpResponse.statusCode {
                 case 200...299:
+                    print("✅ API call successful")
                     break // Success
                 case 429:
-                    throw AIServiceError.rateLimitExceeded
+                    throw AIServiceError.quotaExceeded
+                case 403:
+                    print("❌ 403 Forbidden - API key issue")
+                    throw AIServiceError.invalidAPIKey
                 case 400...499:
+                    print("❌ 4xx Client Error")
                     throw AIServiceError.invalidResponse
                 case 500...599:
-                    throw AIServiceError.serverError("Server error (\(httpResponse.statusCode))")
+                    throw AIServiceError.networkError("Server error (\(httpResponse.statusCode))")
                 default:
-                    throw AIServiceError.unknown("HTTP \(httpResponse.statusCode)")
+                    throw AIServiceError.networkError("HTTP \(httpResponse.statusCode)")
                 }
             }
             
-            // Parse response
-            let aiResponse = try JSONDecoder().decode(AIWorkoutResponse.self, from: data)
+            // Parse Gemini response
+            let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
             
-            // Check if AI generation was successful
-            guard aiResponse.success else {
-                let errorMessage = aiResponse.error ?? "Unknown AI generation error"
-                throw AIServiceError.serverError(errorMessage)
+            // Check for API errors
+            if let error = geminiResponse.error {
+                print("❌ Gemini API error: \(error.message)")
+                throw AIServiceError.geminiError("\(error.message) (Code: \(error.code))")
             }
             
-            return aiResponse
+            // Extract text from response
+            guard let candidate = geminiResponse.candidates?.first,
+                  let text = candidate.content.parts.first?.text else {
+                print("❌ No valid response content")
+                throw AIServiceError.invalidResponse
+            }
+            
+            print("✅ Successfully extracted response text")
+            return text
             
         } catch let error as AIServiceError {
             throw error
         } catch {
-            // Handle network and decoding errors
-            if error is DecodingError {
-                throw AIServiceError.decodingError(error.localizedDescription)
-            } else {
-                throw AIServiceError.noInternetConnection
-            }
+            print("❌ Network error: \(error.localizedDescription)")
+            throw AIServiceError.networkError(error.localizedDescription)
         }
     }
     
-    private func convertToWorkoutPlan(aiResponse: AIWorkoutResponse, userGoals: String) throws -> WorkoutPlan {
-        guard let aiPlan = aiResponse.workoutPlan else {
-            throw AIServiceError.invalidResponse
+    // TEMPORARY: Simple API test
+    func testSimpleAPICall() async {
+        print("🧪 Testing simple Gemini API call...")
+        
+        let testURL = "\(baseURL)?key=\(apiKey)"
+        guard let url = URL(string: testURL) else {
+            print("❌ Invalid test URL")
+            return
         }
         
-        // Convert AI exercises to our Exercise model
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Minimal test request
+        let testBody = """
+        {
+          "contents": [{
+            "parts": [{"text": "Hello"}]
+          }]
+        }
+        """
+        request.httpBody = testBody.data(using: .utf8)
+        
+        do {
+            let (data, response) = try await urlSession.data(for: request)
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("🧪 Test Status: \(httpResponse.statusCode)")
+            }
+            
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🧪 Test Response: \(responseString)")
+            }
+        } catch {
+            print("🧪 Test Error: \(error)")
+        }
+    }
+    
+    private func parseWorkoutResponse(_ responseText: String, userGoals: String) throws -> WorkoutPlan {
+        print("🔍 Parsing Gemini response...")
+        
+        // Clean the response text (remove any markdown formatting)
+        var cleanedText = responseText
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Fix common JSON issues that AI might introduce
+        cleanedText = cleanJSONResponse(cleanedText)
+        
+        print("🧹 Cleaned response (first 200 chars): \(cleanedText.prefix(200))...")
+        
+        // Parse JSON response
+        guard let jsonData = cleanedText.data(using: .utf8) else {
+            throw AIServiceError.parseError("Could not convert response to data")
+        }
+        
+        do {
+            let aiResponse = try JSONDecoder().decode(GeminiWorkoutResponse.self, from: jsonData)
+            print("✅ Successfully parsed JSON response")
+            return convertToWorkoutPlan(aiResponse: aiResponse, userGoals: userGoals)
+        } catch {
+            print("❌ JSON parsing error: \(error)")
+            print("📄 Response text: \(cleanedText)")
+            throw AIServiceError.parseError("Invalid JSON format: \(error.localizedDescription)")
+        }
+    }
+    
+    private func cleanJSONResponse(_ jsonText: String) -> String {
+        var cleaned = jsonText
+        
+        // Fix common AI mistakes in JSON
+        cleaned = cleaned.replacingOccurrences(of: "\"quantity\": AsManyAsPossible", with: "\"quantity\": 10")
+        cleaned = cleaned.replacingOccurrences(of: "\"quantity\": AsLongAsPossible", with: "\"quantity\": 30")
+        cleaned = cleaned.replacingOccurrences(of: "\"quantity\": \"AsManyAsPossible\"", with: "\"quantity\": 10")
+        cleaned = cleaned.replacingOccurrences(of: "\"quantity\": \"AsLongAsPossible\"", with: "\"quantity\": 30")
+        
+        // Fix any other common text values that should be numbers
+        cleaned = cleaned.replacingOccurrences(of: "\"quantity\": \"max\"", with: "\"quantity\": 12")
+        cleaned = cleaned.replacingOccurrences(of: "\"quantity\": \"maximum\"", with: "\"quantity\": 12")
+        cleaned = cleaned.replacingOccurrences(of: "\"sets\": \"max\"", with: "\"sets\": 3")
+        
+        // Handle empty exercise arrays by ensuring at least one exercise
+        if cleaned.contains("\"exercises\": []") {
+            let restExercise = """
+            "exercises": [
+              {
+                "name": "Rest Day",
+                "sets": 1,
+                "quantity": 30,
+                "unit": "minutes",
+                "instructions": "Take a rest day to allow your body to recover"
+              }
+            ]
+            """
+            cleaned = cleaned.replacingOccurrences(of: "\"exercises\": []", with: restExercise)
+        }
+        
+        return cleaned
+    }
+    
+    private func convertToWorkoutPlan(aiResponse: GeminiWorkoutResponse, userGoals: String) -> WorkoutPlan {
         var days: [Day] = []
         let startDate = Date()
         
-        for aiDay in aiPlan.days {
+        for aiDay in aiResponse.days {
             let exercises = aiDay.exercises.map { aiExercise in
                 // Convert string unit to ExerciseUnit enum
                 let unit = ExerciseUnit(rawValue: aiExercise.unit.lowercased()) ?? .reps
@@ -263,14 +427,16 @@ class AIWorkoutGenerationService: ObservableObject {
             days.append(day)
         }
         
-        // Ensure we have 14 days (fill missing days if needed)
+        // Ensure we have exactly 14 days
         while days.count < 14 {
             let dayNumber = days.count + 1
             let dayDate = Calendar.current.date(byAdding: .day, value: dayNumber - 1, to: startDate) ?? startDate
             
-            // Create a rest day or repeat last day's exercises
-            let exercises = days.last?.exercises ?? []
-            let day = Day(dayNumber: dayNumber, date: dayDate, exercises: exercises)
+            // Create a basic day if AI didn't provide enough
+            let basicExercises = [
+                Exercise(name: "Rest day", sets: 1, quantity: 30, unit: .minutes)
+            ]
+            let day = Day(dayNumber: dayNumber, date: dayDate, exercises: basicExercises)
             days.append(day)
         }
         
@@ -278,27 +444,42 @@ class AIWorkoutGenerationService: ObservableObject {
     }
 }
 
-// MARK: - Extension for testing/development
+// MARK: - Gemini Response Models
+struct GeminiWorkoutResponse: Codable {
+    let summary: String?
+    let days: [GeminiWorkoutDay]
+}
+
+struct GeminiWorkoutDay: Codable {
+    let dayNumber: Int
+    let focus: String?
+    let exercises: [GeminiWorkoutExercise]
+}
+
+struct GeminiWorkoutExercise: Codable {
+    let name: String
+    let sets: Int
+    let quantity: Int
+    let unit: String
+    let instructions: String?
+}
+
+// MARK: - Development Extensions (Keep for testing)
 extension AIWorkoutGenerationService {
     
-    /// Create a mock workout plan for testing (remove this in production)
+    /// Create a mock workout plan for testing (fallback if API fails)
     func generateMockWorkoutPlan(from userGoals: String) -> WorkoutPlan {
-        print("🧪 Generating mock workout plan for testing...")
+        print("🧪 Generating mock workout plan as fallback...")
         
-        // Enhanced mock exercises with more variety and different units
         let mockExercises = [
             Exercise(name: "Push-ups", sets: 3, quantity: 12, unit: .reps),
             Exercise(name: "Squats", sets: 3, quantity: 15, unit: .reps),
             Exercise(name: "Plank", sets: 1, quantity: 45, unit: .seconds),
             Exercise(name: "Lunges", sets: 2, quantity: 10, unit: .reps),
-            Exercise(name: "Jumping Jacks", sets: 3, quantity: 20, unit: .reps),
+            Exercise(name: "Jumping Jacks", sets: 3, quantity: 30, unit: .seconds),
             Exercise(name: "Burpees", sets: 2, quantity: 8, unit: .reps),
-            Exercise(name: "Mountain Climbers", sets: 3, quantity: 15, unit: .reps),
-            Exercise(name: "Tricep Dips", sets: 2, quantity: 12, unit: .reps),
-            Exercise(name: "High Knees", sets: 3, quantity: 30, unit: .seconds),
-            Exercise(name: "Wall Sit", sets: 1, quantity: 60, unit: .seconds),
-            Exercise(name: "Side Plank", sets: 2, quantity: 30, unit: .seconds),
-            Exercise(name: "Cardio Intervals", sets: 1, quantity: 5, unit: .minutes)
+            Exercise(name: "Mountain Climbers", sets: 3, quantity: 20, unit: .seconds),
+            Exercise(name: "Wall Sit", sets: 1, quantity: 60, unit: .seconds)
         ]
         
         var days: [Day] = []
@@ -306,9 +487,7 @@ extension AIWorkoutGenerationService {
         
         for i in 1...14 {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
-            
-            // Create variety in exercise selection
-            let exerciseCount = i % 7 == 0 ? 2 : (i % 5 == 0 ? 4 : 3) // Rest days have fewer exercises
+            let exerciseCount = i % 7 == 0 ? 2 : 3 // Rest days have fewer exercises
             let selectedExercises = Array(mockExercises.shuffled().prefix(exerciseCount))
             
             let day = Day(dayNumber: i, date: dayDate, exercises: selectedExercises)
@@ -316,35 +495,5 @@ extension AIWorkoutGenerationService {
         }
         
         return WorkoutPlan(userGoals: userGoals, days: days)
-    }
-    
-    /// Create a mock regenerated workout plan (with some variation)
-    func generateMockRegeneratedPlan(from userGoals: String, preservingDayNumbers: [Int] = []) -> WorkoutPlan {
-        print("🧪 Generating mock regenerated workout plan...")
-        print("🔒 Would preserve days: \(preservingDayNumbers) (mock ignores this)")
-        
-        // For mock, just generate a new plan with slightly different exercises
-        let originalPlan = generateMockWorkoutPlan(from: userGoals)
-        
-        // Add some variation to make it feel like a regeneration
-        var modifiedDays = originalPlan.days
-        for i in 0..<modifiedDays.count {
-            if !preservingDayNumbers.contains(i + 1) {
-                // Modify non-preserved days slightly
-                let exercises = modifiedDays[i].exercises.map { exercise in
-                    // Slightly vary the sets/quantity
-                    let newSets = max(1, exercise.sets + Int.random(in: -1...1))
-                    let newQuantity = max(1, exercise.quantity + Int.random(in: -2...2))
-                    return Exercise(name: exercise.name, sets: newSets, quantity: newQuantity, unit: exercise.unit)
-                }
-                modifiedDays[i] = Day(
-                    dayNumber: modifiedDays[i].dayNumber,
-                    date: modifiedDays[i].date,
-                    exercises: exercises
-                )
-            }
-        }
-        
-        return WorkoutPlan(userGoals: userGoals, days: modifiedDays)
     }
 }

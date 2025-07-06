@@ -3,6 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
+//  Updated to use Google Gemini API
 //
 
 import Foundation
@@ -28,7 +29,7 @@ class WorkoutPlanViewModel: ObservableObject {
     
     // MARK: - AI Plan Generation
     
-    /// Generate workout plan from user goals using AI
+    /// Generate workout plan from user goals using Google Gemini AI
     @MainActor
     func generatePlanFromGoals(_ userGoals: String) async {
         guard !userGoals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -40,21 +41,46 @@ class WorkoutPlanViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            print("🚀 Starting AI plan generation...")
+            print("🚀 Starting Gemini AI plan generation...")
             
-            // For development/testing - use mock first, then switch to real AI
+//            await aiService.testSimpleAPICall()
+
             let newPlan: WorkoutPlan
             
-            #if DEBUG
-            // Use mock for testing - change this to real AI call when ready
-            newPlan = aiService.generateMockWorkoutPlan(from: userGoals)
-            
-            // Simulate network delay for realistic testing
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-            #else
-            // Production: use real AI service
-            newPlan = try await aiService.generateWorkoutPlan(from: userGoals)
-            #endif
+            // Always try real Gemini API first
+            do {
+                newPlan = try await aiService.generateWorkoutPlan(from: userGoals)
+                print("✅ Successfully generated plan using Gemini AI")
+            } catch let aiError as AIServiceError {
+                print("⚠️ Gemini API failed: \(aiError.localizedDescription)")
+                
+                // Handle specific API errors with user-friendly messages
+                switch aiError {
+                case .quotaExceeded:
+                    showErrorMessage("Daily AI generation limit reached. Try again tomorrow or upgrade to premium for unlimited generations.")
+                    isGenerating = false
+                    return
+                case .invalidAPIKey:
+                    showErrorMessage("AI service configuration error. Please contact support.")
+                    isGenerating = false
+                    return
+                case .networkError:
+                    // For network errors, fall back to mock data
+                    print("🧪 Using fallback mock data due to network issues")
+                    newPlan = aiService.generateMockWorkoutPlan(from: userGoals)
+                    showErrorMessage("Using offline workout generation due to connection issues. Your plan is still fully functional!")
+                default:
+                    // For other errors, also fall back to mock data
+                    print("🧪 Using fallback mock data due to API error")
+                    newPlan = aiService.generateMockWorkoutPlan(from: userGoals)
+                    showErrorMessage("Using offline workout generation. Your plan is still fully functional!")
+                }
+            } catch {
+                // For any unexpected errors, fall back to mock data
+                print("⚠️ Unexpected error, using mock data: \(error.localizedDescription)")
+                newPlan = aiService.generateMockWorkoutPlan(from: userGoals)
+                showErrorMessage("Using offline workout generation. Your plan is still fully functional!")
+            }
             
             // Set as suggested plan (NOT current plan)
             suggestedPlan = newPlan
@@ -63,11 +89,8 @@ class WorkoutPlanViewModel: ObservableObject {
             
             print("✅ Successfully generated suggested workout plan")
             
-        } catch let error as AIServiceError {
-            print("❌ AI Service Error: \(error.localizedDescription)")
-            showErrorMessage(error.localizedDescription)
         } catch {
-            print("❌ Unexpected Error: \(error.localizedDescription)")
+            print("❌ Unexpected Error in plan generation: \(error.localizedDescription)")
             showErrorMessage("Failed to generate workout plan. Please try again.")
         }
         
@@ -129,19 +152,41 @@ class WorkoutPlanViewModel: ObservableObject {
         // For MVP: Simple regeneration (replace entire plan)
         // TODO: In future versions, preserve user-modified days
         
-        print("🔄 Regenerating plan...")
+        print("🔄 Regenerating plan using Gemini AI...")
         isGenerating = true
         
         do {
-            // Generate new plan
             let newPlan: WorkoutPlan
             
-            #if DEBUG
-            newPlan = aiService.generateMockWorkoutPlan(from: userGoals)
-            try await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-            #else
-            newPlan = try await aiService.generateWorkoutPlan(from: userGoals)
-            #endif
+            // Always try real Gemini API first for regeneration too
+            do {
+                newPlan = try await aiService.generateWorkoutPlan(from: userGoals)
+                print("✅ Successfully regenerated plan using Gemini AI")
+            } catch let aiError as AIServiceError {
+                print("⚠️ Gemini API failed during regeneration: \(aiError.localizedDescription)")
+                
+                // Handle specific API errors
+                switch aiError {
+                case .quotaExceeded:
+                    showErrorMessage("Daily AI generation limit reached. Try again tomorrow or upgrade to premium for unlimited generations.")
+                    isGenerating = false
+                    return
+                case .invalidAPIKey:
+                    showErrorMessage("AI service configuration error. Please contact support.")
+                    isGenerating = false
+                    return
+                default:
+                    // For other errors, fall back to mock data
+                    print("🧪 Using fallback mock data for regeneration")
+                    newPlan = aiService.generateMockWorkoutPlan(from: userGoals)
+                    showErrorMessage("Using offline workout generation. Your plan is still fully functional!")
+                }
+            } catch {
+                // For any unexpected errors, fall back to mock data
+                print("⚠️ Unexpected error during regeneration, using mock data: \(error.localizedDescription)")
+                newPlan = aiService.generateMockWorkoutPlan(from: userGoals)
+                showErrorMessage("Using offline workout generation. Your plan is still fully functional!")
+            }
             
             // Replace suggested plan with new generation
             suggestedPlan = newPlan
@@ -149,9 +194,6 @@ class WorkoutPlanViewModel: ObservableObject {
             
             print("✅ Successfully regenerated workout plan")
             
-        } catch let error as AIServiceError {
-            print("❌ AI Service Error during regeneration: \(error.localizedDescription)")
-            showErrorMessage("Failed to regenerate plan: \(error.localizedDescription)")
         } catch {
             print("❌ Unexpected Error during regeneration: \(error.localizedDescription)")
             showErrorMessage("Failed to regenerate plan. Please try again.")
