@@ -17,16 +17,11 @@ struct GoalInputView: View {
     
     // MARK: - UI State
     @State private var showingHelpSheet = false
-    @State private var showQualityIndicator = false
     
     // MARK: - Computed Properties
     
     private var canGeneratePlan: Bool {
         return viewModel.canGeneratePlan
-    }
-    
-    private var qualityAssessment: GoalQualityAssessment {
-        return analysisService.getQualityAssessment(for: viewModel.userGoalData)
     }
     
     // MARK: - Body
@@ -43,11 +38,6 @@ struct GoalInputView: View {
                     
                     // Essential Information Section (Always Show)
                     essentialInformationSection
-                    
-                    // Quality Guidance Section
-                    if showQualityIndicator && qualityAssessment.overallScore < 0.8 {
-                        qualityGuidanceSection
-                    }
                     
                     // Generation Button
                     generateButtonSection
@@ -297,88 +287,6 @@ struct GoalInputView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
-    // MARK: - Quality Guidance Section
-    
-    private var qualityGuidanceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundColor(Color.orange)
-                Text("Improve Your Plan Quality")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
-            
-            // Quality Score
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(qualityAssessment.scoreCategory)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(qualityScoreColor)
-                    
-                    Text("\(Int(qualityAssessment.overallScore * 100))% Complete")
-                        .font(.caption2)
-                        .foregroundColor(Color.secondary)
-                }
-                
-                Spacer()
-                
-                // Progress Ring
-                ZStack {
-                    Circle()
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 3)
-                        .frame(width: 32, height: 32)
-                    
-                    Circle()
-                        .trim(from: 0, to: qualityAssessment.overallScore)
-                        .stroke(qualityScoreColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                        .frame(width: 32, height: 32)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.easeInOut(duration: 0.5), value: qualityAssessment.overallScore)
-                }
-            }
-            
-            // Suggestions
-            if !qualityAssessment.suggestions.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(qualityAssessment.suggestions.prefix(3), id: \.self) { suggestion in
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "checkmark.circle")
-                                .foregroundColor(Color.blue)
-                                .font(.caption)
-                            
-                            Text(suggestion)
-                                .font(.caption)
-                                .foregroundColor(Color.secondary)
-                                .multilineTextAlignment(.leading)
-                            
-                            Spacer()
-                        }
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.orange.opacity(0.05))
-                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-        )
-        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showQualityIndicator)
-    }
-    
-    private var qualityScoreColor: Color {
-        switch qualityAssessment.overallScore {
-        case 0.8...1.0: return Color.green
-        case 0.6..<0.8: return Color.blue
-        case 0.4..<0.6: return Color.orange
-        default: return Color.red
-        }
-    }
-    
     // MARK: - Generate Button Section
     
     private var generateButtonSection: some View {
@@ -412,48 +320,6 @@ struct GoalInputView: View {
             }
             .disabled(!canGeneratePlan)
             .animation(.easeInOut(duration: 0.2), value: canGeneratePlan)
-            
-            // Generation Requirements
-            if !canGeneratePlan {
-                VStack(spacing: 4) {
-                    HStack {
-                        Image(systemName: "info.circle")
-                            .foregroundColor(Color.secondary)
-                        Text("To generate a great plan:")
-                            .font(.caption)
-                            .foregroundColor(Color.secondary)
-                        Spacer()
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        requirementRow(
-                            "Describe your fitness goal",
-                            completed: !chipAssistant.goalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        )
-                        
-                        requirementRow(
-                            "Add essential information (\(chipAssistant.completedCount)/\(chipAssistant.totalCount))",
-                            completed: chipAssistant.completionPercentage >= 0.5
-                        )
-                    }
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-    }
-    
-    private func requirementRow(_ text: String, completed: Bool) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: completed ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(completed ? Color.green : Color.secondary)
-                .font(.caption)
-            
-            Text(text)
-                .font(.caption)
-                .foregroundColor(completed ? Color.secondary : Color.primary)
-                .strikethrough(completed)
-            
-            Spacer()
         }
     }
     
@@ -523,18 +389,10 @@ struct GoalInputView: View {
         
         // Trigger real-time analysis
         analysisService.analyzeText(newText, with: viewModel.userGoalData)
-        
-        // Show quality indicator after user has typed something substantial
-        if newText.count > 20 && !showQualityIndicator {
-            withAnimation(.easeInOut(duration: 0.5).delay(1.0)) {
-                showQualityIndicator = true
-            }
-        }
     }
     
     private func resetForm() {
         chipAssistant.reset()
-        showQualityIndicator = false
         setupInitialState()
     }
     
@@ -543,7 +401,6 @@ struct GoalInputView: View {
     private func generatePlan() async {
         print("🎯 Generate Plan button tapped")
         print("📝 Complete goal text: \(chipAssistant.goalText)")
-        print("📊 Quality score: \(qualityAssessment.overallScore)")
         print("✅ Essential chips completed: \(chipAssistant.completedCount)/\(chipAssistant.totalCount)")
         
         // Ensure the ViewModel has the latest goal text from chip assistant

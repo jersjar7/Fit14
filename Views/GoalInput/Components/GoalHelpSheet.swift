@@ -158,67 +158,9 @@ struct GoalHelpSheet: View {
                     .foregroundColor(Color.secondary)
                     .multilineTextAlignment(.center)
             }
-            
-            // Current Goal Quality (if available)
-            if let goalData = userGoalData {
-                currentGoalQualitySection(goalData)
-            }
         }
         .padding()
         .background(Color(.systemGroupedBackground))
-    }
-    
-    private func currentGoalQualitySection(_ goalData: UserGoalData) -> some View {
-        HStack(spacing: 12) {
-            // Quality Indicator
-            ZStack {
-                Circle()
-                    .stroke(Color.blue.opacity(0.3), lineWidth: 3)
-                    .frame(width: 32, height: 32)
-                
-                Circle()
-                    .trim(from: 0, to: goalData.completenessScore)
-                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .frame(width: 32, height: 32)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.5), value: goalData.completenessScore)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Your Goal Quality")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(Color.primary)
-                
-                Text("\(Int(goalData.completenessScore * 100))% Complete")
-                    .font(.caption)
-                    .foregroundColor(Color.secondary)
-            }
-            
-            Spacer()
-            
-            if goalData.completenessScore < 0.7 {
-                Button("Improve") {
-                    selectedSection = .writingEffectiveGoals
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showingDetailSection = true
-                    }
-                }
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(Color.blue)
-            } else {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(Color.green)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .stroke(Color(.systemGray5), lineWidth: 1)
-        )
     }
     
     // MARK: - Overview Content
@@ -257,7 +199,7 @@ struct GoalHelpSheet: View {
                 quickTipRow(
                     icon: "2.circle.fill",
                     title: "Add essential details",
-                    subtitle: "Fill in the orange chips for personalized planning",
+                    subtitle: "Fill in the essential information chips for personalized planning",
                     color: Color.green
                 )
                 
