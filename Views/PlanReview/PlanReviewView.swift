@@ -3,6 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/3/25.
+//  Enhanced with 2-week focus messaging
 //
 
 import SwiftUI
@@ -12,6 +13,7 @@ struct PlanReviewView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedDay: Day?
     @State private var showRegenerateConfirmation = false
+    @State private var showTwoWeekInfo = false
     
     var body: some View {
         NavigationView {
@@ -19,9 +21,9 @@ struct PlanReviewView: View {
                 // Header Section
                 VStack(spacing: 16) {
                     
-                    // Plan Info
-                    VStack(spacing: 8) {
-                        Text("Your 14-Day Fitness Plan")
+                    // Plan Info with 2-Week Focus
+                    VStack(spacing: 12) {
+                        Text("Personalized 2-Week Challenge")
                             .font(.title2)
                             .fontWeight(.bold)
                         
@@ -33,13 +35,41 @@ struct PlanReviewView: View {
                                 .lineLimit(3)
                         }
                         
+                        // 2-Week Benefits Badge
+                        HStack(spacing: 8) {
+                            Image(systemName: "target")
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                            
+                            Text("14 days • Perfect for building habits • Achievable results")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(16)
+                        
                         Divider()
                             .padding(.bottom, 5.0)
-                            
                         
-                        Text("Please review and customize your plan below")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                        VStack(spacing: 8) {
+                            Text("Review and customize your plan below")
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                            
+                            Button(action: {
+                                showTwoWeekInfo = true
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "info.circle")
+                                    Text("Why 2 weeks?")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -73,7 +103,7 @@ struct PlanReviewView: View {
                             .font(.title2)
                             .fontWeight(.semibold)
                         
-                        Text("There was an issue loading your suggested plan")
+                        Text("There was an issue loading your 2-week challenge")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -82,15 +112,35 @@ struct PlanReviewView: View {
                     .background(Color(.systemGroupedBackground))
                 }
                 
-                // Bottom CTA - Only Accept Plan
-                VStack(spacing: 12) {
+                // Bottom CTA Section - Enhanced
+                VStack(spacing: 16) {
                     Divider()
+                    
+                    // Motivational Message
+                    VStack(spacing: 8) {
+                        HStack {
+                            Image(systemName: "flag.checkered")
+                                .foregroundColor(.green)
+                            Text("Ready to transform in 14 days?")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        
+                        HStack {
+                            Text("Start your journey today and build lasting healthy habits")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                    }
                     
                     // Primary CTA - Accept Plan
                     Button(action: acceptPlan) {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                            Text("Accept Plan")
+                            Text("Start My 2-Week Challenge")
                                 .fontWeight(.semibold)
                         }
                         .frame(maxWidth: .infinity)
@@ -99,6 +149,12 @@ struct PlanReviewView: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
+                    
+                    // Secondary info
+                    Text("You can track progress and modify exercises anytime")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -122,13 +178,21 @@ struct PlanReviewView: View {
                         Button(action: {
                             showRegenerateConfirmation = true
                         }) {
-                            Label("Regenerate Plan", systemImage: "arrow.clockwise")
+                            Label("Create New Plan", systemImage: "arrow.clockwise")
                         }
                         
                         Button(action: startOver) {
                             Label("Start Over", systemImage: "arrow.uturn.left")
                         }
                         .foregroundColor(.red)
+                        
+                        Divider()
+                        
+                        Button(action: {
+                            showTwoWeekInfo = true
+                        }) {
+                            Label("About 2-Week Goals", systemImage: "info.circle")
+                        }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
@@ -138,15 +202,18 @@ struct PlanReviewView: View {
                 DayEditView(day: day, dayId: day.id)
                     .environmentObject(viewModel)
             }
-            .alert("Regenerate Plan", isPresented: $showRegenerateConfirmation) {
+            .sheet(isPresented: $showTwoWeekInfo) {
+                TwoWeekInfoSheet()
+            }
+            .alert("Create New Plan", isPresented: $showRegenerateConfirmation) {
                 Button("Cancel", role: .cancel) { }
-                Button("Regenerate", role: .destructive) {
+                Button("Create New Plan", role: .destructive) {
                     Task {
                         await regeneratePlan()
                     }
                 }
             } message: {
-                Text("This will create a new plan and remove your current customizations. Are you sure?")
+                Text("This will generate a completely new 2-week plan and remove your current customizations. Are you sure?")
             }
         }
     }
@@ -168,11 +235,162 @@ struct PlanReviewView: View {
     }
 }
 
-#Preview {
+// MARK: - 2-Week Info Sheet
+
+struct TwoWeekInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(spacing: 16) {
+                        Image(systemName: "target")
+                            .font(.system(size: 48))
+                            .foregroundColor(.blue)
+                        
+                        Text("Why 2-Week Goals Work")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("Science-backed approach to sustainable fitness habits")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    // Benefits
+                    VStack(spacing: 20) {
+                        benefitRow(
+                            icon: "brain.head.profile",
+                            title: "Perfect for Your Brain",
+                            description: "2 weeks is long enough to see real progress but short enough to maintain motivation and focus.",
+                            color: .blue
+                        )
+                        
+                        benefitRow(
+                            icon: "chart.line.uptrend.xyaxis",
+                            title: "Visible Results",
+                            description: "You'll notice improvements in strength, energy, and confidence within the first week.",
+                            color: .green
+                        )
+                        
+                        benefitRow(
+                            icon: "arrow.triangle.2.circlepath",
+                            title: "Habit Formation",
+                            description: "Research shows it takes 14-21 days to start forming new habits. You're right in the sweet spot!",
+                            color: .orange
+                        )
+                        
+                        benefitRow(
+                            icon: "trophy.fill",
+                            title: "Achievement Mindset",
+                            description: "Completing a 2-week challenge builds confidence for longer-term fitness goals.",
+                            color: .purple
+                        )
+                    }
+                    
+                    // Success Quote
+                    VStack(spacing: 12) {
+                        Text("\"The best time to plant a tree was 20 years ago. The second best time is now.\"")
+                            .font(.body)
+                            .italic()
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Your 2-week journey starts today!")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    
+                    // What Happens Next
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("What happens after 2 weeks?")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                Text("Celebrate your success and track your progress")
+                                    .font(.subheadline)
+                                Spacer()
+                            }
+                            
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "arrow.up.right.circle.fill")
+                                    .foregroundColor(.blue)
+                                Text("Level up with a new 2-week challenge")
+                                    .font(.subheadline)
+                                Spacer()
+                            }
+                            
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "repeat.circle.fill")
+                                    .foregroundColor(.orange)
+                                Text("Build on your momentum with progressive goals")
+                                    .font(.subheadline)
+                                Spacer()
+                            }
+                        }
+                    }
+                    
+                    Spacer(minLength: 20)
+                }
+                .padding(24)
+            }
+            .navigationTitle("2-Week Success")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+    
+    private func benefitRow(icon: String, title: String, description: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Text(description)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            Spacer()
+        }
+    }
+}
+
+#Preview("Plan Review") {
     // Create a sample suggested plan for preview
     let viewModel = WorkoutPlanViewModel()
     viewModel.suggestedPlan = SampleData.sampleSuggestedPlan
     
     return PlanReviewView()
         .environmentObject(viewModel)
+}
+
+#Preview("2-Week Info Sheet") {
+    TwoWeekInfoSheet()
 }

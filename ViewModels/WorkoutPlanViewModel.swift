@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
-//  Updated to use Google Gemini API
+//  Updated to use Google Gemini API and structured UserGoalData
 //
 
 import Foundation
@@ -19,6 +19,10 @@ class WorkoutPlanViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showError = false
     
+    // MARK: - Goal Input Management
+    @Published var userGoalData = UserGoalData() // Structured goal data with chips
+    @Published var isGoalInputActive = false     // Whether user is actively inputting goals
+    
     // MARK: - Services
     private let storageService = LocalStorageService()
     private let aiService = AIWorkoutGenerationService()
@@ -29,11 +33,13 @@ class WorkoutPlanViewModel: ObservableObject {
     
     // MARK: - AI Plan Generation
     
-    /// Generate workout plan from user goals using Google Gemini AI
+    /// Generate workout plan from structured UserGoalData
     @MainActor
-    func generatePlanFromGoals(_ userGoals: String) async {
-        guard !userGoals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            showErrorMessage("Please enter your fitness goals")
+    func generatePlanFromGoals() async {
+        // Validate that we have sufficient data
+        guard userGoalData.isSufficientForAI else {
+            let issues = userGoalData.validationIssues
+            showGoalInputError("Please complete your goal information:", suggestions: issues)
             return
         }
         
@@ -41,10 +47,15 @@ class WorkoutPlanViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            print("🚀 Starting Gemini AI plan generation...")
+            print("🚀 Starting Gemini AI plan generation with structured data...")
+            print("📊 Data completeness: \(Int(userGoalData.completenessScore * 100))%")
+            print("📝 Selected chips: \(userGoalData.selectedChips.count)")
             
-            let newPlan = try await aiService.generateWorkoutPlan(from: userGoals)
-            print("✅ Successfully generated plan using Gemini AI")
+            // Build enhanced prompt with structured data
+            let prompt = AIPrompts.buildWorkoutPrompt(from: userGoalData)
+            let newPlan = try await aiService.generateWorkoutPlan(from: prompt)
+            
+            print("✅ Successfully generated plan using structured data")
             
             // Set as suggested plan (NOT current plan)
             suggestedPlan = newPlan
@@ -64,6 +75,60 @@ class WorkoutPlanViewModel: ObservableObject {
         isGenerating = false
     }
     
+    // MARK: - Goal Input Management
+    
+    /// Start the goal input process
+    func startGoalInput() {
+        userGoalData = UserGoalData()
+        isGoalInputActive = true
+        clearError()
+        print("🎯 Started goal input process")
+    }
+    
+    /// Update the free-form text in goal data
+    func updateGoalText(_ text: String) {
+        userGoalData.updateFreeFormText(text)
+        print("📝 Updated goal text: \(text.count) characters")
+    }
+    
+    /// Update a chip selection in goal data
+    func updateChipSelection(_ chipData: ChipData) {
+        userGoalData.updateChip(chipData)
+        print("💰 Updated chip: \(chipData.type.displayTitle) -> \(chipData.selectedText ?? "none")")
+    }
+    
+    /// Get suggested chips based on current text
+    var suggestedChips: [ChipType] {
+        return userGoalData.suggestedChipTypesByRelevance
+    }
+    
+    /// Get data quality for current goals
+    var goalDataQuality: DataQualityAssessment {
+        return AIPrompts.assessDataQuality(userGoalData)
+    }
+    
+    /// Check if ready to generate plan
+    var canGeneratePlan: Bool {
+        return userGoalData.isSufficientForAI && !isGenerating
+    }
+    
+    /// Get completion status for goal input
+    var goalInputCompletion: (percentage: Int, message: String) {
+        let percentage = Int(userGoalData.completenessScore * 100)
+        let quality = goalDataQuality
+        return (percentage, quality.displayMessage)
+    }
+    
+    /// Get visible chips for display
+    var visibleChips: [ChipData] {
+        return userGoalData.visibleChips.sortedForDisplay
+    }
+    
+    /// Get selected chips for display
+    var selectedChips: [ChipData] {
+        return userGoalData.selectedChips
+    }
+    
     // MARK: - Plan State Management
     
     /// Accept the suggested plan and make it active
@@ -81,6 +146,9 @@ class WorkoutPlanViewModel: ObservableObject {
         suggestedPlan = nil
         originalPlan = nil
         
+        // Reset goal input state since plan is now active
+        isGoalInputActive = false
+        
         // Save the active plan
         storageService.saveWorkoutPlan(activePlan)
         
@@ -91,6 +159,7 @@ class WorkoutPlanViewModel: ObservableObject {
     func rejectSuggestedPlan() {
         suggestedPlan = nil
         originalPlan = nil
+        // Keep goal data for potential regeneration
         print("🗑️ Rejected suggested plan")
     }
     
@@ -99,29 +168,34 @@ class WorkoutPlanViewModel: ObservableObject {
         suggestedPlan = nil
         originalPlan = nil
         currentPlan = nil
+        userGoalData = UserGoalData()
+        isGoalInputActive = false
         storageService.clearWorkoutPlan()
         errorMessage = nil
-        print("🔄 Started over - cleared all plans")
+        print("🔄 Started over - cleared all plans and goal data")
     }
     
-    /// Regenerate plan with smart preservation of user changes
+    /// Enhanced regeneration with structured data
     @MainActor
     func regeneratePlan() async {
-        guard let suggested = suggestedPlan else {
+        guard suggestedPlan != nil else {
             print("❌ No suggested plan to regenerate")
             showErrorMessage("No plan available to regenerate")
             return
         }
         
-        // Store user goals before regeneration
-        let userGoals = suggested.userGoals
+        guard userGoalData.isSufficientForAI else {
+            showErrorMessage("Cannot regenerate - insufficient goal data")
+            return
+        }
         
-        print("🔄 Regenerating plan using Gemini AI...")
+        print("🔄 Regenerating plan using structured data...")
         isGenerating = true
         
         do {
-            let newPlan = try await aiService.generateWorkoutPlan(from: userGoals)
-            print("✅ Successfully regenerated plan using Gemini AI")
+            let prompt = AIPrompts.regenerationPrompt(from: userGoalData)
+            let newPlan = try await aiService.generateWorkoutPlan(from: prompt)
+            print("✅ Successfully regenerated plan")
             
             // Replace suggested plan with new generation
             suggestedPlan = newPlan
@@ -140,7 +214,7 @@ class WorkoutPlanViewModel: ObservableObject {
         isGenerating = false
     }
     
-    /// Regenerate plan preserving user modifications (Advanced feature)
+    /// Regenerate plan preserving user modifications
     @MainActor
     func regeneratePlanPreservingChanges() async {
         guard let suggested = suggestedPlan,
@@ -330,13 +404,6 @@ class WorkoutPlanViewModel: ObservableObject {
         }
     }
     
-    /// Create new plan (alternative to AI generation)
-    func createNewPlan(from goals: String, with days: [Day]) {
-        let newPlan = WorkoutPlan(userGoals: goals, days: days, status: .active)
-        currentPlan = newPlan
-        storageService.saveWorkoutPlan(newPlan)
-    }
-    
     /// Start fresh (clear current plan)
     func startFresh() {
         storageService.clearWorkoutPlan()
@@ -396,16 +463,86 @@ class WorkoutPlanViewModel: ObservableObject {
         return true
     }
     
+    // MARK: - 2-Week Focus & Plan Completion
+    
+    /// Get next challenge suggestions when a plan is completed
+    func getNextChallengeSuggestions() -> [String] {
+        guard let completedPlan = currentPlan, completedPlan.isCompleted else {
+            return ["Complete your current plan first to unlock next challenge suggestions!"]
+        }
+        
+        return AIPrompts.getNextChallengeSuggestions(from: userGoalData)
+    }
+    
+    /// Start a new challenge based on completed plan
+    func startNewChallenge() {
+        guard let completedPlan = currentPlan, completedPlan.isCompleted else {
+            showErrorMessage("Complete your current plan before starting a new challenge")
+            return
+        }
+        
+        // Keep some context from the completed plan for progression
+        let previousGoalData = userGoalData
+        userGoalData = UserGoalData()
+        userGoalData.updateFreeFormText("Building on my previous 2-week challenge success...")
+        
+        // Clear current plan and start goal input
+        currentPlan = nil
+        storageService.clearWorkoutPlan()
+        startGoalInput()
+        
+        print("🎯 Started new challenge based on completed plan")
+    }
+    
+    /// Get motivational message for plan completion
+    var planCompletionMessage: String? {
+        guard let plan = currentPlan, plan.isCompleted else { return nil }
+        return AIPrompts.getTwoWeekCompletionMessage()
+    }
+    
+    // MARK: - Debug and Analytics
+    
+    /// Get debug information about current state
+    var debugInfo: String {
+        return """
+        === WORKOUT PLAN VIEW MODEL DEBUG ===
+        
+        State:
+        - Has Active Plan: \(hasActivePlan)
+        - Has Suggested Plan: \(hasSuggestedPlan)
+        - Is Generating: \(isGenerating)
+        - Goal Input Active: \(isGoalInputActive)
+        
+        Goal Data:
+        - Completeness: \(Int(userGoalData.completenessScore * 100))%
+        - Selected Chips: \(userGoalData.selectedChips.count)
+        - Sufficient for AI: \(userGoalData.isSufficientForAI)
+        - Text Length: \(userGoalData.freeFormText.count) chars
+        
+        \(AIPrompts.debugPromptGeneration(from: userGoalData))
+        """
+    }
+    
     // MARK: - Error Handling
     
     func showErrorMessage(_ message: String) {
         errorMessage = message
         showError = true
+        print("❌ Error: \(message)")
     }
     
     /// Clear error state
     func clearError() {
         errorMessage = nil
         showError = false
+    }
+    
+    /// Show goal-specific error with suggestions
+    func showGoalInputError(_ message: String, suggestions: [String] = []) {
+        var fullMessage = message
+        if !suggestions.isEmpty {
+            fullMessage += "\n\n• " + suggestions.joined(separator: "\n• ")
+        }
+        showErrorMessage(fullMessage)
     }
 }

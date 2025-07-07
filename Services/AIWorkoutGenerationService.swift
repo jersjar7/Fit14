@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/3/25.
-//  Updated to use Google Gemini API with flexible rest day support
+//  Updated to use Google Gemini API with structured prompt support
 //
 
 import Foundation
@@ -106,13 +106,13 @@ class AIWorkoutGenerationService: ObservableObject {
     
     // MARK: - Public Methods
     
-    /// Generate workout plan from user goals using Google Gemini
-    func generateWorkoutPlan(from userGoals: String) async throws -> WorkoutPlan {
-        print("🤖 Starting Gemini workout generation...")
-        print("📝 User goals: \(userGoals)")
+    /// Generate workout plan from pre-built prompt using Google Gemini
+    func generateWorkoutPlan(from prompt: String) async throws -> WorkoutPlan {
+        print("🤖 Starting Gemini workout generation with structured prompt...")
+        print("📝 Prompt length: \(prompt.count) characters")
         
         // Validate input
-        guard !userGoals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw AIServiceError.invalidResponse
         }
         
@@ -125,14 +125,11 @@ class AIWorkoutGenerationService: ObservableObject {
         print("✅ API Key validation passed")
         print("🔑 Using API key (first 10 chars): \(String(apiKey.prefix(10)))...")
         
-        // Get the workout generation prompt from AIPrompts
-        let prompt = AIPrompts.workoutPrompt(for: userGoals)
-        
-        // Make API call to Gemini
+        // Make API call to Gemini with the pre-built prompt
         let geminiResponse = try await makeGeminiRequest(prompt: prompt)
         
         // Parse and convert to WorkoutPlan
-        let workoutPlan = try parseWorkoutResponse(geminiResponse, userGoals: userGoals)
+        let workoutPlan = try parseWorkoutResponse(geminiResponse, fromPrompt: prompt)
         
         print("✅ Successfully generated workout plan with \(workoutPlan.days.count) days")
         return workoutPlan
@@ -231,7 +228,7 @@ class AIWorkoutGenerationService: ObservableObject {
         }
     }
     
-    private func parseWorkoutResponse(_ responseText: String, userGoals: String) throws -> WorkoutPlan {
+    private func parseWorkoutResponse(_ responseText: String, fromPrompt prompt: String) throws -> WorkoutPlan {
         print("🔍 Parsing Gemini response...")
         
         // Clean the response text (remove any markdown formatting)
@@ -264,7 +261,7 @@ class AIWorkoutGenerationService: ObservableObject {
             // Validate the response structure
             try validateWorkoutResponse(aiResponse)
             
-            return convertToWorkoutPlan(aiResponse: aiResponse, userGoals: userGoals)
+            return convertToWorkoutPlan(aiResponse: aiResponse, fromPrompt: prompt)
         } catch let decodingError as DecodingError {
             print("❌ JSON parsing error: \(decodingError)")
             let errorDetails = formatDecodingError(decodingError)
@@ -390,7 +387,7 @@ class AIWorkoutGenerationService: ObservableObject {
         return cleaned
     }
     
-    private func convertToWorkoutPlan(aiResponse: GeminiWorkoutResponse, userGoals: String) -> WorkoutPlan {
+    private func convertToWorkoutPlan(aiResponse: GeminiWorkoutResponse, fromPrompt prompt: String) -> WorkoutPlan {
         var days: [Day] = []
         let startDate = Date()
         
@@ -439,7 +436,50 @@ class AIWorkoutGenerationService: ObservableObject {
             days.append(day)
         }
         
+        // Extract user goals from the prompt for the WorkoutPlan
+        // Since the prompt contains structured data, we'll extract the goals section
+        let userGoals = extractUserGoalsFromPrompt(prompt)
+        
         return WorkoutPlan(userGoals: userGoals, days: days)
+    }
+    
+    /// Extract user goals from structured prompt for WorkoutPlan creation
+    private func extractUserGoalsFromPrompt(_ prompt: String) -> String {
+        // Look for the USER_GOALS section in the prompt
+        let lines = prompt.components(separatedBy: .newlines)
+        var inGoalsSection = false
+        var goalLines: [String] = []
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            if trimmedLine.contains("USER'S COMPLETE GOALS:") {
+                inGoalsSection = true
+                continue
+            }
+            
+            if inGoalsSection {
+                // Stop when we hit the next major section
+                if trimmedLine.starts(with: "WORKOUT PLAN REQUIREMENTS:") ||
+                   trimmedLine.starts(with: "FITNESS LEVEL ADAPTATION:") ||
+                   trimmedLine.isEmpty && goalLines.count > 0 {
+                    break
+                }
+                
+                if !trimmedLine.isEmpty {
+                    goalLines.append(trimmedLine)
+                }
+            }
+        }
+        
+        let extractedGoals = goalLines.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Fallback if extraction fails
+        if extractedGoals.isEmpty {
+            return "AI-generated 14-day fitness plan"
+        }
+        
+        return extractedGoals
     }
     
     // MARK: - Debug Helpers
@@ -454,11 +494,17 @@ class AIWorkoutGenerationService: ObservableObject {
         - API Base URL: \(baseURL)
         - Timeout: \(timeout)s
         - API Key Status: \(apiKey.isEmpty ? "Missing" : "Present (\(apiKey.prefix(10))...)")
+        
+        Service Features:
+        - Accepts pre-built prompts from AIPrompts
+        - Enhanced prompt parsing for user goals extraction
+        - Structured data support
+        - 2-week goal focus integration
         """
     }
 }
 
-// MARK: - Gemini Response Models
+// MARK: - Gemini Response Models (Unchanged)
 struct GeminiWorkoutResponse: Codable {
     let summary: String?
     let days: [GeminiWorkoutDay]
