@@ -208,8 +208,8 @@ struct UserGoalData: Codable, Equatable {
     /// Whether the data is sufficient for AI generation
     var isSufficientForAI: Bool {
         let hasText = !freeFormText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasCriticalChips = chips.values.filter { $0.type.importance == .critical && $0.isSelected }.count >= 1
-        return hasText && hasCriticalChips
+        // Remove the critical chips requirement for basic functionality
+        return hasText
     }
     
     /// Get validation issues

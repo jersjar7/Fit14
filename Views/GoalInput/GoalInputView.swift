@@ -157,6 +157,7 @@ struct GoalInputView: View {
                 if !chipAssistant.goalText.isEmpty {
                     HStack {
                         Text("\(chipAssistant.goalText.count) characters")
+                            .padding(.leading, 7.0)
                             .font(.caption2)
                             .foregroundColor(Color.secondary)
                         
@@ -168,6 +169,7 @@ struct GoalInputView: View {
                                 ProgressView()
                                     .scaleEffect(0.6)
                                 Text("Analyzing...")
+                                    .padding(.trailing, 2.0)
                                     .font(.caption2)
                                     .foregroundColor(Color.secondary)
                             }
@@ -177,6 +179,7 @@ struct GoalInputView: View {
                                     .foregroundColor(Color.green)
                                     .font(.caption)
                                 Text("Ready")
+                                    .padding(.trailing, 2.0)
                                     .font(.caption2)
                                     .foregroundColor(Color.green)
                             }
@@ -231,7 +234,7 @@ struct GoalInputView: View {
                     .tint(.blue)
             }
         }
-        .padding()
+        .padding(.bottom, 10)
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }

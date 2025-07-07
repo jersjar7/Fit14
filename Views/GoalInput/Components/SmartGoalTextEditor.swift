@@ -109,6 +109,12 @@ struct SmartGoalTextEditor: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .onTapGesture {
+            // Dismiss keyboard when tapping outside the text area
+            if isTextFieldFocused {
+                isTextFieldFocused = false
+            }
+        }
         .onChange(of: textFieldText) { _, newValue in
             // Sync with chip assistant
             chipAssistant.updateGoalText(newValue)
@@ -145,8 +151,7 @@ struct SmartGoalTextEditor: View {
             ))
             .focused($isTextFieldFocused)
             .font(.system(size: 15, weight: .regular, design: .rounded)) // Custom size with rounded design
-            .padding(12)
-            .padding(.bottom, isTextFieldFocused ? 40 : 12) // Extra bottom padding when focused to make room for Done button
+            .padding(12) // Removed conditional bottom padding since no Done button
             .background(Color.clear)
             .scrollContentBackground(.hidden)
             .frame(minHeight: minHeight)
@@ -175,31 +180,7 @@ struct SmartGoalTextEditor: View {
                     }
             }
             
-            // Done button in bottom right corner (only when focused)
-            if isTextFieldFocused {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            isTextFieldFocused = false
-                        }) {
-                            Text("Done")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.blue)
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(8)
-                .transition(.opacity.combined(with: .scale))
-                .animation(.easeInOut(duration: 0.2), value: isTextFieldFocused)
-            }
+            // Done button section removed completely
         }
     }
     
