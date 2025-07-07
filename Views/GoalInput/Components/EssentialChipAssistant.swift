@@ -321,22 +321,22 @@ class EssentialChipAssistant: ObservableObject {
     }
     
     /// Update completion states based on current goal text content
+    /// Preserves completed chips even when additional text is added
     private func updateCompletionStates() {
         let lowercaseText = goalText.lowercased()
         
         for index in chips.indices {
             let chip = chips[index]
             
-            var isNowCompleted = false
+            var isPatternDetected = false
             var matchingOption: ChipSelectionOption?
             
-            // Use custom detection logic based on chip type
+            // Check if the detectable pattern is found in text
             switch chip.type {
             case .fitnessLevel:
-                // Only check for actual completed text, not placeholder
-                if lowercaseText.contains("fitness level") && !lowercaseText.contains("{{fitness_level_placeholder}}") {
+                // Look for the complete phrase "my fitness level is [level]"
+                if lowercaseText.contains("my fitness level is") && !lowercaseText.contains("{{fitness_level_placeholder}}") {
                     print("🔍 Detected fitness level pattern")
-                    // Look for specific levels in text
                     if lowercaseText.contains("beginner") {
                         matchingOption = chip.options.first { $0.value.contains("beginner") }
                     } else if lowercaseText.contains("intermediate") {
@@ -346,36 +346,41 @@ class EssentialChipAssistant: ObservableObject {
                     } else {
                         matchingOption = chip.options.first
                     }
-                    isNowCompleted = true
-                    print("🔍 Fitness level completed: \(matchingOption?.displayText ?? "none")")
+                    isPatternDetected = true
+                    print("🔍 Fitness level pattern found: \(matchingOption?.displayText ?? "none")")
                 }
                 
             case .sex:
-                if (lowercaseText.contains("male") || lowercaseText.contains("female")) && !lowercaseText.contains("{{sex_placeholder}}") {
+                // Look for the complete phrase "i am a [male/female]"
+                if (lowercaseText.contains("i am a male") ||
+                    lowercaseText.contains("i am a female") ||
+                    lowercaseText.contains("i am a person")) &&
+                   !lowercaseText.contains("{{sex_placeholder}}") {
                     print("🔍 Detected sex pattern")
                     if lowercaseText.contains("female") {
                         matchingOption = chip.options.first { $0.value.contains("female") }
                     } else if lowercaseText.contains("male") && !lowercaseText.contains("female") {
                         matchingOption = chip.options.first { $0.value.contains("male") }
                     } else {
-                        matchingOption = chip.options.first
+                        matchingOption = chip.options.first { $0.value.contains("prefer not to say") }
                     }
-                    isNowCompleted = true
-                    print("🔍 Sex completed: \(matchingOption?.displayText ?? "none")")
+                    isPatternDetected = true
+                    print("🔍 Sex pattern found: \(matchingOption?.displayText ?? "none")")
                 }
                 
             case .physicalStats:
-                if lowercaseText.contains("height and weight") && !lowercaseText.contains("{{physical_stats_placeholder}}") {
+                // Look for the complete phrase "my height and weight are"
+                if lowercaseText.contains("my height and weight are") && !lowercaseText.contains("{{physical_stats_placeholder}}") {
                     print("🔍 Detected physical stats pattern")
                     matchingOption = chip.options.first
-                    isNowCompleted = true
-                    print("🔍 Physical stats completed: \(matchingOption?.displayText ?? "none")")
+                    isPatternDetected = true
+                    print("🔍 Physical stats pattern found: \(matchingOption?.displayText ?? "none")")
                 }
                 
             case .timeAvailable:
-                if lowercaseText.contains("work out for") && !lowercaseText.contains("{{time_available_placeholder}}") {
+                // Look for the complete phrase "i can work out for [time]"
+                if lowercaseText.contains("i can work out for") && !lowercaseText.contains("{{time_available_placeholder}}") {
                     print("🔍 Detected time available pattern")
-                    // Look for time indicators
                     if lowercaseText.contains("15-30") || (lowercaseText.contains("15") && lowercaseText.contains("30")) {
                         matchingOption = chip.options.first { $0.value.contains("15-30") }
                     } else if lowercaseText.contains("30-45") || (lowercaseText.contains("30") && lowercaseText.contains("45")) {
@@ -387,55 +392,69 @@ class EssentialChipAssistant: ObservableObject {
                     } else {
                         matchingOption = chip.options.first
                     }
-                    isNowCompleted = true
-                    print("🔍 Time available completed: \(matchingOption?.displayText ?? "none")")
+                    isPatternDetected = true
+                    print("🔍 Time available pattern found: \(matchingOption?.displayText ?? "none")")
                 }
                 
             case .workoutLocation:
-                if lowercaseText.contains("be working out") && !lowercaseText.contains("{{workout_location_placeholder}}") {
+                // Look for the complete phrase "i will be working out [location]"
+                if lowercaseText.contains("i will be working out") && !lowercaseText.contains("{{workout_location_placeholder}}") {
                     print("🔍 Detected workout location pattern")
-                    if lowercaseText.contains("home") {
-                        matchingOption = chip.options.first { $0.value.contains("home") }
-                    } else if lowercaseText.contains("gym") {
-                        matchingOption = chip.options.first { $0.value.contains("gym") }
-                    } else if lowercaseText.contains("outdoor") {
-                        matchingOption = chip.options.first { $0.value.contains("outdoor") }
+                    if lowercaseText.contains("at home") {
+                        matchingOption = chip.options.first { $0.value.contains("at home") }
+                    } else if lowercaseText.contains("at the gym") {
+                        matchingOption = chip.options.first { $0.value.contains("at the gym") }
+                    } else if lowercaseText.contains("outdoors") {
+                        matchingOption = chip.options.first { $0.value.contains("outdoors") }
+                    } else if lowercaseText.contains("home and gym") {
+                        matchingOption = chip.options.first { $0.value.contains("home and gym") }
                     } else {
                         matchingOption = chip.options.first
                     }
-                    isNowCompleted = true
-                    print("🔍 Workout location completed: \(matchingOption?.displayText ?? "none")")
+                    isPatternDetected = true
+                    print("🔍 Workout location pattern found: \(matchingOption?.displayText ?? "none")")
                 }
                 
             case .weeklyFrequency:
-                if lowercaseText.contains("can exercise") && !lowercaseText.contains("{{weekly_frequency_placeholder}}") {
+                // Look for the actual completed phrases, not just "can exercise"
+                if (lowercaseText.contains("i can exercise 3 days") ||
+                    lowercaseText.contains("i can exercise 4-5 days") ||
+                    lowercaseText.contains("i can exercise 6+ days") ||
+                    lowercaseText.contains("i can exercise daily except sunday")) &&
+                   !lowercaseText.contains("{{weekly_frequency_placeholder}}") {
                     print("🔍 Detected weekly frequency pattern")
                     if lowercaseText.contains("3 days") || lowercaseText.contains("three days") {
                         matchingOption = chip.options.first { $0.value.contains("3 days") }
-                    } else if lowercaseText.contains("4-5") || lowercaseText.contains("4") || lowercaseText.contains("5") {
+                    } else if lowercaseText.contains("4-5") || (lowercaseText.contains("4") && lowercaseText.contains("5")) {
                         matchingOption = chip.options.first { $0.value.contains("4-5") }
-                    } else if lowercaseText.contains("daily except sunday") || lowercaseText.contains("6") {
+                    } else if lowercaseText.contains("daily except sunday") {
                         matchingOption = chip.options.first { $0.value.contains("daily except Sunday") }
                     } else if lowercaseText.contains("6+") || lowercaseText.contains("daily") {
                         matchingOption = chip.options.first { $0.value.contains("6+") }
                     } else {
                         matchingOption = chip.options.first
                     }
-                    isNowCompleted = true
-                    print("🔍 Weekly frequency completed: \(matchingOption?.displayText ?? "none")")
+                    isPatternDetected = true
+                    print("🔍 Weekly frequency pattern found: \(matchingOption?.displayText ?? "none")")
                 }
             }
             
-            // Always update state
-            chips[index].isCompleted = isNowCompleted
-            chips[index].selectedOption = matchingOption
-            
-            if isNowCompleted {
-                print("✅ Chip \(chip.title) marked as completed")
+            // Update chip completion status:
+            // 1. If pattern is detected, mark as completed
+            // 2. If pattern is NOT detected BUT chip was already completed, keep it completed
+            // 3. Only reset to incomplete through explicit user action (resetChip method)
+            if isPatternDetected {
+                chips[index].isCompleted = true
+                chips[index].selectedOption = matchingOption
+                print("✅ Chip \(chip.title) marked as completed (pattern detected)")
+            } else if chip.isCompleted {
+                // Keep as completed even if pattern is not detected anymore
+                print("🔒 Chip \(chip.title) staying completed (preserving previous state)")
             }
+            // If not detected AND not already completed, chip remains incomplete (no action needed)
         }
         
-        print("📊 Total completed: \(completedCount)/\(totalCount)")
+        print("📊 Total completed: \(completedCount)/\(totalCount) (preserving completed state)")
     }
     
     // MARK: - Debug Helpers
