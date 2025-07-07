@@ -126,7 +126,7 @@ struct SmartGoalTextEditor: View {
     }
     
     // MARK: - Text Editor Section
-    
+        
     private var textEditorSection: some View {
         ZStack(alignment: .topLeading) {
             // Background
@@ -144,14 +144,12 @@ struct SmartGoalTextEditor: View {
                 }
             ))
             .focused($isTextFieldFocused)
-            .font(.body)
+            .font(.system(size: 15, weight: .regular, design: .rounded)) // Custom size with rounded design
             .padding(12)
+            .padding(.bottom, isTextFieldFocused ? 40 : 12) // Extra bottom padding when focused to make room for Done button
             .background(Color.clear)
             .scrollContentBackground(.hidden)
             .frame(minHeight: minHeight)
-            .onTapGesture {
-                isTextFieldFocused = true
-            }
             .onChange(of: isTextFieldFocused) { _, focused in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isEditing = focused
@@ -161,11 +159,46 @@ struct SmartGoalTextEditor: View {
             // Placeholder text
             if displayText.isEmpty && !isEditing {
                 Text(placeholder)
-                    .font(.body)
+                    .font(.system(size: 15, weight: .regular, design: .rounded)) // Match the TextEditor font
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 20)
                     .allowsHitTesting(false)
+            }
+            
+            // Invisible overlay to handle taps on the text editor specifically
+            if !isTextFieldFocused {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        isTextFieldFocused = true
+                    }
+            }
+            
+            // Done button in bottom right corner (only when focused)
+            if isTextFieldFocused {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            isTextFieldFocused = false
+                        }) {
+                            Text("Done")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.blue)
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(8)
+                .transition(.opacity.combined(with: .scale))
+                .animation(.easeInOut(duration: 0.2), value: isTextFieldFocused)
             }
         }
     }

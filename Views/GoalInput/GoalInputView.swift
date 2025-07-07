@@ -228,7 +228,7 @@ struct GoalInputView: View {
                 // Progress bar
                 ProgressView(value: chipAssistant.completionPercentage)
                     .frame(width: 60)
-                    .tint(.green)
+                    .tint(.blue)
             }
         }
         .padding()
@@ -293,10 +293,6 @@ struct GoalInputView: View {
     
     private var generateButtonSection: some View {
         VStack(spacing: 12) {
-            // Add a visual separator to ensure proper spacing
-            Rectangle()
-                .fill(Color.clear)
-                .frame(height: 1)
             
             Button(action: {
                 Task {
