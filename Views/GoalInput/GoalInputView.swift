@@ -234,7 +234,8 @@ struct GoalInputView: View {
                     .tint(.blue)
             }
         }
-        .padding(.bottom, 10)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 20)
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }

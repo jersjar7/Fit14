@@ -35,21 +35,21 @@ struct PlanReviewView: View {
                                 .lineLimit(3)
                         }
                         
-                        // 2-Week Benefits Badge
-                        HStack(spacing: 8) {
-                            Image(systemName: "target")
-                                .foregroundColor(.blue)
-                                .font(.caption)
-                            
-                            Text("14 days • Perfect for building habits • Achievable results")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                                .fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(16)
+//                        // 2-Week Benefits Badge
+//                        HStack(spacing: 8) {
+//                            Image(systemName: "target")
+//                                .foregroundColor(.blue)
+//                                .font(.caption)
+//                            
+//                            Text("14 days • Perfect for building habits • Achievable results")
+//                                .font(.caption)
+//                                .foregroundColor(.blue)
+//                                .fontWeight(.medium)
+//                        }
+//                        .padding(.horizontal, 12)
+//                        .padding(.vertical, 6)
+//                        .background(Color.blue.opacity(0.1))
+//                        .cornerRadius(16)
                         
                         Divider()
                             .padding(.bottom, 5.0)
@@ -113,33 +113,14 @@ struct PlanReviewView: View {
                 }
                 
                 // Bottom CTA Section - Enhanced
-                VStack(spacing: 16) {
-                    Divider()
+                VStack(spacing: 5) {
+//                    Divider()
                     
-                    // Motivational Message
-                    VStack(spacing: 8) {
-                        HStack {
-                            Image(systemName: "flag.checkered")
-                                .foregroundColor(.green)
-                            Text("Ready to transform in 14 days?")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        
-                        HStack {
-                            Text("Start your journey today and build lasting healthy habits")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                        }
-                    }
-                    
+
                     // Primary CTA - Accept Plan
                     Button(action: acceptPlan) {
                         HStack {
-                            Image(systemName: "checkmark.circle.fill")
+                            Image(systemName: "flag.checkered")
                             Text("Start My 2-Week Challenge")
                                 .fontWeight(.semibold)
                         }
@@ -150,14 +131,10 @@ struct PlanReviewView: View {
                         .cornerRadius(12)
                     }
                     
-                    // Secondary info
-                    Text("You can track progress and modify exercises anytime")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .padding(.vertical, 15)
                 .background(Color(.systemBackground))
             }
             .navigationBarTitleDisplayMode(.inline)
