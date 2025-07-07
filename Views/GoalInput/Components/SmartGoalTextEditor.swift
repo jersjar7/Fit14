@@ -39,7 +39,7 @@ struct SmartGoalTextEditor: View {
             "{{PHYSICAL_STATS_PLACEHOLDER}}": "My height and weight are ",
             "{{TIME_AVAILABLE_PLACEHOLDER}}": "I can work out for ",
             "{{WORKOUT_LOCATION_PLACEHOLDER}}": "I will be working out ",
-            "{{WEEKLY_FREQUENCY_PLACEHOLDER}}": "I can work out "
+            "{{WEEKLY_FREQUENCY_PLACEHOLDER}}": "I can exercise "  // Changed from "I can work out "
         ]
         
         for (token, replacement) in tokenReplacements {
@@ -55,9 +55,9 @@ struct SmartGoalTextEditor: View {
         let promptMappings: [(String, ChipType)] = [
             ("My fitness level is ", .fitnessLevel),
             ("My height and weight are ", .physicalStats),
-            ("I can work out for ", .timeAvailable),  // Check this before the shorter "I can work out "
+            ("I can work out for ", .timeAvailable),  // Check this before the shorter "I can exercise "
             ("I will be working out ", .workoutLocation),
-            ("I can work out ", .weeklyFrequency),
+            ("I can exercise ", .weeklyFrequency),  // Changed from "I can work out "
             ("I am a ", .sex)
         ]
         

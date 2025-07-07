@@ -252,7 +252,7 @@ class EssentialChipAssistant: ObservableObject {
                     ChipSelectionOption(value: "5'6\", 140 lbs", displayText: "My height and weight are 5'6\", 140 lbs"),
                     ChipSelectionOption(value: "5'9\", 160 lbs", displayText: "My height and weight are 5'9\", 160 lbs"),
                     ChipSelectionOption(value: "6'0\", 180 lbs", displayText: "My height and weight are 6'0\", 180 lbs"),
-                    ChipSelectionOption(value: "custom", displayText: "My height and weight are custom measurements", description: "Tap to enter custom height and weight")
+                    ChipSelectionOption(value: "custom", displayText: "My height and weight are ", description: "Tap to enter custom height and weight")
                 ]
             ),
             
@@ -291,10 +291,10 @@ class EssentialChipAssistant: ObservableObject {
                 icon: "calendar",
                 promptTemplate: "{{WEEKLY_FREQUENCY_PLACEHOLDER}}",
                 options: [
-                    ChipSelectionOption(value: "3 days per week", displayText: "I can work out 3 days per week", description: "Balanced approach with recovery time"),
-                    ChipSelectionOption(value: "4-5 days per week", displayText: "I can work out 4-5 days per week", description: "Regular, consistent training"),
-                    ChipSelectionOption(value: "6+ days per week", displayText: "I can work out 6+ days per week", description: "High-frequency training"),
-                    ChipSelectionOption(value: "on a flexible schedule", displayText: "I can work out on a flexible schedule", description: "Adapt based on availability")
+                    ChipSelectionOption(value: "3 days per week", displayText: "I can exercise 3 days per week", description: "Balanced approach with recovery time"),
+                    ChipSelectionOption(value: "4-5 days per week", displayText: "I can exercise 4-5 days per week", description: "Regular, consistent training"),
+                    ChipSelectionOption(value: "6+ days per week", displayText: "I can exercise 6+ days per week", description: "High-frequency training"),
+                    ChipSelectionOption(value: "daily except Sunday", displayText: "I can exercise daily except Sunday", description: "6 days per week with Sunday rest")
                 ]
             )
         ]
@@ -322,28 +322,120 @@ class EssentialChipAssistant: ObservableObject {
     
     /// Update completion states based on current goal text content
     private func updateCompletionStates() {
+        let lowercaseText = goalText.lowercased()
+        
         for index in chips.indices {
             let chip = chips[index]
             
-            // Check if any of this chip's completed text appears in the goal text
-            let wasCompleted = chip.isCompleted
             var isNowCompleted = false
             var matchingOption: ChipSelectionOption?
             
-            for option in chip.options {
-                if goalText.contains(option.displayText) {
+            // Use custom detection logic based on chip type
+            switch chip.type {
+            case .fitnessLevel:
+                // Only check for actual completed text, not placeholder
+                if lowercaseText.contains("fitness level") && !lowercaseText.contains("{{fitness_level_placeholder}}") {
+                    print("🔍 Detected fitness level pattern")
+                    // Look for specific levels in text
+                    if lowercaseText.contains("beginner") {
+                        matchingOption = chip.options.first { $0.value.contains("beginner") }
+                    } else if lowercaseText.contains("intermediate") {
+                        matchingOption = chip.options.first { $0.value.contains("intermediate") }
+                    } else if lowercaseText.contains("advanced") {
+                        matchingOption = chip.options.first { $0.value.contains("advanced") }
+                    } else {
+                        matchingOption = chip.options.first
+                    }
                     isNowCompleted = true
-                    matchingOption = option
-                    break
+                    print("🔍 Fitness level completed: \(matchingOption?.displayText ?? "none")")
+                }
+                
+            case .sex:
+                if (lowercaseText.contains("male") || lowercaseText.contains("female")) && !lowercaseText.contains("{{sex_placeholder}}") {
+                    print("🔍 Detected sex pattern")
+                    if lowercaseText.contains("female") {
+                        matchingOption = chip.options.first { $0.value.contains("female") }
+                    } else if lowercaseText.contains("male") && !lowercaseText.contains("female") {
+                        matchingOption = chip.options.first { $0.value.contains("male") }
+                    } else {
+                        matchingOption = chip.options.first
+                    }
+                    isNowCompleted = true
+                    print("🔍 Sex completed: \(matchingOption?.displayText ?? "none")")
+                }
+                
+            case .physicalStats:
+                if lowercaseText.contains("height and weight") && !lowercaseText.contains("{{physical_stats_placeholder}}") {
+                    print("🔍 Detected physical stats pattern")
+                    matchingOption = chip.options.first
+                    isNowCompleted = true
+                    print("🔍 Physical stats completed: \(matchingOption?.displayText ?? "none")")
+                }
+                
+            case .timeAvailable:
+                if lowercaseText.contains("work out for") && !lowercaseText.contains("{{time_available_placeholder}}") {
+                    print("🔍 Detected time available pattern")
+                    // Look for time indicators
+                    if lowercaseText.contains("15-30") || (lowercaseText.contains("15") && lowercaseText.contains("30")) {
+                        matchingOption = chip.options.first { $0.value.contains("15-30") }
+                    } else if lowercaseText.contains("30-45") || (lowercaseText.contains("30") && lowercaseText.contains("45")) {
+                        matchingOption = chip.options.first { $0.value.contains("30-45") }
+                    } else if lowercaseText.contains("45-60") || (lowercaseText.contains("45") && lowercaseText.contains("60")) {
+                        matchingOption = chip.options.first { $0.value.contains("45-60") }
+                    } else if lowercaseText.contains("60+") || lowercaseText.contains("hour") {
+                        matchingOption = chip.options.first { $0.value.contains("60+") }
+                    } else {
+                        matchingOption = chip.options.first
+                    }
+                    isNowCompleted = true
+                    print("🔍 Time available completed: \(matchingOption?.displayText ?? "none")")
+                }
+                
+            case .workoutLocation:
+                if lowercaseText.contains("be working out") && !lowercaseText.contains("{{workout_location_placeholder}}") {
+                    print("🔍 Detected workout location pattern")
+                    if lowercaseText.contains("home") {
+                        matchingOption = chip.options.first { $0.value.contains("home") }
+                    } else if lowercaseText.contains("gym") {
+                        matchingOption = chip.options.first { $0.value.contains("gym") }
+                    } else if lowercaseText.contains("outdoor") {
+                        matchingOption = chip.options.first { $0.value.contains("outdoor") }
+                    } else {
+                        matchingOption = chip.options.first
+                    }
+                    isNowCompleted = true
+                    print("🔍 Workout location completed: \(matchingOption?.displayText ?? "none")")
+                }
+                
+            case .weeklyFrequency:
+                if lowercaseText.contains("can exercise") && !lowercaseText.contains("{{weekly_frequency_placeholder}}") {
+                    print("🔍 Detected weekly frequency pattern")
+                    if lowercaseText.contains("3 days") || lowercaseText.contains("three days") {
+                        matchingOption = chip.options.first { $0.value.contains("3 days") }
+                    } else if lowercaseText.contains("4-5") || lowercaseText.contains("4") || lowercaseText.contains("5") {
+                        matchingOption = chip.options.first { $0.value.contains("4-5") }
+                    } else if lowercaseText.contains("daily except sunday") || lowercaseText.contains("6") {
+                        matchingOption = chip.options.first { $0.value.contains("daily except Sunday") }
+                    } else if lowercaseText.contains("6+") || lowercaseText.contains("daily") {
+                        matchingOption = chip.options.first { $0.value.contains("6+") }
+                    } else {
+                        matchingOption = chip.options.first
+                    }
+                    isNowCompleted = true
+                    print("🔍 Weekly frequency completed: \(matchingOption?.displayText ?? "none")")
                 }
             }
             
-            // Update state if changed
-            if wasCompleted != isNowCompleted {
-                chips[index].isCompleted = isNowCompleted
-                chips[index].selectedOption = matchingOption
+            // Always update state
+            chips[index].isCompleted = isNowCompleted
+            chips[index].selectedOption = matchingOption
+            
+            if isNowCompleted {
+                print("✅ Chip \(chip.title) marked as completed")
             }
         }
+        
+        print("📊 Total completed: \(completedCount)/\(totalCount)")
     }
     
     // MARK: - Debug Helpers
@@ -362,5 +454,97 @@ class EssentialChipAssistant: ObservableObject {
         Essential Chip States:
         \(chips.map { "- \($0.title) (\($0.type.importance.displayName)): \($0.isCompleted ? "✅" : "❌") \($0.selectedOption?.displayText ?? "none")" }.joined(separator: "\n"))
         """
+    }
+    
+    // MARK: - Detection Helper Methods
+
+    private func findMatchingFitnessLevelOption() -> ChipSelectionOption? {
+        let text = goalText.lowercased()
+        let chip = chips.first { $0.type == .fitnessLevel }
+        
+        if text.contains("beginner") || text.contains("new to") {
+            return chip?.options.first { $0.value == "beginner" }
+        } else if text.contains("intermediate") {
+            return chip?.options.first { $0.value == "intermediate" }
+        } else if text.contains("advanced") || text.contains("experienced") {
+            return chip?.options.first { $0.value == "advanced" }
+        }
+        
+        // Default to first option if pattern is detected but specific level isn't clear
+        return chip?.options.first
+    }
+
+    private func findMatchingSexOption() -> ChipSelectionOption? {
+        let text = goalText.lowercased()
+        let chip = chips.first { $0.type == .sex }
+        
+        if text.contains("male") && !text.contains("female") {
+            return chip?.options.first { $0.value == "male" }
+        } else if text.contains("female") {
+            return chip?.options.first { $0.value == "female" }
+        }
+        
+        return chip?.options.first
+    }
+
+    private func findMatchingPhysicalStatsOption() -> ChipSelectionOption? {
+        let chip = chips.first { $0.type == .physicalStats }
+        // Since this is usually custom input, return the custom option
+        return chip?.options.first { $0.value == "custom" }
+    }
+
+    private func findMatchingTimeOption() -> ChipSelectionOption? {
+        let text = goalText.lowercased()
+        let chip = chips.first { $0.type == .timeAvailable }
+        
+        if text.contains("15") || text.contains("30") {
+            if text.contains("30") && (text.contains("45") || text.contains("40")) {
+                return chip?.options.first { $0.value == "30-45 minutes" }
+            } else {
+                return chip?.options.first { $0.value == "15-30 minutes" }
+            }
+        } else if text.contains("45") || text.contains("60") {
+            if text.contains("45") && text.contains("60") {
+                return chip?.options.first { $0.value == "45-60 minutes" }
+            } else {
+                return chip?.options.first { $0.value == "30-45 minutes" }
+            }
+        } else if text.contains("hour") || text.contains("60+") {
+            return chip?.options.first { $0.value == "60+ minutes" }
+        }
+        
+        return chip?.options.first
+    }
+
+    private func findMatchingLocationOption() -> ChipSelectionOption? {
+        let text = goalText.lowercased()
+        let chip = chips.first { $0.type == .workoutLocation }
+        
+        if text.contains("home") {
+            return chip?.options.first { $0.value == "at home" }
+        } else if text.contains("gym") {
+            return chip?.options.first { $0.value == "at the gym" }
+        } else if text.contains("outdoor") || text.contains("outside") {
+            return chip?.options.first { $0.value == "outdoors" }
+        }
+        
+        return chip?.options.first
+    }
+
+    private func findMatchingFrequencyOption() -> ChipSelectionOption? {
+        let text = goalText.lowercased()
+        let chip = chips.first { $0.type == .weeklyFrequency }
+        
+        if text.contains("3 days") || text.contains("three days") {
+            return chip?.options.first { $0.value == "3 days per week" }
+        } else if text.contains("4") || text.contains("5") || text.contains("four") || text.contains("five") {
+            return chip?.options.first { $0.value == "4-5 days per week" }
+        } else if text.contains("6") || text.contains("daily except sunday") || text.contains("six") {
+            return chip?.options.first { $0.value == "daily except Sunday" }
+        } else if text.contains("daily") || text.contains("every day") {
+            return chip?.options.first { $0.value == "6+ days per week" }
+        }
+        
+        return chip?.options.first
     }
 }

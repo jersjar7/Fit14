@@ -57,7 +57,7 @@ struct ChipConfiguration {
         ChipOption(value: "3 days", displayText: "3 days per week", description: "Balanced approach with recovery time"),
         ChipOption(value: "4-5 days", displayText: "4-5 days per week", description: "Regular, consistent training"),
         ChipOption(value: "6+ days", displayText: "6+ days per week", description: "High-frequency training"),
-        ChipOption(value: "flexible", displayText: "Flexible schedule", description: "Adapt based on availability"),
+        ChipOption(value: "daily except Sunday", displayText: "Daily except Sunday", description: "6 days per week with Sunday rest"),
         ChipOption.customInput
     ]
     
