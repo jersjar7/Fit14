@@ -41,7 +41,7 @@ struct GoalInputView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 24) { // Increased from 20 to 24
                     // Header Section
                     headerSection
                     
@@ -60,16 +60,18 @@ struct GoalInputView: View {
                     
                     // Generation Button
                     generateButtonSection
+                        .padding(.top, 20) // Add explicit top padding to button section
                     
                     // Existing Plan Notice
                     if viewModel.hasActivePlan && !viewModel.isGenerating {
                         existingPlanSection
                     }
                     
-                    Spacer(minLength: 40)
+                    Spacer(minLength: 60) // Increased from 40 to 60
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
+                .padding(.bottom, 20) // Add bottom padding to entire content
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
@@ -225,19 +227,108 @@ struct GoalInputView: View {
         }
     }
     
-    // MARK: - Smart Chips Section
+    // MARK: - Smart Chips Section (Updated with Progressive Disclosure)
     
     private var smartChipsSection: some View {
-        VStack(spacing: 0) {
-            ChipSelectorView.standard(
-                userGoalData: .constant(viewModel.userGoalData),
-                onSelectionChanged: { chipData in
-                    handleChipSelection(chipData)
+        VStack(spacing: 20) { // Increased spacing from 16 to 20
+            // Always show what we need, regardless of current state
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                    Text("Essential Information")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Spacer()
                 }
-            )
+                
+                // Show preview of what we need even before user types
+                VStack(alignment: .leading, spacing: 8) {
+                    quickInfoRow(
+                        icon: "figure.strengthtraining.traditional",
+                        title: "Fitness Level",
+                        isCompleted: viewModel.userGoalData.isChipSelected(.fitnessLevel)
+                    )
+                    
+                    quickInfoRow(
+                        icon: "person.2",
+                        title: "Sex",
+                        isCompleted: viewModel.userGoalData.isChipSelected(.sex)
+                    )
+                    
+                    quickInfoRow(
+                        icon: "ruler.fill",
+                        title: "Height & Weight",
+                        isCompleted: viewModel.userGoalData.isChipSelected(.physicalStats)
+                    )
+                    
+                    quickInfoRow(
+                        icon: "clock",
+                        title: "Time Per Workout",
+                        isCompleted: viewModel.userGoalData.isChipSelected(.timeAvailable)
+                    )
+                    
+                    quickInfoRow(
+                        icon: "location",
+                        title: "Workout Location",
+                        isCompleted: viewModel.userGoalData.isChipSelected(.workoutLocation)
+                    )
+                    
+                    quickInfoRow(
+                        icon: "calendar",
+                        title: "Days Per Week",
+                        isCompleted: viewModel.userGoalData.isChipSelected(.weeklyFrequency)
+                    )
+                }
+                
+                if !hasUserInteracted {
+                    Text("Start typing your goal above and selection options will appear")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .italic()
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+            
+            // Show actual chips once user starts interacting
+            if hasUserInteracted {
+                ChipSelectorView(
+                    userGoalData: .constant(viewModel.userGoalData),
+                    layout: .adaptive,
+                    style: .standard,
+                    showSectionHeaders: false, // Hide section headers to avoid duplication
+                    onSelectionChanged: { chipData in
+                        handleChipSelection(chipData)
+                    }
+                )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: shouldShowChips)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: hasUserInteracted)
+    }
+    
+    // MARK: - Quick Info Row Helper
+    
+    private func quickInfoRow(icon: String, title: String, isCompleted: Bool) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundColor(.blue)
+                .frame(width: 16)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                .font(.caption)
+                .foregroundColor(isCompleted ? .green : .gray)
+        }
     }
     
     // MARK: - Quality Guidance Section
@@ -326,6 +417,11 @@ struct GoalInputView: View {
     
     private var generateButtonSection: some View {
         VStack(spacing: 12) {
+            // Add a visual separator to ensure proper spacing
+            Rectangle()
+                .fill(Color.clear)
+                .frame(height: 1)
+            
             Button(action: {
                 Task {
                     await generatePlan()
