@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
-//  Updated to use Google Gemini API and structured UserGoalData
+//  Updated to use Google Gemini API and structured UserGoalData with essential chips only
 //
 
 import Foundation
@@ -20,7 +20,7 @@ class WorkoutPlanViewModel: ObservableObject {
     @Published var showError = false
     
     // MARK: - Goal Input Management
-    @Published var userGoalData = UserGoalData() // Structured goal data with chips
+    @Published var userGoalData = UserGoalData() // Structured goal data with essential chips
     @Published var isGoalInputActive = false     // Whether user is actively inputting goals
     
     // MARK: - Services
@@ -47,15 +47,15 @@ class WorkoutPlanViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            print("🚀 Starting Gemini AI plan generation with structured data...")
+            print("🚀 Starting Gemini AI plan generation with essential chip data...")
             print("📊 Data completeness: \(Int(userGoalData.completenessScore * 100))%")
-            print("📝 Selected chips: \(userGoalData.selectedChips.count)")
+            print("📝 Selected essential chips: \(userGoalData.selectedChips.count)")
             
             // Build enhanced prompt with structured data
             let prompt = AIPrompts.buildWorkoutPrompt(from: userGoalData)
             let newPlan = try await aiService.generateWorkoutPlan(from: prompt)
             
-            print("✅ Successfully generated plan using structured data")
+            print("✅ Successfully generated plan using essential chip data")
             
             // Set as suggested plan (NOT current plan)
             suggestedPlan = newPlan
@@ -94,12 +94,18 @@ class WorkoutPlanViewModel: ObservableObject {
     /// Update a chip selection in goal data
     func updateChipSelection(_ chipData: ChipData) {
         userGoalData.updateChip(chipData)
-        print("💰 Updated chip: \(chipData.type.displayTitle) -> \(chipData.selectedText ?? "none")")
+        print("💰 Updated essential chip: \(chipData.type.displayTitle) -> \(chipData.selectedText ?? "none")")
     }
     
-    /// Get suggested chips based on current text
+    /// Get smart suggestions for essential chips based on current text
     var suggestedChips: [ChipType] {
-        return userGoalData.suggestedChipTypesByRelevance
+        let smartDefaults = userGoalData.getSmartSuggestions()
+        return Array(smartDefaults.keys)
+    }
+    
+    /// Get smart chip defaults for auto-filling
+    var smartChipDefaults: [ChipType: ChipOption] {
+        return userGoalData.getSmartSuggestions()
     }
     
     /// Get data quality for current goals
@@ -119,7 +125,7 @@ class WorkoutPlanViewModel: ObservableObject {
         return (percentage, quality.displayMessage)
     }
     
-    /// Get visible chips for display
+    /// Get visible chips for display (all essential chips are visible)
     var visibleChips: [ChipData] {
         return userGoalData.visibleChips.sortedForDisplay
     }
@@ -127,6 +133,16 @@ class WorkoutPlanViewModel: ObservableObject {
     /// Get selected chips for display
     var selectedChips: [ChipData] {
         return userGoalData.selectedChips
+    }
+    
+    /// Get natural language info that's mentioned in the goal text
+    var naturallyMentionedInfo: [String] {
+        return userGoalData.naturallyMentionedInfo
+    }
+    
+    /// Check if goal text contains important constraints that will help the AI
+    var hasImportantConstraints: Bool {
+        return userGoalData.containsImportantConstraints
     }
     
     // MARK: - Plan State Management
@@ -189,7 +205,7 @@ class WorkoutPlanViewModel: ObservableObject {
             return
         }
         
-        print("🔄 Regenerating plan using structured data...")
+        print("🔄 Regenerating plan using essential chip data...")
         isGenerating = true
         
         do {
@@ -500,6 +516,34 @@ class WorkoutPlanViewModel: ObservableObject {
         return AIPrompts.getTwoWeekCompletionMessage()
     }
     
+    // MARK: - Essential Chip Management Helpers
+    
+    /// Apply smart defaults to essential chips based on current text
+    func applySmartDefaults() {
+        let smartDefaults = ChipConfiguration.getSmartDefaults(for: userGoalData.freeFormText)
+        
+        for (chipType, option) in smartDefaults {
+            // Only apply if chip isn't already selected
+            if !userGoalData.isChipSelected(chipType) {
+                let chipData = ChipConfiguration.createChipData(for: chipType)
+                var updatedChip = chipData
+                updatedChip.select(option: option)
+                userGoalData.updateChip(updatedChip)
+                print("🤖 Applied smart default for \(chipType.displayTitle): \(option.displayText)")
+            }
+        }
+    }
+    
+    /// Get critical chips that need immediate attention
+    var criticalChipsNeeded: [ChipType] {
+        return ChipType.criticalTypes.filter { !userGoalData.isChipSelected($0) }
+    }
+    
+    /// Check if all critical essential chips are completed
+    var hasCriticalChips: Bool {
+        return criticalChipsNeeded.isEmpty
+    }
+    
     // MARK: - Debug and Analytics
     
     /// Get debug information about current state
@@ -513,11 +557,15 @@ class WorkoutPlanViewModel: ObservableObject {
         - Is Generating: \(isGenerating)
         - Goal Input Active: \(isGoalInputActive)
         
-        Goal Data:
+        Essential Chip Data:
         - Completeness: \(Int(userGoalData.completenessScore * 100))%
         - Selected Chips: \(userGoalData.selectedChips.count)
+        - Critical Chips Needed: \(criticalChipsNeeded.count)
         - Sufficient for AI: \(userGoalData.isSufficientForAI)
+        - Has Important Constraints: \(hasImportantConstraints)
         - Text Length: \(userGoalData.freeFormText.count) chars
+        
+        Natural Info Mentioned: \(naturallyMentionedInfo.joined(separator: ", "))
         
         \(AIPrompts.debugPromptGeneration(from: userGoalData))
         """

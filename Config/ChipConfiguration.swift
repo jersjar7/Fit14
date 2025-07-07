@@ -3,16 +3,17 @@
 //  Fit14
 //
 //  Created by Jerson on 7/6/25.
+//  Updated for essential chips only approach
 //
 
 import Foundation
 
 // MARK: - Chip Configuration Manager
 
-/// Central configuration manager for all chip types and their options
+/// Central configuration manager for essential chip types and their options
 struct ChipConfiguration {
     
-    // MARK: - Universal Chip Options
+    // MARK: - Essential Chip Options
     
     /// Fitness level options - critical for AI plan generation
     static let fitnessLevelOptions: [ChipOption] = [
@@ -60,88 +61,17 @@ struct ChipConfiguration {
         ChipOption.customInput
     ]
     
-    // MARK: - Contextual Chip Options
-    
-    /// Timeline options - emphasizes Fit14's 2-week philosophy
-    static let timelineOptions: [ChipOption] = [
-        ChipOption(value: "2 weeks", displayText: "2 weeks (recommended)", description: "Perfect for building habits and seeing initial results"),
-        ChipOption(value: "1 month", displayText: "1 month", description: "Extended goal with multiple milestones"),
-        ChipOption(value: "3 months", displayText: "3 months", description: "Long-term transformation goal"),
-        ChipOption(value: "6+ months", displayText: "6+ months", description: "Major lifestyle change commitment"),
-        ChipOption.customInput
-    ]
-    
-    /// Common injury/limitation options - for safety
-    static let limitationsOptions: [ChipOption] = [
-        ChipOption(value: "lower back pain", displayText: "Lower back pain", description: "Avoid exercises that strain the lower back"),
-        ChipOption(value: "knee problems", displayText: "Knee problems", description: "Low-impact alternatives for joint protection"),
-        ChipOption(value: "shoulder injury", displayText: "Shoulder injury", description: "Modified upper body movements"),
-        ChipOption(value: "ankle/foot issues", displayText: "Ankle/foot issues", description: "Limited weight-bearing exercises"),
-        ChipOption(value: "wrist/elbow pain", displayText: "Wrist/elbow pain", description: "Avoid high-impact arm exercises"),
-        ChipOption(value: "recent surgery", displayText: "Recent surgery", description: "Following medical restrictions"),
-        ChipOption(value: "chronic condition", displayText: "Chronic condition", description: "Working with ongoing health considerations"),
-        ChipOption.customInput
-    ]
-    
-    /// Schedule restriction options - for workout timing
-    static let scheduleOptions: [ChipOption] = [
-        ChipOption(value: "early morning only", displayText: "Early morning only", description: "Before work/commitments"),
-        ChipOption(value: "lunch break workouts", displayText: "Lunch break workouts", description: "Quick midday sessions"),
-        ChipOption(value: "evening after work", displayText: "Evening after work", description: "End-of-day fitness routine"),
-        ChipOption(value: "weekends only", displayText: "Weekends only", description: "Saturday and Sunday focused"),
-        ChipOption(value: "flexible weekdays", displayText: "Flexible weekdays", description: "Adapt to daily schedule"),
-        ChipOption(value: "avoid Sundays", displayText: "Avoid Sundays", description: "Sunday rest day preference"),
-        ChipOption.customInput
-    ]
-    
-    /// Equipment availability options - affects exercise selection
-    static let equipmentOptions: [ChipOption] = [
-        ChipOption(value: "no equipment", displayText: "No equipment", description: "Bodyweight exercises only"),
-        ChipOption(value: "basic home gym", displayText: "Basic home gym", description: "Dumbbells, resistance bands, mat"),
-        ChipOption(value: "full home gym", displayText: "Full home gym", description: "Weights, machines, cardio equipment"),
-        ChipOption(value: "gym membership", displayText: "Gym membership", description: "Access to all gym equipment"),
-        ChipOption(value: "outdoor gear", displayText: "Outdoor gear", description: "Running shoes, bike, hiking equipment"),
-        ChipOption(value: "resistance bands only", displayText: "Resistance bands only", description: "Portable, versatile equipment"),
-        ChipOption(value: "dumbbells only", displayText: "Dumbbells only", description: "Adjustable or fixed weight dumbbells"),
-        ChipOption.customInput
-    ]
-    
-    /// Previous experience options - helps calibrate expectations
-    static let experienceOptions: [ChipOption] = [
-        ChipOption(value: "complete beginner", displayText: "Complete beginner", description: "Never exercised regularly before"),
-        ChipOption(value: "used to be active", displayText: "Used to be active", description: "Was fit in the past, returning to fitness"),
-        ChipOption(value: "some experience", displayText: "Some experience", description: "Occasional workouts, basic knowledge"),
-        ChipOption(value: "former athlete", displayText: "Former athlete", description: "Competitive sports background"),
-        ChipOption(value: "gym regular", displayText: "Gym regular", description: "Consistent gym-goer for months/years"),
-        ChipOption(value: "personal trainer", displayText: "Personal trainer background", description: "Professional fitness knowledge"),
-        ChipOption.customInput
-    ]
-    
-    /// Exercise preference options - for enjoyment and adherence
-    static let preferencesOptions: [ChipOption] = [
-        ChipOption(value: "love cardio", displayText: "Love cardio", description: "Running, cycling, high-energy workouts"),
-        ChipOption(value: "prefer strength training", displayText: "Prefer strength training", description: "Weight lifting, resistance exercises"),
-        ChipOption(value: "enjoy yoga/stretching", displayText: "Enjoy yoga/stretching", description: "Flexibility and mindfulness focus"),
-        ChipOption(value: "like variety", displayText: "Like variety", description: "Mix of different exercise types"),
-        ChipOption(value: "hate running", displayText: "Hate running", description: "Avoid traditional cardio activities"),
-        ChipOption(value: "no gym intimidation", displayText: "Gym intimidation", description: "Prefer home or outdoor workouts"),
-        ChipOption(value: "team sports", displayText: "Team sports", description: "Social, competitive activities"),
-        ChipOption(value: "solo workouts", displayText: "Solo workouts", description: "Independent, self-motivated training"),
-        ChipOption.customInput
-    ]
-    
     // MARK: - Chip Factory Methods
     
-    /// Create a default ChipData instance for any chip type
+    /// Create a default ChipData instance for any essential chip type
     static func createChipData(for chipType: ChipType) -> ChipData {
         let options = getOptions(for: chipType)
         return ChipData(type: chipType, options: options)
     }
     
-    /// Get all available options for a specific chip type
+    /// Get all available options for a specific essential chip type
     static func getOptions(for chipType: ChipType) -> [ChipOption] {
         switch chipType {
-        // Universal chips
         case .fitnessLevel:
             return fitnessLevelOptions
         case .sex:
@@ -154,24 +84,10 @@ struct ChipConfiguration {
             return workoutLocationOptions
         case .weeklyFrequency:
             return weeklyFrequencyOptions
-            
-        // Contextual chips
-        case .timeline:
-            return timelineOptions
-        case .limitations:
-            return limitationsOptions
-        case .schedule:
-            return scheduleOptions
-        case .equipment:
-            return equipmentOptions
-        case .experience:
-            return experienceOptions
-        case .preferences:
-            return preferencesOptions
         }
     }
     
-    /// Get the default/recommended option for a chip type
+    /// Get the default/recommended option for an essential chip type
     static func getDefaultOption(for chipType: ChipType) -> ChipOption? {
         switch chipType {
         case .fitnessLevel:
@@ -182,8 +98,6 @@ struct ChipConfiguration {
             return workoutLocationOptions.first { $0.value == "at home" }
         case .weeklyFrequency:
             return weeklyFrequencyOptions.first { $0.value == "3 days" }
-        case .timeline:
-            return timelineOptions.first { $0.value == "2 weeks" } // Emphasize Fit14's philosophy
         default:
             return getOptions(for: chipType).first
         }
@@ -191,7 +105,7 @@ struct ChipConfiguration {
     
     // MARK: - Complete Chip Set Factory
     
-    /// Create a complete set of all chips with default configurations
+    /// Create a complete set of all essential chips with default configurations
     static func createAllChips() -> [ChipType: ChipData] {
         var chips: [ChipType: ChipData] = [:]
         
@@ -202,11 +116,11 @@ struct ChipConfiguration {
         return chips
     }
     
-    /// Create only universal chips (always visible)
-    static func createUniversalChips() -> [ChipType: ChipData] {
+    /// Create essential chips (all chips are essential now)
+    static func createEssentialChips() -> [ChipType: ChipData] {
         var chips: [ChipType: ChipData] = [:]
         
-        for chipType in ChipType.universalTypes {
+        for chipType in ChipType.essentialTypes {
             var chipData = createChipData(for: chipType)
             chipData.isVisible = true
             chips[chipType] = chipData
@@ -236,7 +150,7 @@ struct ChipConfiguration {
                 errors.append(contentsOf: validateTimeValue(selection.customValue ?? ""))
             }
         default:
-            break // Most chips don't need special validation
+            break // Most essential chips don't need special validation
         }
         
         return ValidationResult(isValid: errors.isEmpty, errors: errors)
@@ -272,7 +186,7 @@ struct ChipConfiguration {
     
     // MARK: - Display Configuration
     
-    /// Get display configuration for chip types
+    /// Get display configuration for essential chip types
     static func getDisplayConfig(for chipType: ChipType) -> ChipDisplayConfig {
         switch chipType {
         case .fitnessLevel:
@@ -280,65 +194,87 @@ struct ChipConfiguration {
                 showInCompactMode: true,
                 allowMultipleSelection: false,
                 sortOrder: 1,
-                animationDelay: 0.0
+                animationDelay: 0.0,
+                requiresAttention: true  // Critical for safety
             )
         case .timeAvailable:
             return ChipDisplayConfig(
                 showInCompactMode: true,
                 allowMultipleSelection: false,
                 sortOrder: 2,
-                animationDelay: 0.1
+                animationDelay: 0.1,
+                requiresAttention: true  // Critical for planning
             )
-        case .timeline:
+        case .sex:
             return ChipDisplayConfig(
-                showInCompactMode: false,
+                showInCompactMode: true,
                 allowMultipleSelection: false,
-                sortOrder: 10,
-                animationDelay: 0.3,
-                highlightRecommended: true
+                sortOrder: 3,
+                animationDelay: 0.15
             )
-        case .limitations:
+        case .workoutLocation:
             return ChipDisplayConfig(
-                showInCompactMode: false,
-                allowMultipleSelection: true,
-                sortOrder: 15,
-                animationDelay: 0.2,
-                requiresAttention: true
-            )
-        default:
-            return ChipDisplayConfig(
-                showInCompactMode: false,
+                showInCompactMode: true,
                 allowMultipleSelection: false,
-                sortOrder: chipType.importance.rawValue,
+                sortOrder: 4,
                 animationDelay: 0.2
+            )
+        case .physicalStats:
+            return ChipDisplayConfig(
+                showInCompactMode: false,
+                allowMultipleSelection: false,
+                sortOrder: 5,
+                animationDelay: 0.25
+            )
+        case .weeklyFrequency:
+            return ChipDisplayConfig(
+                showInCompactMode: false,
+                allowMultipleSelection: false,
+                sortOrder: 6,
+                animationDelay: 0.3
             )
         }
     }
     
     // MARK: - Smart Defaults
     
-    /// Get smart default selections based on common patterns
+    /// Get smart default selections based on common patterns in goal text
     static func getSmartDefaults(for text: String) -> [ChipType: ChipOption] {
         var defaults: [ChipType: ChipOption] = [:]
         let lowercasedText = text.lowercased()
         
-        // Timeline smart defaults
-        if lowercasedText.contains("2 weeks") || lowercasedText.contains("quickly") {
-            defaults[.timeline] = timelineOptions.first { $0.value == "2 weeks" }
-        }
-        
         // Fitness level smart defaults
-        if lowercasedText.contains("beginner") || lowercasedText.contains("new to") {
+        if lowercasedText.contains("beginner") || lowercasedText.contains("new to") || lowercasedText.contains("never") {
             defaults[.fitnessLevel] = fitnessLevelOptions.first { $0.value == "beginner" }
-        } else if lowercasedText.contains("experienced") || lowercasedText.contains("advanced") {
+        } else if lowercasedText.contains("experienced") || lowercasedText.contains("advanced") || lowercasedText.contains("athlete") {
             defaults[.fitnessLevel] = fitnessLevelOptions.first { $0.value == "advanced" }
+        } else if lowercasedText.contains("regular") || lowercasedText.contains("intermediate") {
+            defaults[.fitnessLevel] = fitnessLevelOptions.first { $0.value == "intermediate" }
         }
         
         // Location smart defaults
-        if lowercasedText.contains("home") || lowercasedText.contains("no gym") {
+        if lowercasedText.contains("home") || lowercasedText.contains("no gym") || lowercasedText.contains("apartment") {
             defaults[.workoutLocation] = workoutLocationOptions.first { $0.value == "at home" }
-        } else if lowercasedText.contains("gym") {
+        } else if lowercasedText.contains("gym") || lowercasedText.contains("fitness center") {
             defaults[.workoutLocation] = workoutLocationOptions.first { $0.value == "at the gym" }
+        } else if lowercasedText.contains("outdoor") || lowercasedText.contains("running") || lowercasedText.contains("hiking") {
+            defaults[.workoutLocation] = workoutLocationOptions.first { $0.value == "outdoors" }
+        }
+        
+        // Time availability smart defaults
+        if lowercasedText.contains("quick") || lowercasedText.contains("15") || lowercasedText.contains("20") {
+            defaults[.timeAvailable] = timeAvailableOptions.first { $0.value == "15-30 minutes" }
+        } else if lowercasedText.contains("45") || lowercasedText.contains("hour") {
+            defaults[.timeAvailable] = timeAvailableOptions.first { $0.value == "45-60 minutes" }
+        } else if lowercasedText.contains("30") {
+            defaults[.timeAvailable] = timeAvailableOptions.first { $0.value == "30-45 minutes" }
+        }
+        
+        // Frequency smart defaults
+        if lowercasedText.contains("every day") || lowercasedText.contains("daily") {
+            defaults[.weeklyFrequency] = weeklyFrequencyOptions.first { $0.value == "6+ days" }
+        } else if lowercasedText.contains("3 times") || lowercasedText.contains("three times") {
+            defaults[.weeklyFrequency] = weeklyFrequencyOptions.first { $0.value == "3 days" }
         }
         
         return defaults
@@ -362,16 +298,34 @@ struct ChipConfiguration {
                 "displayConfig": [
                     "showInCompactMode": displayConfig.showInCompactMode,
                     "allowMultipleSelection": displayConfig.allowMultipleSelection,
-                    "sortOrder": displayConfig.sortOrder
+                    "sortOrder": displayConfig.sortOrder,
+                    "requiresAttention": displayConfig.requiresAttention
                 ]
             ]
         }
         
         return ChipConfigurationExport(
-            version: "1.0",
+            version: "2.0",
             generatedAt: Date(),
             chipConfigurations: chipConfigs
         )
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Check if a chip type requires immediate attention
+    static func requiresImmediateAttention(_ chipType: ChipType) -> Bool {
+        return chipType.importance == .critical
+    }
+    
+    /// Get minimum required chips for AI generation
+    static func getMinimumRequiredChips() -> [ChipType] {
+        return ChipType.criticalTypes
+    }
+    
+    /// Get all essential chip types in recommended order
+    static func getRecommendedOrder() -> [ChipType] {
+        return ChipType.sortedByImportance
     }
 }
 

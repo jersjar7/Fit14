@@ -59,7 +59,7 @@ struct ChipSelectionOption: Identifiable, Equatable {
 
 // MARK: - Essential Chip Assistant
 
-/// Manages the state and logic for essential information chips in goal input
+/// Manages the state and logic for the 6 essential information chips required for workout planning
 class EssentialChipAssistant: ObservableObject {
     
     // MARK: - Published Properties
@@ -78,7 +78,7 @@ class EssentialChipAssistant: ObservableObject {
         chips.filter { $0.isCompleted }.count
     }
     
-    /// Total number of essential chips
+    /// Total number of essential chips (always 6)
     var totalCount: Int {
         chips.count
     }
@@ -97,13 +97,18 @@ class EssentialChipAssistant: ObservableObject {
     /// Get chips sorted by importance and completion status
     var sortedChips: [EssentialChip] {
         chips.sorted { first, second in
-            // Completed chips go to bottom
+            // Incomplete chips go to top for better UX
             if first.isCompleted != second.isCompleted {
                 return !first.isCompleted
             }
-            // Sort by chip type importance
+            // Sort by chip type importance (critical first)
             return first.type.importance.rawValue > second.type.importance.rawValue
         }
+    }
+    
+    /// Get only critical essential chips that need immediate attention
+    var criticalChips: [EssentialChip] {
+        chips.filter { $0.type.importance == .critical && !$0.isCompleted }
     }
     
     // MARK: - Initialization
@@ -129,7 +134,7 @@ class EssentialChipAssistant: ObservableObject {
         // Update the goal text with the completed phrase
         updateGoalTextWithCompletion(for: chips[index])
         
-        print("✅ Completed chip: \(type.displayTitle) -> \(selectedOption.displayText)")
+        print("✅ Completed essential chip: \(type.displayTitle) -> \(selectedOption.displayText)")
     }
     
     /// Reset a chip to uncompleted state
@@ -146,7 +151,7 @@ class EssentialChipAssistant: ObservableObject {
         chips[index].selectedOption = nil
         chips[index].isCompleted = false
         
-        print("🔄 Reset chip: \(type.displayTitle)")
+        print("🔄 Reset essential chip: \(type.displayTitle)")
     }
     
     /// Insert prompt text for a chip into the goal text
@@ -167,7 +172,7 @@ class EssentialChipAssistant: ObservableObject {
             goalText = trimmed + separator + insertion
         }
         
-        print("➕ Inserted placeholder for: \(type.displayTitle)")
+        print("➕ Inserted placeholder for essential chip: \(type.displayTitle)")
     }
     
     /// Get available options for inline selection
@@ -180,7 +185,7 @@ class EssentialChipAssistant: ObservableObject {
         goalText = newText
     }
     
-    /// Reset all chips and clear goal text
+    /// Reset all essential chips and clear goal text
     func reset() {
         for index in chips.indices {
             chips[index].isCompleted = false
@@ -190,9 +195,23 @@ class EssentialChipAssistant: ObservableObject {
         print("🔄 Reset all essential chips")
     }
     
+    /// Check if minimum essential information is provided for AI generation
+    var hasMinimumInformation: Bool {
+        // At least one critical chip must be completed
+        let criticalCompleted = chips.filter { $0.type.importance == .critical && $0.isCompleted }.count
+        return criticalCompleted >= 1 && !goalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
+    /// Check if optimal information is provided for best AI results
+    var hasOptimalInformation: Bool {
+        let criticalCompleted = chips.filter { $0.type.importance == .critical && $0.isCompleted }.count
+        let highCompleted = chips.filter { $0.type.importance == .high && $0.isCompleted }.count
+        return criticalCompleted >= 2 && highCompleted >= 1
+    }
+    
     // MARK: - Private Methods
     
-    /// Set up the essential chips with their options
+    /// Set up the 6 essential chips with their options
     private func setupEssentialChips() {
         chips = [
             // Fitness Level (Critical)
@@ -280,7 +299,7 @@ class EssentialChipAssistant: ObservableObject {
             )
         ]
         
-        print("🎯 Initialized \(chips.count) essential chips")
+        print("🎯 Initialized \(chips.count) essential information chips")
     }
     
     /// Update the goal text with a completed chip phrase
@@ -333,13 +352,15 @@ class EssentialChipAssistant: ObservableObject {
     func getDebugInfo() -> String {
         return """
         Essential Chip Assistant Debug:
-        - Total chips: \(totalCount)
+        - Total essential chips: \(totalCount)
         - Completed: \(completedCount)
         - Completion: \(Int(completionPercentage * 100))%
+        - Has minimum info: \(hasMinimumInformation)
+        - Has optimal info: \(hasOptimalInformation)
         - Goal text length: \(goalText.count)
         
-        Chip States:
-        \(chips.map { "- \($0.title): \($0.isCompleted ? "✅" : "❌") \($0.selectedOption?.displayText ?? "none")" }.joined(separator: "\n"))
+        Essential Chip States:
+        \(chips.map { "- \($0.title) (\($0.type.importance.displayName)): \($0.isCompleted ? "✅" : "❌") \($0.selectedOption?.displayText ?? "none")" }.joined(separator: "\n"))
         """
     }
 }

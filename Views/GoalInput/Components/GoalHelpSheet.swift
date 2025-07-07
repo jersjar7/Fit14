@@ -12,7 +12,7 @@ import SwiftUI
 enum HelpSection: String, CaseIterable, Identifiable {
     case twoWeekPhilosophy = "two_week_philosophy"
     case writingEffectiveGoals = "writing_effective_goals"
-    case usingSmartChips = "using_smart_chips"
+    case usingEssentialChips = "using_essential_chips"
     case aiGenerationTips = "ai_generation_tips"
     case exampleGoals = "example_goals"
     case troubleshooting = "troubleshooting"
@@ -25,8 +25,8 @@ enum HelpSection: String, CaseIterable, Identifiable {
             return "Why 2 Weeks?"
         case .writingEffectiveGoals:
             return "Writing Effective Goals"
-        case .usingSmartChips:
-            return "Using Smart Chips"
+        case .usingEssentialChips:
+            return "Essential Information"
         case .aiGenerationTips:
             return "Better AI Results"
         case .exampleGoals:
@@ -42,8 +42,8 @@ enum HelpSection: String, CaseIterable, Identifiable {
             return "calendar.badge.clock"
         case .writingEffectiveGoals:
             return "pencil.and.outline"
-        case .usingSmartChips:
-            return "sparkles"
+        case .usingEssentialChips:
+            return "star.fill"
         case .aiGenerationTips:
             return "brain.head.profile"
         case .exampleGoals:
@@ -59,10 +59,10 @@ enum HelpSection: String, CaseIterable, Identifiable {
             return Color.blue
         case .writingEffectiveGoals:
             return Color.green
-        case .usingSmartChips:
-            return Color.purple
-        case .aiGenerationTips:
+        case .usingEssentialChips:
             return Color.orange
+        case .aiGenerationTips:
+            return Color.purple
         case .exampleGoals:
             return Color.yellow
         case .troubleshooting:
@@ -250,21 +250,21 @@ struct GoalHelpSheet: View {
                 quickTipRow(
                     icon: "1.circle.fill",
                     title: "Start with your main goal",
-                    subtitle: "\"I want to lose 5 pounds\" or \"Build upper body strength\"",
+                    subtitle: "\"Beat my 5K PR of 25 minutes\" or \"Do my first pull-up\"",
                     color: Color.blue
                 )
                 
                 quickTipRow(
                     icon: "2.circle.fill",
-                    title: "Add your details",
-                    subtitle: "Use the smart chips that appear as you type",
+                    title: "Add essential details",
+                    subtitle: "Fill in the orange chips for personalized planning",
                     color: Color.green
                 )
                 
                 quickTipRow(
                     icon: "3.circle.fill",
-                    title: "Review & customize",
-                    subtitle: "Perfect your AI-generated plan before starting",
+                    title: "Include any constraints",
+                    subtitle: "Mention injuries, equipment, or schedule naturally in your text",
                     color: Color.purple
                 )
             }
@@ -358,9 +358,9 @@ struct GoalHelpSheet: View {
                 )
                 
                 featureRow(
-                    icon: "sparkles",
-                    title: "Smart Suggestions",
-                    description: "Contextual chips help you provide complete information for better results"
+                    icon: "target",
+                    title: "Versatile Goal Support",
+                    description: "From PRs to skill building, our AI handles any fitness challenge"
                 )
             }
         }
@@ -415,8 +415,8 @@ struct GoalHelpSheet: View {
             twoWeekPhilosophyContent
         case .writingEffectiveGoals:
             writingEffectiveGoalsContent
-        case .usingSmartChips:
-            usingSmartChipsContent
+        case .usingEssentialChips:
+            usingEssentialChipsContent
         case .aiGenerationTips:
             aiGenerationTipsContent
         case .exampleGoals:
@@ -493,25 +493,64 @@ struct GoalHelpSheet: View {
                 .foregroundColor(Color.secondary)
             
             goalWritingTip(
-                title: "Be Specific",
-                good: "Lose 5 pounds in 2 weeks",
-                bad: "Get fit",
-                explanation: "Specific goals help the AI create targeted workouts"
+                title: "Be Specific About Outcomes",
+                good: "Improve my deadlift PR from 185 to 205 pounds",
+                bad: "Get stronger",
+                explanation: "Specific targets help the AI create progressive training"
             )
             
             goalWritingTip(
-                title: "Include Timeline",
-                good: "Build strength for hiking in 2 weeks",
-                bad: "Get stronger eventually",
-                explanation: "Clear timelines enable proper progression planning"
+                title: "Include Performance Goals",
+                good: "Run a 5K in under 24 minutes (current best is 26:30)",
+                bad: "Run faster",
+                explanation: "Current baseline enables proper pacing and progression"
             )
             
             goalWritingTip(
-                title: "Mention Constraints",
-                good: "Gain muscle working out at home 30 minutes daily",
-                bad: "Build muscle",
-                explanation: "Constraints help create realistic, achievable plans"
+                title: "Mention Natural Constraints",
+                good: "Build core strength while avoiding exercises that hurt my lower back",
+                bad: "Work on abs",
+                explanation: "Constraints help create safe, appropriate workouts"
             )
+            
+            // Add section about natural information inclusion
+            VStack(alignment: .leading, spacing: 12) {
+                Text("💡 Pro Tip: Include Details Naturally")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.green)
+                
+                Text("Feel free to mention injuries, equipment preferences, or schedule constraints directly in your goal text. Our AI understands natural language and will incorporate these details into your plan.")
+                    .font(.caption)
+                    .foregroundColor(Color.secondary)
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    naturalDetailExample("Equipment: \"using only resistance bands and bodyweight\"")
+                    naturalDetailExample("Injuries: \"while being careful with my shoulder injury\"")
+                    naturalDetailExample("Schedule: \"working around my busy weekday mornings\"")
+                    naturalDetailExample("Preferences: \"avoiding high-impact exercises\"")
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.green.opacity(0.05))
+            )
+        }
+    }
+    
+    private func naturalDetailExample(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(Color.green)
+                .font(.caption)
+            
+            Text(text)
+                .font(.caption)
+                .foregroundColor(Color.secondary)
+                .italic()
+            
+            Spacer()
         }
     }
     
@@ -566,41 +605,35 @@ struct GoalHelpSheet: View {
         )
     }
     
-    private var usingSmartChipsContent: some View {
+    private var usingEssentialChipsContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Using Smart Chips", icon: "sparkles", color: Color.purple)
+            sectionHeader("Essential Information", icon: "star.fill", color: Color.orange)
             
-            Text("Smart chips help you provide complete information without overwhelming forms:")
+            Text("Essential chips collect the core information needed for any workout plan:")
                 .font(.subheadline)
                 .foregroundColor(Color.secondary)
             
             chipExplanation(
                 category: "Essential Information",
-                description: "Always visible chips for critical planning data",
-                chips: ["Fitness Level", "Time Available", "Workout Location"],
+                description: "Critical data for safe and effective workout planning",
+                chips: ["Fitness Level", "Time Available", "Workout Location", "Height & Weight"],
                 color: Color.orange
             )
             
-            chipExplanation(
-                category: "Smart Suggestions",
-                description: "Appear based on keywords in your goal text",
-                chips: ["Timeline", "Limitations", "Equipment"],
-                color: Color.blue
-            )
-            
             VStack(alignment: .leading, spacing: 8) {
-                Text("Pro Tips")
+                Text("Why These Matter")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
-                tipRow("Type naturally - relevant chips will appear automatically")
-                tipRow("Fill in critical chips (marked with *) for best results")
-                tipRow("Use custom input for specific needs not covered by options")
+                tipRow("Fitness Level: Ensures appropriate exercise difficulty and progression")
+                tipRow("Time Available: Creates realistic workouts that fit your schedule")
+                tipRow("Location: Determines available equipment and space considerations")
+                tipRow("Body Stats: Helps with calorie calculations and exercise modifications")
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.purple.opacity(0.05))
+                    .fill(Color.orange.opacity(0.05))
             )
         }
     }
@@ -608,7 +641,7 @@ struct GoalHelpSheet: View {
     private func chipExplanation(category: String, description: String, chips: [String], color: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Image(systemName: category == "Essential Information" ? "star.fill" : "sparkles")
+                Image(systemName: "star.fill")
                     .foregroundColor(color)
                 Text(category)
                     .font(.subheadline)
@@ -643,29 +676,29 @@ struct GoalHelpSheet: View {
     
     private var aiGenerationTipsContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Better AI Results", icon: "brain.head.profile", color: Color.orange)
+            sectionHeader("Better AI Results", icon: "brain.head.profile", color: Color.purple)
             
             aiTip(
-                title: "Include Numbers",
-                description: "\"Lose 10 pounds\" or \"Work out 4 times per week\"",
+                title: "Include Current Numbers",
+                description: "\"My current 5K time is 28 minutes\" or \"I can bench press 135 pounds\"",
                 icon: "number"
             )
             
             aiTip(
-                title: "Mention Experience",
-                description: "\"I'm a beginner\" or \"Former athlete getting back in shape\"",
+                title: "Mention Experience Level",
+                description: "\"I'm returning to fitness after 2 years off\" or \"Former college athlete\"",
                 icon: "person.fill"
             )
             
             aiTip(
-                title: "Specify Equipment",
-                description: "\"Home gym with dumbbells\" or \"Bodyweight only\"",
+                title: "Specify Equipment Access",
+                description: "\"I have a home gym with dumbbells up to 50lbs\" or \"Bodyweight only\"",
                 icon: "dumbbell"
             )
             
             aiTip(
-                title: "Note Limitations",
-                description: "\"Bad knee\" or \"No running due to ankle injury\"",
+                title: "Note Physical Considerations",
+                description: "\"Avoiding overhead movements due to shoulder impingement\"",
                 icon: "exclamationmark.triangle"
             )
         }
@@ -675,7 +708,7 @@ struct GoalHelpSheet: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundColor(Color.orange)
+                .foregroundColor(Color.purple)
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 2) {
@@ -693,13 +726,17 @@ struct GoalHelpSheet: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.orange.opacity(0.05))
+                .fill(Color.purple.opacity(0.05))
         )
     }
     
     private var exampleGoalsContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Goal Examples", icon: "lightbulb", color: Color.yellow)
+            
+            Text("Our AI can handle any fitness goal - from specific PRs to skill development:")
+                .font(.subheadline)
+                .foregroundColor(Color.secondary)
             
             ForEach(goalExamples, id: \.category) { example in
                 goalExampleCard(example)
@@ -760,18 +797,18 @@ struct GoalHelpSheet: View {
             )
             
             troubleshootingItem(
-                problem: "No smart chips appearing",
-                solution: "Add more details about your specific goals and constraints"
-            )
-            
-            troubleshootingItem(
                 problem: "Plan doesn't match my goals",
-                solution: "Review your goal description and update chip selections before regenerating"
+                solution: "Review your goal description and essential chip selections before regenerating"
             )
             
             troubleshootingItem(
                 problem: "Exercises too difficult/easy",
                 solution: "Adjust your fitness level selection and regenerate the plan"
+            )
+            
+            troubleshootingItem(
+                problem: "Missing equipment considerations",
+                solution: "Mention your available equipment directly in your goal text"
             )
         }
     }
@@ -842,30 +879,110 @@ struct GoalHelpSheet: View {
     private var goalExamples: [GoalExample] {
         [
             GoalExample(
-                category: "Weight Loss",
-                good: "Lose 8 pounds in 2 weeks through cardio and strength training at home",
-                bad: "Lose weight",
-                explanation: "Specific target, timeline, and method preferences help create targeted workouts"
-            ),
-            GoalExample(
-                category: "Strength Building",
-                good: "Build upper body strength for rock climbing, working out 45 minutes 4x per week",
+                category: "Personal Records",
+                good: "Beat my squat PR of 185 pounds and hit 200 pounds in two weeks",
                 bad: "Get stronger",
-                explanation: "Goal purpose, time commitment, and frequency enable proper progression planning"
+                explanation: "Specific current PR and target gives the AI exact progression to plan for"
             ),
             GoalExample(
-                category: "Endurance",
-                good: "Prepare for 5K run in 2 weeks, currently can jog 1 mile without stopping",
-                bad: "Run better",
-                explanation: "Specific event, timeline, and current ability level help calibrate training intensity"
+                category: "Skill Development",
+                good: "Do my first unassisted pull-up (currently can do negatives for 8 seconds)",
+                bad: "Learn pull-ups",
+                explanation: "Current ability level helps create appropriate progressions"
             ),
             GoalExample(
-                category: "Recovery",
-                good: "Return to fitness after knee surgery, focusing on low-impact exercises",
-                bad: "Exercise again",
-                explanation: "Medical context and exercise restrictions ensure safe, appropriate workouts"
+                category: "Sport Performance",
+                good: "Improve my tennis serve power and prepare for upcoming tournament",
+                bad: "Get better at tennis",
+                explanation: "Sport-specific goals enable targeted movement patterns and training"
+            ),
+            GoalExample(
+                category: "Recovery & Rehabilitation",
+                good: "Strengthen my glutes and core to help with my chronic lower back pain",
+                bad: "Fix my back",
+                explanation: "Specific muscle targets and health context create appropriate therapeutic exercise"
+            ),
+            GoalExample(
+                category: "Endurance Goals",
+                good: "Cut 2 minutes off my current 10K time of 52 minutes using interval training",
+                bad: "Run faster",
+                explanation: "Current time, target improvement, and preferred method guide training approach"
+            ),
+            GoalExample(
+                category: "Functional Fitness",
+                good: "Build the strength and mobility to keep up with my toddler at the playground",
+                bad: "Get in shape for parenting",
+                explanation: "Real-world application helps create functional movement patterns"
             )
         ]
+    }
+}
+
+// MARK: - Flow Layout Helper (if not already defined elsewhere)
+
+struct FlowLayout: Layout {
+    let spacing: CGFloat
+    
+    init(spacing: CGFloat = 8) {
+        self.spacing = spacing
+    }
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(
+            in: proposal.replacingUnspecifiedDimensions().width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(
+            in: proposal.replacingUnspecifiedDimensions().width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: result.frames[index].origin, proposal: .unspecified)
+        }
+    }
+    
+    struct FlowResult {
+        var frames: [CGRect] = []
+        var size: CGSize
+        
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var currentX: CGFloat = 0
+            var currentY: CGFloat = 0
+            var lineHeight: CGFloat = 0
+            
+            for subview in subviews {
+                let subviewSize = subview.sizeThatFits(.unspecified)
+                
+                if currentX + subviewSize.width > maxWidth && currentX > 0 {
+                    // Move to next line
+                    currentX = 0
+                    currentY += lineHeight + spacing
+                    lineHeight = 0
+                }
+                
+                frames.append(CGRect(
+                    x: currentX,
+                    y: currentY,
+                    width: subviewSize.width,
+                    height: subviewSize.height
+                ))
+                
+                currentX += subviewSize.width + spacing
+                lineHeight = max(lineHeight, subviewSize.height)
+            }
+            
+            size = CGSize(
+                width: maxWidth,
+                height: currentY + lineHeight
+            )
+        }
     }
 }
 
@@ -880,7 +997,7 @@ struct GoalHelpSheet: View {
 #Preview("Help with Goal Data") {
     let sampleGoalData = {
         var data = UserGoalData()
-        data.updateFreeFormText("I want to lose 5 pounds in 2 weeks")
+        data.updateFreeFormText("I want to beat my deadlift PR of 225 pounds")
         return data
     }()
     

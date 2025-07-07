@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
-//  Enhanced with smart chip system and real-time analysis
+//  Enhanced with essential information chip system
 //
 
 import SwiftUI
@@ -11,13 +11,12 @@ import SwiftUI
 struct GoalInputView: View {
     @EnvironmentObject var viewModel: WorkoutPlanViewModel
     
-    // MARK: - Smart Chip System State
+    // MARK: - Essential Chip System State
     @StateObject private var analysisService = GoalAnalysisService()
     @StateObject private var chipAssistant = EssentialChipAssistant()
     
     // MARK: - UI State
     @State private var showingHelpSheet = false
-    @State private var hasUserInteracted = false
     @State private var showQualityIndicator = false
     
     // MARK: - Computed Properties
@@ -44,11 +43,6 @@ struct GoalInputView: View {
                     
                     // Essential Information Section (Always Show)
                     essentialInformationSection
-                    
-                    // Additional Chips Section (Show after user starts typing)
-                    if hasUserInteracted {
-                        additionalChipsSection
-                    }
                     
                     // Quality Guidance Section
                     if showQualityIndicator && qualityAssessment.overallScore < 0.8 {
@@ -165,43 +159,46 @@ struct GoalInputView: View {
                 minHeight: 120
             )
             .disabled(viewModel.isGenerating)
-            .onChange(of: chipAssistant.goalText) { _, newText in
-                // Trigger interaction state when user starts typing
-                if !newText.isEmpty && !hasUserInteracted {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        hasUserInteracted = true
-                    }
-                }
-            }
             
-            // Character count and analysis status
-            HStack {
-                if !chipAssistant.goalText.isEmpty {
-                    Text("\(chipAssistant.goalText.count) characters")
-                        .font(.caption2)
-                        .foregroundColor(Color.secondary)
-                }
-                
-                Spacer()
-                
-                // Real-time analysis indicator
-                if analysisService.isAnalyzing {
-                    HStack(spacing: 4) {
-                        ProgressView()
-                            .scaleEffect(0.6)
-                        Text("Analyzing...")
+            // Subtle hint text
+            VStack(alignment: .leading, spacing: 4) {
+                // Character count and analysis status
+                HStack {
+                    if !chipAssistant.goalText.isEmpty {
+                        Text("\(chipAssistant.goalText.count) characters")
                             .font(.caption2)
                             .foregroundColor(Color.secondary)
                     }
-                } else if !chipAssistant.goalText.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(Color.green)
-                            .font(.caption)
-                        Text("Ready")
-                            .font(.caption2)
-                            .foregroundColor(Color.green)
+                    
+                    Spacer()
+                    
+                    // Real-time analysis indicator
+                    if analysisService.isAnalyzing {
+                        HStack(spacing: 4) {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                            Text("Analyzing...")
+                                .font(.caption2)
+                                .foregroundColor(Color.secondary)
+                        }
+                    } else if !chipAssistant.goalText.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(Color.green)
+                                .font(.caption)
+                            Text("Ready")
+                                .font(.caption2)
+                                .foregroundColor(Color.green)
+                        }
                     }
+                }
+                
+                // Subtle hint text about additional information
+                if chipAssistant.goalText.isEmpty {
+                    Text("Feel free to mention any injuries, equipment preferences, or schedule constraints")
+                        .font(.caption)
+                        .foregroundColor(Color.secondary)
+                        .padding(.top, 4)
                 }
             }
         }
@@ -228,46 +225,23 @@ struct GoalInputView: View {
                 }
             }
             
-            if !hasUserInteracted {
-                Text("Tap the + buttons to add information to your goal")
+            // Completion Progress
+            HStack {
+                Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                    .italic()
-            } else {
-                // Completion Progress
-                HStack {
-                    Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    // Progress bar
-                    ProgressView(value: chipAssistant.completionPercentage)
-                        .frame(width: 60)
-                        .tint(.green)
-                }
+                
+                Spacer()
+                
+                // Progress bar
+                ProgressView(value: chipAssistant.completionPercentage)
+                    .frame(width: 60)
+                    .tint(.green)
             }
         }
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
-    }
-    
-    // MARK: - Additional Chips Section
-    
-    private var additionalChipsSection: some View {
-        ChipSelectorView(
-            userGoalData: .constant(viewModel.userGoalData),
-            layout: .adaptive,
-            style: .standard,
-            showSectionHeaders: true,
-            onSelectionChanged: { chipData in
-                handleChipSelection(chipData)
-            }
-        )
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: hasUserInteracted)
     }
     
     // MARK: - Interactive Chip Row Helper
@@ -440,7 +414,7 @@ struct GoalInputView: View {
             .animation(.easeInOut(duration: 0.2), value: canGeneratePlan)
             
             // Generation Requirements
-            if !canGeneratePlan && hasUserInteracted {
+            if !canGeneratePlan {
                 VStack(spacing: 4) {
                     HStack {
                         Image(systemName: "info.circle")
@@ -556,46 +530,10 @@ struct GoalInputView: View {
                 showQualityIndicator = true
             }
         }
-        
-        // Update chip visibility based on analysis
-        updateChipVisibility()
-    }
-    
-    private func handleChipSelection(_ chipData: ChipData) {
-        // Update ViewModel's goal data
-        viewModel.updateChipSelection(chipData)
-        
-        // Re-trigger analysis with updated data
-        Task {
-            await analysisService.forceAnalysis(for: chipAssistant.goalText, with: viewModel.userGoalData)
-        }
-        
-        // Haptic feedback for successful selection
-        let notificationFeedback = UINotificationFeedbackGenerator()
-        notificationFeedback.notificationOccurred(.success)
-    }
-    
-    private func updateChipVisibility() {
-        // Get suggested chip types from analysis
-        let suggestedTypes = viewModel.userGoalData.suggestedChipTypesByRelevance
-        
-        // Update contextual chip visibility
-        for chipType in ChipType.contextualTypes {
-            var chip = viewModel.userGoalData.getChip(chipType) ?? ChipConfiguration.createChipData(for: chipType)
-            
-            if suggestedTypes.contains(chipType) {
-                chip.isVisible = true
-            } else if !chip.isSelected {
-                chip.isVisible = false
-            }
-            
-            viewModel.updateChipSelection(chip)
-        }
     }
     
     private func resetForm() {
         chipAssistant.reset()
-        hasUserInteracted = false
         showQualityIndicator = false
         setupInitialState()
     }

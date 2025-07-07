@@ -3,6 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/6/25.
+//  Updated for essential chips only approach
 //
 
 import Foundation
@@ -38,7 +39,7 @@ struct ChipOption: Identifiable, Codable, Equatable {
 
 // MARK: - Chip Selection Model
 
-/// Represents a user's selection for a specific chip
+/// Represents a user's selection for a specific essential chip
 struct ChipSelection: Identifiable, Codable, Equatable {
     let id = UUID()
     let chipType: ChipType
@@ -90,40 +91,28 @@ struct ChipSelection: Identifiable, Codable, Equatable {
         case .workoutLocation:
             return "I'll be working out \(value)"
         case .weeklyFrequency:
-            return "I can work out \(value) per week"
-        case .timeline:
-            return "My timeline: \(value)"
-        case .limitations:
-            return "Limitations: \(value)"
-        case .schedule:
-            return "Schedule: \(value)"
-        case .equipment:
-            return "Equipment available: \(value)"
-        case .experience:
-            return "My experience: \(value)"
-        case .preferences:
-            return "My preferences: \(value)"
+            return "I can work out \(value)"
         }
     }
 }
 
 // MARK: - Chip Data Model
 
-/// Represents a chip in the UI with its current state and available options
+/// Represents an essential chip in the UI with its current state and available options
 struct ChipData: Identifiable, Codable, Equatable {
     let id = UUID()
     let type: ChipType
     let options: [ChipOption]
     var selection: ChipSelection?
-    var isVisible: Bool = false        // For contextual chips
+    var isVisible: Bool = true         // Essential chips are always visible
     var isHighlighted: Bool = false    // Visual emphasis
     
     init(type: ChipType, options: [ChipOption], selection: ChipSelection? = nil) {
         self.type = type
         self.options = options
         self.selection = selection
-        // Universal chips are always visible
-        self.isVisible = type.category == .universal
+        // Essential chips are always visible
+        self.isVisible = true
     }
     
     /// Convenience computed properties
@@ -148,20 +137,21 @@ struct ChipData: Identifiable, Codable, Equatable {
         self.selection = nil
     }
     
-    /// Show this chip (for contextual chips)
+    /// Show this chip (essential chips are always visible)
     mutating func show() {
         self.isVisible = true
     }
     
-    /// Hide this chip (for contextual chips)
+    /// Hide this chip (not applicable for essential chips)
     mutating func hide() {
-        self.isVisible = false
+        // Essential chips should always remain visible
+        self.isVisible = true
     }
 }
 
 // MARK: - User Goal Data Model
 
-/// Complete user goal data combining free-form text and structured chip selections
+/// Complete user goal data combining free-form text and essential chip selections
 struct UserGoalData: Codable, Equatable {
     var freeFormText: String = ""
     var chips: [ChipType: ChipData] = [:]
@@ -197,20 +187,20 @@ struct UserGoalData: Codable, Equatable {
         return chips.values.filter { $0.isSelected }
     }
     
-    /// Get all visible chips
+    /// Get all visible chips (all essential chips are visible)
     var visibleChips: [ChipData] {
         return chips.values.filter { $0.isVisible }
     }
     
     // MARK: - Data Quality
     
-    /// Calculate completeness score (0.0 to 1.0)
+    /// Calculate completeness score (0.0 to 1.0) based on essential chips
     var completenessScore: Double {
-        let totalUniversalChips = ChipType.allCases.filter { $0.category == .universal }.count
-        let selectedUniversalChips = chips.values.filter { $0.category == .universal && $0.isSelected }.count
+        let totalEssentialChips = ChipType.essentialTypes.count
+        let selectedEssentialChips = chips.values.filter { $0.category == .universal && $0.isSelected }.count
         
         let textScore = freeFormText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.0 : 0.3
-        let chipScore = totalUniversalChips > 0 ? Double(selectedUniversalChips) / Double(totalUniversalChips) * 0.7 : 0.0
+        let chipScore = totalEssentialChips > 0 ? Double(selectedEssentialChips) / Double(totalEssentialChips) * 0.7 : 0.0
         
         return min(1.0, textScore + chipScore)
     }
@@ -218,8 +208,8 @@ struct UserGoalData: Codable, Equatable {
     /// Whether the data is sufficient for AI generation
     var isSufficientForAI: Bool {
         let hasText = !freeFormText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasMinimumChips = selectedChips.count >= 2
-        return hasText && hasMinimumChips
+        let hasCriticalChips = chips.values.filter { $0.type.importance == .critical && $0.isSelected }.count >= 1
+        return hasText && hasCriticalChips
     }
     
     /// Get validation issues
@@ -240,7 +230,7 @@ struct UserGoalData: Codable, Equatable {
     
     // MARK: - Natural Language Conversion
     
-    /// Convert all chip selections to natural language
+    /// Convert all essential chip selections to natural language
     var chipSelectionsAsText: String {
         let phrases = selectedChips.compactMap { $0.selection?.naturalLanguagePhrase }
         return phrases.joined(separator: ". ")
@@ -277,52 +267,73 @@ struct UserGoalData: Codable, Equatable {
     
     // MARK: - Text Analysis Helpers
     
-    /// Update the free-form text and trigger analysis
+    /// Update the free-form text
     mutating func updateFreeFormText(_ text: String) {
         freeFormText = text
         lastModified = Date()
     }
     
-    /// Check if text contains any of the keywords for a chip type
-    func textContainsKeywords(for chipType: ChipType) -> Bool {
-        return chipType.shouldSuggest(for: freeFormText)
+    /// Get smart suggestions for essential chips based on text content
+    func getSmartSuggestions() -> [ChipType: ChipOption] {
+        return ChipConfiguration.getSmartDefaults(for: freeFormText)
     }
     
-    /// Get all chip types that should be suggested based on current text
-    var suggestedChipTypes: [ChipType] {
-        return ChipType.contextualTypes.filter { chipType in
-            !isChipSelected(chipType) && chipType.shouldSuggest(for: freeFormText)
+    /// Check if text mentions common fitness-related constraints that would be helpful for AI
+    var containsImportantConstraints: Bool {
+        let lowercaseText = freeFormText.lowercased()
+        let constraintKeywords = [
+            "injury", "injured", "pain", "hurt", "limitation", "can't", "cannot",
+            "equipment", "weights", "bands", "home", "gym", "outdoor",
+            "schedule", "busy", "morning", "evening", "weekend", "time",
+            "experience", "beginner", "advanced", "athlete", "never"
+        ]
+        
+        return constraintKeywords.contains { lowercaseText.contains($0) }
+    }
+    
+    /// Get a summary of what information is naturally mentioned in the goal text
+    var naturallyMentionedInfo: [String] {
+        var info: [String] = []
+        let lowercaseText = freeFormText.lowercased()
+        
+        if lowercaseText.contains("injury") || lowercaseText.contains("pain") || lowercaseText.contains("hurt") {
+            info.append("Physical limitations mentioned")
         }
-    }
-    
-    /// Get chip types sorted by relevance to current text
-    var suggestedChipTypesByRelevance: [ChipType] {
-        return ChipType.contextualTypes
-            .filter { !isChipSelected($0) }
-            .sortedByRelevance(for: freeFormText)
-            .filter { $0.relevanceScore(for: freeFormText) > 0.0 }
+        
+        if lowercaseText.contains("equipment") || lowercaseText.contains("weights") || lowercaseText.contains("bands") {
+            info.append("Equipment preferences specified")
+        }
+        
+        if lowercaseText.contains("schedule") || lowercaseText.contains("busy") || lowercaseText.contains("time") {
+            info.append("Schedule constraints noted")
+        }
+        
+        if lowercaseText.contains("experience") || lowercaseText.contains("beginner") || lowercaseText.contains("athlete") {
+            info.append("Experience level indicated")
+        }
+        
+        if lowercaseText.contains("week") || lowercaseText.contains("month") || lowercaseText.contains("day") {
+            info.append("Timeline specified")
+        }
+        
+        return info
     }
 }
 
 // MARK: - Extensions for Convenience
 
 extension Array where Element == ChipData {
-    /// Sort chips by category, importance, and selection status for optimal display
+    /// Sort chips by importance and selection status for optimal display
     var sortedForDisplay: [ChipData] {
         return self.sorted { first, second in
-            // Universal chips first
-            if first.category != second.category {
-                return first.category == .universal
-            }
-            
-            // Within same category, sort by importance
+            // Sort by importance first (critical chips first)
             if first.type.importance.rawValue != second.type.importance.rawValue {
                 return first.type.importance.rawValue > second.type.importance.rawValue
             }
             
-            // Selected chips before unselected
+            // Unselected chips before selected for better UX (user sees what needs attention)
             if first.isSelected != second.isSelected {
-                return first.isSelected
+                return !first.isSelected
             }
             
             // Finally by display title for consistency
@@ -330,7 +341,7 @@ extension Array where Element == ChipData {
         }
     }
     
-    /// Filter to only visible chips
+    /// Filter to only visible chips (all essential chips should be visible)
     var visibleChips: [ChipData] {
         return self.filter { $0.isVisible }
     }
@@ -340,7 +351,7 @@ extension Array where Element == ChipData {
         return self.filter { $0.isSelected }
     }
     
-    /// Filter by category
+    /// Filter by category (all chips are universal/essential now)
     func chips(in category: ChipCategory) -> [ChipData] {
         return self.filter { $0.category == category }
     }
@@ -348,5 +359,15 @@ extension Array where Element == ChipData {
     /// Filter by importance level
     func chips(withImportance importance: ChipImportance) -> [ChipData] {
         return self.filter { $0.type.importance == importance }
+    }
+    
+    /// Get critical chips that need immediate attention
+    var criticalChips: [ChipData] {
+        return self.filter { $0.type.importance == .critical }
+    }
+    
+    /// Get unselected critical chips
+    var unselectedCriticalChips: [ChipData] {
+        return self.filter { $0.type.importance == .critical && !$0.isSelected }
     }
 }

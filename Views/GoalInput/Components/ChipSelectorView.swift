@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created for GoalInputView Enhancement
-//  Container for multiple chips with layout and animation logic
+//  Container for essential information chips with layout and animation logic
 //
 
 import SwiftUI
@@ -69,24 +69,13 @@ struct ChipSelectorView: View {
     
     // MARK: - Computed Properties
     
-    private var universalChips: [ChipData] {
+    private var essentialChips: [ChipData] {
         let chips = userGoalData.chips.values.filter { $0.category == .universal }
         return Array(chips).sortedForDisplay
     }
     
-    private var contextualChips: [ChipData] {
-        let chips = userGoalData.chips.values.filter {
-            $0.category == .contextual && $0.isVisible
-        }
-        return Array(chips).sortedForDisplay
-    }
-    
-    private var hasVisibleContextualChips: Bool {
-        return !contextualChips.isEmpty
-    }
-    
     private var allVisibleChips: [ChipData] {
-        return universalChips + contextualChips
+        return essentialChips
     }
     
     // MARK: - Initialization
@@ -112,18 +101,8 @@ struct ChipSelectorView: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: layout.sectionSpacing, pinnedViews: []) {
-                // Universal Chips Section
-                universalChipsSection
-                
-                // Contextual Chips Section
-                if hasVisibleContextualChips {
-                    contextualChipsSection
-                }
-                
-                // Empty State for Contextual Chips
-                if !hasVisibleContextualChips && hasAppeared {
-                    emptyContextualState
-                }
+                // Essential Information Section
+                essentialInformationSection
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -134,9 +113,6 @@ struct ChipSelectorView: View {
             withAnimation(.easeInOut(duration: 0.5).delay(0.2)) {
                 hasAppeared = true
             }
-        }
-        .onChange(of: userGoalData.visibleChips) { _, newChips in
-            handleVisibilityChanges(newChips)
         }
         .sheet(isPresented: $showingOptionSheet) {
             if let chip = selectedChip {
@@ -153,9 +129,9 @@ struct ChipSelectorView: View {
         }
     }
     
-    // MARK: - Universal Chips Section
+    // MARK: - Essential Information Section
     
-    private var universalChipsSection: some View {
+    private var essentialInformationSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Section Header
             if showSectionHeaders {
@@ -168,67 +144,8 @@ struct ChipSelectorView: View {
             }
             
             // Chips Layout
-            chipLayout(for: universalChips, isContextual: false)
+            chipLayout(for: essentialChips)
         }
-    }
-    
-    // MARK: - Contextual Chips Section
-    
-    private var contextualChipsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section Header
-            if showSectionHeaders {
-                sectionHeader(
-                    title: "Smart Suggestions",
-                    subtitle: "Based on what you've written",
-                    icon: "sparkles",
-                    color: Color.blue
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-            
-            // Chips Layout
-            chipLayout(for: contextualChips, isContextual: true)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-        }
-        .animation(
-            .spring(response: animationConfig.springResponse, dampingFraction: animationConfig.springDamping),
-            value: contextualChips.count
-        )
-    }
-    
-    // MARK: - Empty State
-    
-    private var emptyContextualState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "lightbulb")
-                .font(.title2)
-                .foregroundColor(Color.gray)
-            
-            VStack(spacing: 4) {
-                Text("Smart suggestions will appear here")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(Color.primary)
-                
-                Text("Keep typing to get personalized recommendations")
-                    .font(.caption)
-                    .foregroundColor(Color.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .padding(.vertical, 20)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .stroke(Color(.systemGray5), lineWidth: 1)
-        )
-        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-        .animation(
-            .spring(response: 0.5, dampingFraction: 0.8).delay(0.3),
-            value: hasAppeared
-        )
     }
     
     // MARK: - Layout Components
@@ -256,22 +173,22 @@ struct ChipSelectorView: View {
         .padding(.horizontal, 4)
     }
     
-    private func chipLayout(for chips: [ChipData], isContextual: Bool) -> some View {
+    private func chipLayout(for chips: [ChipData]) -> some View {
         Group {
             switch layout {
             case .adaptive:
-                adaptiveGridLayout(chips: chips, isContextual: isContextual)
+                adaptiveGridLayout(chips: chips)
             case .flowing:
-                flowingLayout(chips: chips, isContextual: isContextual)
+                flowingLayout(chips: chips)
             case .stacked:
-                stackedLayout(chips: chips, isContextual: isContextual)
+                stackedLayout(chips: chips)
             case .compact:
-                compactLayout(chips: chips, isContextual: isContextual)
+                compactLayout(chips: chips)
             }
         }
     }
     
-    private func adaptiveGridLayout(chips: [ChipData], isContextual: Bool) -> some View {
+    private func adaptiveGridLayout(chips: [ChipData]) -> some View {
         LazyVGrid(
             columns: [
                 GridItem(.adaptive(minimum: 140), spacing: layout.spacing)
@@ -279,29 +196,29 @@ struct ChipSelectorView: View {
             spacing: layout.spacing
         ) {
             ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index, isContextual: isContextual)
+                chipView(for: chip, index: index)
             }
         }
     }
     
-    private func flowingLayout(chips: [ChipData], isContextual: Bool) -> some View {
+    private func flowingLayout(chips: [ChipData]) -> some View {
         FlowLayout(spacing: layout.spacing) {
             ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index, isContextual: isContextual)
+                chipView(for: chip, index: index)
             }
         }
     }
     
-    private func stackedLayout(chips: [ChipData], isContextual: Bool) -> some View {
+    private func stackedLayout(chips: [ChipData]) -> some View {
         VStack(spacing: layout.spacing) {
             ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index, isContextual: isContextual)
+                chipView(for: chip, index: index)
                     .frame(maxWidth: .infinity)
             }
         }
     }
     
-    private func compactLayout(chips: [ChipData], isContextual: Bool) -> some View {
+    private func compactLayout(chips: [ChipData]) -> some View {
         LazyVGrid(
             columns: [
                 GridItem(.adaptive(minimum: 100), spacing: layout.spacing)
@@ -309,13 +226,13 @@ struct ChipSelectorView: View {
             spacing: layout.spacing
         ) {
             ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index, isContextual: isContextual, useCompactStyle: true)
+                chipView(for: chip, index: index, useCompactStyle: true)
             }
         }
     }
     
-    private func chipView(for chip: ChipData, index: Int, isContextual: Bool, useCompactStyle: Bool = false) -> some View {
-        let isVisible = visibilityStates[chip.type] ?? (isContextual ? false : true)
+    private func chipView(for chip: ChipData, index: Int, useCompactStyle: Bool = false) -> some View {
+        let isVisible = visibilityStates[chip.type] ?? true
         
         return GoalChipView(
             chipData: chip,
@@ -324,30 +241,25 @@ struct ChipSelectorView: View {
                 handleChipTap(chip)
             }
         )
-        .scaleEffect(isVisible ? 1.0 : (isContextual ? 0.8 : 1.0))
-        .opacity(isVisible ? 1.0 : (isContextual ? 0.0 : 1.0))
+        .scaleEffect(isVisible ? 1.0 : 0.9)
+        .opacity(isVisible ? 1.0 : 0.0)
         .animation(
             .spring(
                 response: animationConfig.springResponse,
                 dampingFraction: animationConfig.springDamping
             )
-            .delay(isContextual ? Double(index) * animationConfig.staggerDelay : 0),
+            .delay(Double(index) * animationConfig.staggerDelay),
             value: isVisible
         )
         .onAppear {
-            if isContextual {
-                // Animate contextual chips in
-                withAnimation(
-                    .spring(
-                        response: animationConfig.springResponse,
-                        dampingFraction: animationConfig.springDamping
-                    )
-                    .delay(Double(index) * animationConfig.staggerDelay)
-                ) {
-                    visibilityStates[chip.type] = true
-                }
-            } else {
-                // Universal chips appear immediately
+            // Animate essential chips in with a subtle stagger
+            withAnimation(
+                .spring(
+                    response: animationConfig.springResponse,
+                    dampingFraction: animationConfig.springDamping
+                )
+                .delay(Double(index) * animationConfig.staggerDelay)
+            ) {
                 visibilityStates[chip.type] = true
             }
         }
@@ -356,38 +268,9 @@ struct ChipSelectorView: View {
     // MARK: - Event Handlers
     
     private func setupInitialState() {
-        // Initialize visibility states
+        // Initialize visibility states for essential chips
         for chip in allVisibleChips {
-            visibilityStates[chip.type] = chip.category == .universal
-        }
-    }
-    
-    private func handleVisibilityChanges(_ newChips: [ChipData]) {
-        let newVisibleTypes = Set(newChips.map { $0.type })
-        let currentVisibleTypes = Set(visibilityStates.keys.filter { visibilityStates[$0] == true })
-        
-        // Handle appearing chips
-        let appearingTypes = newVisibleTypes.subtracting(currentVisibleTypes)
-        for chipType in appearingTypes {
-            withAnimation(
-                .spring(
-                    response: animationConfig.springResponse,
-                    dampingFraction: animationConfig.springDamping
-                )
-                .delay(animationConfig.staggerDelay)
-            ) {
-                visibilityStates[chipType] = true
-            }
-        }
-        
-        // Handle disappearing chips
-        let disappearingTypes = currentVisibleTypes.subtracting(newVisibleTypes)
-        for chipType in disappearingTypes {
-            withAnimation(
-                .easeInOut(duration: animationConfig.disappearanceDuration)
-            ) {
-                visibilityStates[chipType] = false
-            }
+            visibilityStates[chip.type] = false // Start hidden for animation
         }
     }
     
@@ -418,74 +301,6 @@ struct ChipSelectorView: View {
         // Success haptic feedback
         let notificationFeedback = UINotificationFeedbackGenerator()
         notificationFeedback.notificationOccurred(.success)
-    }
-}
-
-// MARK: - Flow Layout Helper
-
-struct FlowLayout: Layout {
-    let spacing: CGFloat
-    
-    init(spacing: CGFloat = 8) {
-        self.spacing = spacing
-    }
-    
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(
-            in: proposal.replacingUnspecifiedDimensions().width,
-            subviews: subviews,
-            spacing: spacing
-        )
-        return result.size
-    }
-    
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(
-            in: proposal.replacingUnspecifiedDimensions().width,
-            subviews: subviews,
-            spacing: spacing
-        )
-        
-        for (index, subview) in subviews.enumerated() {
-            subview.place(at: result.frames[index].origin, proposal: .unspecified)
-        }
-    }
-    
-    struct FlowResult {
-        var frames: [CGRect] = []
-        var size: CGSize
-        
-        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
-            var currentX: CGFloat = 0
-            var currentY: CGFloat = 0
-            var lineHeight: CGFloat = 0
-            
-            for subview in subviews {
-                let subviewSize = subview.sizeThatFits(.unspecified)
-                
-                if currentX + subviewSize.width > maxWidth && currentX > 0 {
-                    // Move to next line
-                    currentX = 0
-                    currentY += lineHeight + spacing
-                    lineHeight = 0
-                }
-                
-                frames.append(CGRect(
-                    x: currentX,
-                    y: currentY,
-                    width: subviewSize.width,
-                    height: subviewSize.height
-                ))
-                
-                currentX += subviewSize.width + spacing
-                lineHeight = max(lineHeight, subviewSize.height)
-            }
-            
-            size = CGSize(
-                width: maxWidth,
-                height: currentY + lineHeight
-            )
-        }
     }
 }
 
@@ -554,16 +369,8 @@ extension ChipSelectorView {
         }
         
         private func setupSampleData() {
-            // Add universal chips
-            for chipType in ChipType.universalTypes {
-                var chip = ChipConfiguration.createChipData(for: chipType)
-                chip.isVisible = true
-                userGoalData.updateChip(chip)
-            }
-            
-            // Add some contextual chips
-            let contextualTypes: [ChipType] = [.timeline, .limitations]
-            for chipType in contextualTypes {
+            // Add essential chips only
+            for chipType in ChipType.essentialTypes {
                 var chip = ChipConfiguration.createChipData(for: chipType)
                 chip.isVisible = true
                 userGoalData.updateChip(chip)
@@ -591,7 +398,7 @@ extension ChipSelectorView {
         }
         
         private func setupSampleData() {
-            for chipType in ChipType.universalTypes.prefix(4) {
+            for chipType in ChipType.essentialTypes.prefix(4) {
                 var chip = ChipConfiguration.createChipData(for: chipType)
                 chip.isVisible = true
                 userGoalData.updateChip(chip)
@@ -619,7 +426,7 @@ extension ChipSelectorView {
         }
         
         private func setupSampleData() {
-            for chipType in ChipType.allCases {
+            for chipType in ChipType.essentialTypes {
                 var chip = ChipConfiguration.createChipData(for: chipType)
                 chip.isVisible = true
                 userGoalData.updateChip(chip)

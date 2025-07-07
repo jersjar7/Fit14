@@ -64,8 +64,6 @@ struct GoalChipView: View {
     
     private var isSelected: Bool { chipData.isSelected }
     private var isRequired: Bool { chipData.isRequired }
-    private var isContextual: Bool { chipData.category == .contextual }
-    private var isUniversal: Bool { chipData.category == .universal }
     
     // MARK: - Initialization
     
@@ -181,7 +179,7 @@ struct GoalChipView: View {
     
     private var backgroundColor: Color {
         if isSelected {
-            return isContextual ? Color.blue.opacity(0.1) : Color.green.opacity(0.1)
+            return Color.orange.opacity(0.1)
         } else if isPressed {
             return Color.gray.opacity(0.2)
         } else if isRequired && !isSelected {
@@ -193,7 +191,7 @@ struct GoalChipView: View {
     
     private var borderColor: Color {
         if isSelected {
-            return isContextual ? Color.blue : Color.green
+            return Color.orange
         } else if isRequired && !isSelected {
             return Color.orange.opacity(0.6)
         } else {
@@ -207,7 +205,7 @@ struct GoalChipView: View {
     
     private var shadowColor: Color {
         if isSelected {
-            return (isContextual ? Color.blue : Color.green).opacity(0.3)
+            return Color.orange.opacity(0.3)
         } else {
             return Color.black.opacity(0.1)
         }
@@ -219,7 +217,7 @@ struct GoalChipView: View {
     
     private var iconColor: Color {
         if isSelected {
-            return isContextual ? Color.blue : Color.green
+            return Color.orange
         } else if isRequired && !isSelected {
             return Color.orange
         } else {
@@ -229,7 +227,7 @@ struct GoalChipView: View {
     
     private var titleColor: Color {
         if isSelected {
-            return isContextual ? Color.blue : Color.green
+            return Color.orange
         } else if isRequired && !isSelected {
             return Color.primary
         } else {
@@ -274,9 +272,7 @@ struct GoalChipView: View {
             label += ", required"
         }
         
-        if isContextual {
-            label += ", smart suggestion"
-        }
+        label += ", essential information"
         
         return label
     }
@@ -408,15 +404,15 @@ struct ErrorChipView: View {
 
 // MARK: - Preview Provider
 
-#Preview("Basic Chips") {
+#Preview("Essential Chips") {
     VStack(spacing: 16) {
-        // Universal chip - unselected
+        // Essential chip - unselected
         GoalChipView(
             chipData: ChipConfiguration.createChipData(for: .fitnessLevel),
             onTap: { print("Fitness Level tapped") }
         )
         
-        // Universal chip - selected
+        // Essential chip - selected
         GoalChipView(
             chipData: {
                 var chip = ChipConfiguration.createChipData(for: .timeAvailable)
@@ -426,20 +422,20 @@ struct ErrorChipView: View {
             onTap: { print("Time Available tapped") }
         )
         
-        // Contextual chip - unselected
+        // Required essential chip - unselected (fitnessLevel is critical)
         GoalChipView(
-            chipData: ChipConfiguration.createChipData(for: .timeline),
-            onTap: { print("Timeline tapped") }
+            chipData: ChipConfiguration.createChipData(for: .fitnessLevel),
+            onTap: { print("Fitness Level tapped") }
         )
         
-        // Contextual chip - selected
+        // Essential chip with long selected text
         GoalChipView(
             chipData: {
-                var chip = ChipConfiguration.createChipData(for: .limitations)
-                chip.select(option: ChipOption(value: "knee problems", displayText: "Knee problems"))
+                var chip = ChipConfiguration.createChipData(for: .physicalStats)
+                chip.select(option: ChipOption(value: "custom", displayText: "5'8\", 165 lbs"))
                 return chip
             }(),
-            onTap: { print("Limitations tapped") }
+            onTap: { print("Physical Stats tapped") }
         )
     }
     .padding()
@@ -468,12 +464,12 @@ struct ErrorChipView: View {
     .background(Color(.systemGroupedBackground))
 }
 
-#Preview("Responsive Layout") {
+#Preview("Essential Chips Layout") {
     ScrollView {
         LazyVGrid(columns: [
             GridItem(.adaptive(minimum: 120), spacing: 8)
         ], spacing: 8) {
-            ForEach(ChipType.allCases, id: \.self) { chipType in
+            ForEach(ChipType.essentialTypes, id: \.self) { chipType in
                 GoalChipView(
                     chipData: ChipConfiguration.createChipData(for: chipType),
                     style: .compact,

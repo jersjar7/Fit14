@@ -122,11 +122,11 @@ struct ChipOptionSheet: View {
             HStack(spacing: 12) {
                 Image(systemName: chipData.icon)
                     .font(.title2)
-                    .foregroundColor(chipData.type.importance == .critical ? Color.orange : Color.blue)
+                    .foregroundColor(chipIconColor)
                     .frame(width: 32, height: 32)
                     .background(
                         Circle()
-                            .fill((chipData.type.importance == .critical ? Color.orange : Color.blue).opacity(0.1))
+                            .fill(chipIconColor.opacity(0.1))
                     )
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -156,6 +156,19 @@ struct ChipOptionSheet: View {
         .background(Color(.systemGroupedBackground))
     }
     
+    private var chipIconColor: Color {
+        switch chipData.type.importance {
+        case .critical:
+            return Color.orange
+        case .high:
+            return Color.orange.opacity(0.8)
+        case .medium:
+            return Color.orange.opacity(0.6)
+        case .low:
+            return Color.gray
+        }
+    }
+    
     private var importanceBadge: some View {
         Text(chipData.type.importance.displayName)
             .font(.caption2)
@@ -165,9 +178,21 @@ struct ChipOptionSheet: View {
             .padding(.vertical, 4)
             .background(
                 Capsule()
-                    .fill(chipData.type.importance == .critical ? Color.orange :
-                         chipData.type.importance == .high ? Color.blue : Color.gray)
+                    .fill(importanceBadgeColor)
             )
+    }
+    
+    private var importanceBadgeColor: Color {
+        switch chipData.type.importance {
+        case .critical:
+            return Color.orange
+        case .high:
+            return Color.orange.opacity(0.8)
+        case .medium:
+            return Color.blue
+        case .low:
+            return Color.gray
+        }
     }
     
     private var attentionBanner: some View {
@@ -270,7 +295,7 @@ struct ChipOptionSheet: View {
                         customText = ""
                     }
                     .font(.caption)
-                    .foregroundColor(Color.blue)
+                    .foregroundColor(Color.orange)
                     .opacity(customText.isEmpty ? 0 : 1)
                 }
                 
@@ -319,7 +344,7 @@ struct ChipOptionSheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(canSave ? Color.blue : Color.gray)
+                .background(canSave ? Color.orange : Color.gray)
                 .foregroundColor(Color.white)
                 .cornerRadius(12)
                 .disabled(!canSave)
@@ -428,18 +453,12 @@ struct ChipOptionSheet: View {
             return "e.g., 45 minutes"
         case .workoutLocation:
             return "e.g., home gym with weights"
-        case .timeline:
-            return "e.g., 6 weeks"
-        case .limitations:
-            return "e.g., lower back injury"
-        case .schedule:
-            return "e.g., weekday evenings only"
-        case .equipment:
-            return "e.g., resistance bands and yoga mat"
-        case .experience:
-            return "e.g., played sports in college"
-        case .preferences:
-            return "e.g., love swimming, hate running"
+        case .fitnessLevel:
+            return "e.g., intermediate with some limitations"
+        case .sex:
+            return "e.g., non-binary"
+        case .weeklyFrequency:
+            return "e.g., 5 days per week when possible"
         default:
             return "Enter your details..."
         }
@@ -449,10 +468,14 @@ struct ChipOptionSheet: View {
         switch chipData.type {
         case .physicalStats:
             return "Include both height and weight for better workout recommendations"
-        case .limitations:
-            return "Be specific about injuries or physical limitations for safety"
         case .timeAvailable:
-            return "Include time units (minutes/hours)"
+            return "Include time units (minutes/hours) for accurate planning"
+        case .workoutLocation:
+            return "Describe your space and any equipment available"
+        case .fitnessLevel:
+            return "Describe your experience level and any specific considerations"
+        case .weeklyFrequency:
+            return "Be realistic about how often you can consistently work out"
         default:
             return "Provide as much detail as helpful for your workout plan"
         }
@@ -479,7 +502,7 @@ struct OptionRowView: View {
                     }
                 }
                 .font(.title3)
-                .foregroundColor(isSelected ? Color.blue : Color.gray)
+                .foregroundColor(isSelected ? Color.orange : Color.gray)
                 .animation(.easeInOut(duration: 0.2), value: isSelected)
                 
                 // Option Content
@@ -517,7 +540,7 @@ struct OptionRowView: View {
         .buttonStyle(PlainButtonStyle())
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.blue.opacity(0.05) : Color.clear)
+                .fill(isSelected ? Color.orange.opacity(0.05) : Color.clear)
                 .animation(.easeInOut(duration: 0.2), value: isSelected)
         )
         .accessibilityLabel("\(option.displayText)\(option.description != nil ? ", \(option.description!)" : "")")
@@ -539,9 +562,9 @@ struct OptionRowView: View {
     )
 }
 
-#Preview("Timeline Options with Custom") {
+#Preview("Time Available Options") {
     ChipOptionSheet(
-        chipData: ChipConfiguration.createChipData(for: .timeline),
+        chipData: ChipConfiguration.createChipData(for: .timeAvailable),
         onSelection: { option, customValue in
             print("Selected: \(option.displayText), Custom: \(customValue ?? "none")")
         },
@@ -551,9 +574,9 @@ struct OptionRowView: View {
     )
 }
 
-#Preview("Limitations (Safety Critical)") {
+#Preview("Physical Stats (Custom Input)") {
     ChipOptionSheet(
-        chipData: ChipConfiguration.createChipData(for: .limitations),
+        chipData: ChipConfiguration.createChipData(for: .physicalStats),
         onSelection: { option, customValue in
             print("Selected: \(option.displayText), Custom: \(customValue ?? "none")")
         },
@@ -563,9 +586,9 @@ struct OptionRowView: View {
     )
 }
 
-#Preview("Equipment (Many Options)") {
+#Preview("Workout Location Options") {
     ChipOptionSheet(
-        chipData: ChipConfiguration.createChipData(for: .equipment),
+        chipData: ChipConfiguration.createChipData(for: .workoutLocation),
         onSelection: { option, customValue in
             print("Selected: \(option.displayText), Custom: \(customValue ?? "none")")
         },

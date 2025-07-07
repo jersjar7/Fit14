@@ -28,21 +28,17 @@ enum AnalysisState: Equatable {
     }
 }
 
-/// Real-time analysis update with suggestions
+/// Real-time analysis update with quality assessment
 struct AnalysisUpdate: Equatable {
     let text: String
     let state: AnalysisState
-    let suggestedChips: [ChipType]
-    let chipVisibilityChanges: [ChipType: Bool]  // ChipType -> shouldBeVisible
     let qualityScore: Double
     let processingTime: TimeInterval
     let timestamp: Date
     
-    init(text: String, state: AnalysisState, suggestedChips: [ChipType] = [], chipVisibilityChanges: [ChipType: Bool] = [:], qualityScore: Double = 0.0, processingTime: TimeInterval = 0.0) {
+    init(text: String, state: AnalysisState, qualityScore: Double = 0.0, processingTime: TimeInterval = 0.0) {
         self.text = text
         self.state = state
-        self.suggestedChips = suggestedChips
-        self.chipVisibilityChanges = chipVisibilityChanges
         self.qualityScore = qualityScore
         self.processingTime = processingTime
         self.timestamp = Date()
@@ -53,16 +49,12 @@ struct AnalysisUpdate: Equatable {
 struct AnalysisConfiguration {
     let debounceInterval: TimeInterval = 0.5
     let minTextLength: Int = 3
-    let maxSuggestedChips: Int = 3
-    let minConfidenceThreshold: Double = 0.3
     let enableRealTimeAnalysis: Bool = true
-    let enableSmartSuggestions: Bool = true
-    let enableProgressiveDisclosure: Bool = true  // Show chips gradually
 }
 
 // MARK: - Goal Analysis Service
 
-/// Service that provides real-time text analysis and contextual chip suggestions
+/// Service that provides real-time text analysis and goal quality assessment
 @MainActor
 class GoalAnalysisService: ObservableObject {
     
@@ -74,7 +66,6 @@ class GoalAnalysisService: ObservableObject {
     
     // MARK: - Private Properties
     
-    private let keywordMatcher: KeywordMatcher
     private let configuration: AnalysisConfiguration
     private var cancellables = Set<AnyCancellable>()
     private var analysisTask: Task<Void, Never>?
@@ -85,7 +76,6 @@ class GoalAnalysisService: ObservableObject {
     
     // State tracking
     private var currentUserGoalData: UserGoalData?
-    private var visibleChipTypes: Set<ChipType> = Set(ChipType.universalTypes)
     
     // Performance tracking
     private var analysisCount: Int = 0
@@ -93,10 +83,8 @@ class GoalAnalysisService: ObservableObject {
     
     // MARK: - Initialization
     
-    init(keywordMatcher: KeywordMatcher = KeywordMatcher(), configuration: AnalysisConfiguration = AnalysisConfiguration()) {
-        self.keywordMatcher = keywordMatcher
+    init(configuration: AnalysisConfiguration = AnalysisConfiguration()) {
         self.configuration = configuration
-        
         setupTextAnalysisStream()
     }
     
@@ -122,7 +110,7 @@ class GoalAnalysisService: ObservableObject {
     
     // MARK: - Public API
     
-    /// Analyze text input and update chip suggestions
+    /// Analyze text input for quality assessment
     func analyzeText(_ text: String, with userGoalData: UserGoalData? = nil) {
         // Update current goal data
         if let goalData = userGoalData {
@@ -137,22 +125,6 @@ class GoalAnalysisService: ObservableObject {
         
         // Send to debounced stream
         textSubject.send(text)
-    }
-    
-    /// Get current chip suggestions based on latest analysis
-    func getCurrentSuggestions() -> [ChipType] {
-        return currentAnalysis?.suggestedChips ?? []
-    }
-    
-    /// Check if a specific chip type should be visible
-    func shouldShowChip(_ chipType: ChipType) -> Bool {
-        // Universal chips are always visible
-        if chipType.category == .universal {
-            return true
-        }
-        
-        // Contextual chips depend on analysis
-        return visibleChipTypes.contains(chipType)
     }
     
     /// Get quality assessment for current goal data
@@ -186,7 +158,6 @@ class GoalAnalysisService: ObservableObject {
         analysisHistory.removeAll()
         isAnalyzing = false
         lastAnalysisText = ""
-        visibleChipTypes = Set(ChipType.universalTypes)
         currentUserGoalData = nil
     }
     
@@ -206,29 +177,15 @@ class GoalAnalysisService: ObservableObject {
             isAnalyzing = true
             lastAnalysisText = text
             
-            // Perform keyword analysis
-            let keywordResult = await keywordMatcher.analyzeText(text)
-            
-            // Generate contextual chip suggestions
-            let suggestedChips = generateContextualSuggestions(from: keywordResult)
-            
             // Calculate quality score
-            let qualityScore = calculateQualityScore(text: text, keywordResult: keywordResult)
-            
-            // Determine chip visibility changes
-            let visibilityChanges = determineChipVisibilityChanges(from: suggestedChips)
-            
-            // Update visible chips
-            updateVisibleChips(with: visibilityChanges)
+            let qualityScore = calculateTextQualityScore(text)
             
             let processingTime = CFAbsoluteTimeGetCurrent() - startTime
             
             // Create analysis update
             let update = AnalysisUpdate(
                 text: text,
-                state: .completed(confidence: keywordResult.confidence),
-                suggestedChips: suggestedChips,
-                chipVisibilityChanges: visibilityChanges,
+                state: .completed(confidence: qualityScore),
                 qualityScore: qualityScore,
                 processingTime: processingTime
             )
@@ -260,17 +217,9 @@ class GoalAnalysisService: ObservableObject {
     }
     
     private func handleShortText(_ text: String) async {
-        // For short text, hide contextual chips and reset state
-        let visibilityChanges = ChipType.contextualTypes.reduce(into: [ChipType: Bool]()) { result, chipType in
-            result[chipType] = false
-        }
-        
-        updateVisibleChips(with: visibilityChanges)
-        
         let update = AnalysisUpdate(
             text: text,
-            state: .idle,
-            chipVisibilityChanges: visibilityChanges
+            state: .idle
         )
         
         currentAnalysis = update
@@ -278,108 +227,32 @@ class GoalAnalysisService: ObservableObject {
         lastAnalysisText = text
     }
     
-    // MARK: - Suggestion Logic
-    
-    private func generateContextualSuggestions(from keywordResult: TextAnalysisResult) -> [ChipType] {
-        guard configuration.enableSmartSuggestions else { return [] }
-        
-        // Get chip types that should be suggested
-        var candidateChips = keywordResult.suggestedChips
-        
-        // Filter out already selected chips
-        if let currentData = currentUserGoalData {
-            candidateChips = candidateChips.filter { !currentData.isChipSelected($0) }
-        }
-        
-        // Apply progressive disclosure if enabled
-        if configuration.enableProgressiveDisclosure {
-            candidateChips = applyProgressiveDisclosure(to: candidateChips)
-        }
-        
-        // Limit to max suggested chips
-        candidateChips = Array(candidateChips.prefix(configuration.maxSuggestedChips))
-        
-        return candidateChips
-    }
-    
-    private func applyProgressiveDisclosure(to chipTypes: [ChipType]) -> [ChipType] {
-        // Show high-importance chips first, gradually reveal others
-        let criticalChips = chipTypes.filter { $0.importance == .critical }
-        let highChips = chipTypes.filter { $0.importance == .high }
-        let mediumChips = chipTypes.filter { $0.importance == .medium }
-        let lowChips = chipTypes.filter { $0.importance == .low }
-        
-        // Determine how many to show based on current text length and existing selections
-        let textLength = lastAnalysisText.count
-        let selectedCount = currentUserGoalData?.selectedChips.count ?? 0
-        
-        var maxToShow = 1
-        if textLength > 50 || selectedCount > 2 { maxToShow = 2 }
-        if textLength > 100 || selectedCount > 4 { maxToShow = 3 }
-        
-        // Prioritize by importance
-        var result: [ChipType] = []
-        result.append(contentsOf: criticalChips)
-        result.append(contentsOf: highChips)
-        result.append(contentsOf: mediumChips)
-        result.append(contentsOf: lowChips)
-        
-        return Array(result.prefix(maxToShow))
-    }
-    
-    private func determineChipVisibilityChanges(from suggestedChips: [ChipType]) -> [ChipType: Bool] {
-        var changes: [ChipType: Bool] = [:]
-        
-        // Show suggested chips
-        for chipType in suggestedChips {
-            if !visibleChipTypes.contains(chipType) {
-                changes[chipType] = true
-            }
-        }
-        
-        // Hide chips that are no longer relevant
-        let currentContextualChips = visibleChipTypes.filter { $0.category == .contextual }
-        for chipType in currentContextualChips {
-            if !suggestedChips.contains(chipType) {
-                changes[chipType] = false
-            }
-        }
-        
-        return changes
-    }
-    
-    private func updateVisibleChips(with changes: [ChipType: Bool]) {
-        for (chipType, shouldBeVisible) in changes {
-            if shouldBeVisible {
-                visibleChipTypes.insert(chipType)
-            } else {
-                visibleChipTypes.remove(chipType)
-            }
-        }
-    }
-    
     // MARK: - Quality Assessment
     
-    private func calculateQualityScore(text: String, keywordResult: TextAnalysisResult) -> Double {
+    private func calculateTextQualityScore(_ text: String) -> Double {
         let textLength = text.count
         let wordCount = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count
         
         // Base score from text length and detail
         var score = 0.0
         
-        // Text length score (0.0 to 0.4)
+        // Text length score (0.0 to 0.5)
         if textLength >= 20 { score += 0.1 }
-        if textLength >= 50 { score += 0.1 }
-        if textLength >= 100 { score += 0.1 }
+        if textLength >= 50 { score += 0.15 }
+        if textLength >= 100 { score += 0.15 }
         if textLength >= 200 { score += 0.1 }
         
-        // Word diversity score (0.0 to 0.2)
-        if wordCount >= 5 { score += 0.05 }
-        if wordCount >= 10 { score += 0.05 }
+        // Word diversity score (0.0 to 0.3)
+        if wordCount >= 5 { score += 0.1 }
+        if wordCount >= 10 { score += 0.1 }
         if wordCount >= 20 { score += 0.1 }
         
-        // Keyword relevance score (0.0 to 0.4)
-        score += keywordResult.confidence * 0.4
+        // Content quality indicators (0.0 to 0.2)
+        let lowercaseText = text.lowercased()
+        if lowercaseText.contains(where: { "0123456789".contains($0) }) { score += 0.05 } // Contains numbers
+        if lowercaseText.contains("week") || lowercaseText.contains("month") || lowercaseText.contains("day") { score += 0.05 } // Timeline mentions
+        if lowercaseText.contains("pound") || lowercaseText.contains("lb") || lowercaseText.contains("kg") || lowercaseText.contains("minutes") { score += 0.05 } // Specific targets
+        if lowercaseText.contains("home") || lowercaseText.contains("gym") || lowercaseText.contains("park") { score += 0.05 } // Location context
         
         return min(1.0, score)
     }
@@ -403,7 +276,7 @@ class GoalAnalysisService: ObservableObject {
                 feedback.append("Add more details about your specific goals")
             }
             if !trimmedText.lowercased().contains(where: { "0123456789".contains($0) }) {
-                feedback.append("Consider adding specific targets (e.g., '5 pounds', '3 times per week')")
+                feedback.append("Consider adding specific targets (e.g., '5 pounds', 'beat my 25-minute 5K time')")
             }
         }
         
@@ -418,7 +291,7 @@ class GoalAnalysisService: ObservableObject {
         var score = 0.0
         var feedback: [String] = []
         
-        // Critical chips score
+        // Critical chips score (most important)
         if criticalSelected >= 1 { score += 0.4 }
         if criticalSelected >= 2 { score += 0.2 }
         
@@ -434,7 +307,7 @@ class GoalAnalysisService: ObservableObject {
             feedback.append("Select your fitness level and available time")
         }
         if selectedCount < 3 {
-            feedback.append("Add more details using the suggestion chips")
+            feedback.append("Fill in more essential information chips")
         }
         
         return QualityComponent(score: min(1.0, score), feedback: feedback)
@@ -443,7 +316,6 @@ class GoalAnalysisService: ObservableObject {
     private func generateImprovementSuggestions(_ userGoalData: UserGoalData) -> [String] {
         var suggestions: [String] = []
         
-        let criticalSelected = userGoalData.selectedChips.filter { $0.type.importance == .critical }
         let selectedChipTypes = Set(userGoalData.selectedChips.map { $0.type })
         
         // Check for missing critical information
@@ -460,13 +332,17 @@ class GoalAnalysisService: ObservableObject {
             suggestions.append("📍 Tell us where you'll be working out")
         }
         
-        if !selectedChipTypes.contains(.limitations) && userGoalData.freeFormText.lowercased().contains(where: { "pain injury hurt can't".contains($0) }) {
-            suggestions.append("⚠️ Add any injuries or limitations for safety")
+        if !selectedChipTypes.contains(.physicalStats) {
+            suggestions.append("📏 Add your height and weight for personalized recommendations")
         }
         
         // Text improvements
         if userGoalData.freeFormText.count < 50 {
-            suggestions.append("📝 Add more details about your specific goals")
+            suggestions.append("📝 Add more details about your specific goals and any constraints")
+        }
+        
+        if !userGoalData.freeFormText.lowercased().contains(where: { "0123456789".contains($0) }) {
+            suggestions.append("🎯 Include specific targets or numbers in your goal description")
         }
         
         return suggestions
@@ -478,7 +354,6 @@ class GoalAnalysisService: ObservableObject {
         return AnalyticsData(
             totalAnalyses: analysisCount,
             averageProcessingTime: analysisCount > 0 ? totalProcessingTime / Double(analysisCount) : 0.0,
-            currentVisibleChips: Array(visibleChipTypes),
             lastAnalysisConfidence: currentAnalysis?.state.confidence ?? 0.0
         )
     }
@@ -512,6 +387,5 @@ struct GoalQualityAssessment {
 struct AnalyticsData {
     let totalAnalyses: Int
     let averageProcessingTime: TimeInterval
-    let currentVisibleChips: [ChipType]
     let lastAnalysisConfidence: Double
 }

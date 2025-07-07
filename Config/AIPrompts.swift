@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/6/25.
-//  Enhanced with structured chip data support
+//  Enhanced with structured chip data support for essential information
 //
 
 import Foundation
@@ -11,8 +11,8 @@ import Foundation
 struct AIPrompts {
     
     // MARK: - Version Tracking
-    static let promptVersion = "2.0.0"
-    static let lastUpdated = "2025-07-06"
+    static let promptVersion = "2.1.0"
+    static let lastUpdated = "2025-07-07"
     
     // MARK: - Enhanced Workout Generation Prompt
     static let workoutGenerationPrompt: String = """
@@ -39,6 +39,7 @@ struct AIPrompts {
         - For "as many as possible" exercises, use a reasonable number based on their fitness level
         - Make each day different and progressive throughout the 14 days
         - Adapt difficulty and intensity to their experience level
+        - Parse the user's goal text for additional constraints like injuries, equipment preferences, or schedule restrictions
         
         FITNESS LEVEL ADAPTATION:
         - Beginner: Focus on form, basic movements, lower intensity, more rest
@@ -55,6 +56,16 @@ struct AIPrompts {
         - At the gym: Full range of equipment, machines, free weights
         - Outdoors: Running, walking, bodyweight, park equipment
         - Flexible: Mix of locations with equipment alternatives
+        - Pay attention to equipment mentions in the user's goal text
+        
+        NATURAL LANGUAGE PROCESSING:
+        - Carefully read the user's goal text for mentions of:
+          * Injuries or physical limitations (e.g., "bad knee", "shoulder injury")
+          * Equipment preferences (e.g., "resistance bands", "no weights")
+          * Schedule constraints (e.g., "busy mornings", "weekends only")
+          * Specific goals (e.g., "beat my 5K time", "first pull-up")
+          * Training preferences (e.g., "hate running", "love swimming")
+        - Incorporate these natural language details into the workout design
         
         REST DAY GUIDELINES:
         - Rest days are crucial for recovery and should be included
@@ -147,14 +158,14 @@ struct AIPrompts {
     
     // MARK: - Structured Data Conversion Methods
     
-    /// Convert UserGoalData's structured data to user profile for AI
+    /// Convert UserGoalData's essential information to user profile for AI
     static func buildUserProfile(from goalData: UserGoalData) -> String {
         var profileComponents: [String] = []
         
         // Extract structured data using the existing method
         let structuredData = goalData.structuredData
         
-        // Build profile sections based on selected chips
+        // Build profile sections based on selected essential chips only
         for chip in goalData.selectedChips {
             guard let selection = chip.selection,
                   let value = selection.effectiveValue else { continue }
@@ -177,30 +188,12 @@ struct AIPrompts {
                 
             case .weeklyFrequency:
                 profileComponents.append("WEEKLY FREQUENCY: \(value)")
-                
-            case .timeline:
-                profileComponents.append("TIMELINE: \(value)")
-                
-            case .limitations:
-                profileComponents.append("LIMITATIONS/INJURIES: \(value)")
-                
-            case .schedule:
-                profileComponents.append("SCHEDULE RESTRICTIONS: \(value)")
-                
-            case .equipment:
-                profileComponents.append("AVAILABLE EQUIPMENT: \(value)")
-                
-            case .experience:
-                profileComponents.append("PREVIOUS EXPERIENCE: \(value)")
-                
-            case .preferences:
-                profileComponents.append("EXERCISE PREFERENCES: \(value)")
             }
         }
         
         // If no structured data, provide minimal profile
         if profileComponents.isEmpty {
-            return "No specific profile information provided. Please create a balanced, beginner-friendly plan suitable for home workouts."
+            return "No essential information provided. Please create a balanced, beginner-friendly plan suitable for home workouts. Parse the user's goal text carefully for any additional constraints, equipment, or preferences mentioned naturally."
         }
         
         return profileComponents.joined(separator: "\n")
@@ -238,7 +231,7 @@ struct AIPrompts {
         
         Use the same 11 allowed units: reps, seconds, minutes, hours, meters, yards, feet, kilometers, miles, steps, laps.
         
-        Create a fresh 14-day plan that's different from the previous generation but maintains the same quality, difficulty level, and structure appropriate for the user's profile.
+        Create a fresh 14-day plan that's different from the previous generation but maintains the same quality, difficulty level, and structure appropriate for the user's profile. Parse the user's goal text for any naturally mentioned constraints.
         """
     
     static let quickWorkoutPrompt: String = """
@@ -254,6 +247,7 @@ struct AIPrompts {
         Return only JSON format with the same structure as the 14-day plan, but with just one day.
         Use only the 11 allowed units: reps, seconds, minutes, hours, meters, yards, feet, kilometers, miles, steps, laps.
         Ensure the workout fits within the specified time and uses only available equipment.
+        Parse the user's goal text for additional naturally mentioned preferences or constraints.
         """
     
     // MARK: - Enhanced Helper Methods
@@ -313,7 +307,7 @@ struct AIPrompts {
             suggestions.append("Consider adding more detail about what you want to achieve")
         }
         
-        // Check critical chips
+        // Check critical essential chips
         let criticalChips = goalData.selectedChips.filter { $0.type.importance == .critical }
         if criticalChips.count >= 2 {
             strengths.append("Essential fitness information provided")
@@ -322,20 +316,22 @@ struct AIPrompts {
             suggestions.append("Add your fitness level and available workout time")
         }
         
-        // Check for safety information
-        let hasLimitations = goalData.isChipSelected(.limitations)
-        if hasLimitations {
-            strengths.append("Safety considerations noted")
-        } else if goalData.freeFormText.lowercased().contains("injury") {
-            suggestions.append("Consider adding your injury details using the limitations chip")
+        // Check for safety information in text
+        let lowercaseText = goalData.freeFormText.lowercased()
+        if lowercaseText.contains("injury") || lowercaseText.contains("pain") || lowercaseText.contains("hurt") {
+            strengths.append("Safety considerations mentioned")
         }
         
-        // Check timeline
-        let hasTimeline = goalData.isChipSelected(.timeline)
-        if hasTimeline {
-            strengths.append("Clear timeline specified")
+        // Check for equipment mentions in text
+        if lowercaseText.contains("equipment") || lowercaseText.contains("weights") || lowercaseText.contains("bands") {
+            strengths.append("Equipment preferences specified")
+        }
+        
+        // Check for timeline mentions in text
+        if lowercaseText.contains("week") || lowercaseText.contains("month") || lowercaseText.contains("day") {
+            strengths.append("Timeline considerations included")
         } else {
-            suggestions.append("Add a timeline to focus your plan (2 weeks recommended)")
+            suggestions.append("Consider mentioning your timeline (2 weeks recommended)")
         }
         
         // Overall completeness
@@ -445,7 +441,8 @@ struct AIPrompts {
         
         Features:
         - UserGoalData integration
-        - Structured chip data support
+        - Essential chip data support
+        - Natural language processing for constraints
         - Enhanced user profiling
         - 2-week goal focus
         - Data quality assessment
@@ -453,9 +450,14 @@ struct AIPrompts {
         
         Allowed Units: \(allowedUnits.sorted().joined(separator: ", "))
         
-        Supported Chip Types:
-        Universal: \(ChipType.universalTypes.map { $0.displayTitle }.joined(separator: ", "))
-        Contextual: \(ChipType.contextualTypes.map { $0.displayTitle }.joined(separator: ", "))
+        Supported Essential Chip Types:
+        \(ChipType.essentialTypes.map { $0.displayTitle }.joined(separator: ", "))
+        
+        Natural Language Processing:
+        - Automatically detects injuries/limitations in goal text
+        - Identifies equipment preferences and constraints
+        - Recognizes schedule restrictions
+        - Processes specific performance goals and timelines
         """
     }
     
@@ -469,7 +471,7 @@ struct AIPrompts {
         === USER GOAL DATA DEBUG ===
         
         Free-form text: "\(goalData.freeFormText)"
-        Selected chips: \(goalData.selectedChips.count)
+        Selected essential chips: \(goalData.selectedChips.count)
         Completeness: \(Int(goalData.completenessScore * 100))%
         Quality: \(quality.score.rawValue)
         
