@@ -269,7 +269,7 @@ struct GoalHelpSheet: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 80)
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -547,37 +547,163 @@ struct GoalHelpSheet: View {
         )
     }
     
+    // MARK: - Updated Essential Information Content
+
     private var usingEssentialChipsContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             sectionHeader("Essential Information", icon: "star.fill", color: Color.orange)
             
-            Text("Essential chips collect the core information needed for any workout plan:")
+            // Introduction text
+            Text("Essential information is the core data needed to create any safe and effective workout plan. These details help our AI understand your situation and generate personalized recommendations.")
                 .font(.subheadline)
                 .foregroundColor(Color.secondary)
+                .lineSpacing(2)
             
-            chipExplanation(
-                category: "Essential Information",
-                description: "Critical data for safe and effective workout planning",
-                chips: ["Fitness Level", "Time Available", "Workout Location", "Height & Weight"],
-                color: Color.orange
-            )
+            // Essential chips display
+            essentialChipsDisplay
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Why These Matter")
+            // Why these matter section
+            whyEssentialInfoMattersSection
+            
+            // Tips section
+            essentialInfoTipsSection
+        }
+    }
+
+    private var essentialChipsDisplay: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("The 6 Essential Chips")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(Color.orange)
+            
+            // Using LazyVGrid instead of FlowLayout to avoid layout issues
+            LazyVGrid(columns: [
+                GridItem(.adaptive(minimum: 120), spacing: 8)
+            ], spacing: 8) {
+                ForEach(essentialChipsList, id: \.self) { chip in
+                    Text(chip)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            Capsule()
+                                .fill(Color.orange.opacity(0.1))
+                                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                        )
+                        .foregroundColor(Color.orange)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.orange.opacity(0.05))
+        )
+    }
+
+    private var whyEssentialInfoMattersSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Why These Matter")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            VStack(spacing: 12) {
+                essentialInfoRow(
+                    icon: "figure.strengthtraining.traditional",
+                    title: "Fitness Level",
+                    description: "Ensures appropriate exercise difficulty and safe progression"
+                )
+                
+                essentialInfoRow(
+                    icon: "clock",
+                    title: "Time Available",
+                    description: "Creates realistic workouts that fit your schedule"
+                )
+                
+                essentialInfoRow(
+                    icon: "location",
+                    title: "Workout Location",
+                    description: "Determines available equipment and space considerations"
+                )
+                
+                essentialInfoRow(
+                    icon: "person.2",
+                    title: "Sex",
+                    description: "Helps with calorie calculations and exercise modifications"
+                )
+                
+                essentialInfoRow(
+                    icon: "ruler.fill",
+                    title: "Height & Weight",
+                    description: "Enables personalized intensity and calorie recommendations"
+                )
+                
+                essentialInfoRow(
+                    icon: "calendar",
+                    title: "Weekly Frequency",
+                    description: "Plans appropriate rest days and workout distribution"
+                )
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+        )
+    }
+
+    private var essentialInfoTipsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("💡 Pro Tips")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(Color.blue)
+            
+            VStack(spacing: 8) {
+                tipRow("Complete all essential chips for the best AI results")
+                tipRow("You can always change your selections and regenerate")
+                tipRow("Don't worry about being perfect - the AI adapts to your needs")
+                tipRow("Essential info is saved and can be reused for future plans")
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.blue.opacity(0.05))
+        )
+    }
+
+    // MARK: - Helper Functions
+
+    // Helper function for consistent essential info rows
+    private func essentialInfoRow(icon: String, title: String, description: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(Color.orange)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
-                tipRow("Fitness Level: Ensures appropriate exercise difficulty and progression")
-                tipRow("Time Available: Creates realistic workouts that fit your schedule")
-                tipRow("Location: Determines available equipment and space considerations")
-                tipRow("Body Stats: Helps with calorie calculations and exercise modifications")
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(Color.secondary)
+                    .lineSpacing(1)
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.orange.opacity(0.05))
-            )
+            
+            Spacer()
         }
+    }
+
+    // Essential chips list
+    private var essentialChipsList: [String] {
+        ["Fitness Level", "Sex", "Height & Weight", "Time Available", "Workout Location", "Weekly Frequency"]
     }
     
     private func chipExplanation(category: String, description: String, chips: [String], color: Color) -> some View {

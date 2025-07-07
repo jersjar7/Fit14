@@ -111,6 +111,7 @@ struct GoalInputView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(Color.primary)
+                    
                 Spacer()
             }
             
@@ -140,7 +141,7 @@ struct GoalInputView: View {
     }
     
     // MARK: - Smart Goal Input Section
-    
+
     private var smartGoalInputSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             SmartGoalTextEditor(
@@ -150,46 +151,47 @@ struct GoalInputView: View {
             )
             .disabled(viewModel.isGenerating)
             
-            // Subtle hint text
-            VStack(alignment: .leading, spacing: 4) {
-                // Character count and analysis status
-                HStack {
-                    if !chipAssistant.goalText.isEmpty {
+            // Status and hint text
+            VStack(alignment: .leading, spacing: 8) {
+                // Character count and analysis status (only show when there's text)
+                if !chipAssistant.goalText.isEmpty {
+                    HStack {
                         Text("\(chipAssistant.goalText.count) characters")
                             .font(.caption2)
                             .foregroundColor(Color.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    // Real-time analysis indicator
-                    if analysisService.isAnalyzing {
-                        HStack(spacing: 4) {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                            Text("Analyzing...")
-                                .font(.caption2)
-                                .foregroundColor(Color.secondary)
+                        
+                        Spacer()
+                        
+                        // Real-time analysis indicator
+                        if analysisService.isAnalyzing {
+                            HStack(spacing: 4) {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                                Text("Analyzing...")
+                                    .font(.caption2)
+                                    .foregroundColor(Color.secondary)
+                            }
+                        } else {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(Color.green)
+                                    .font(.caption)
+                                Text("Ready")
+                                    .font(.caption2)
+                                    .foregroundColor(Color.green)
+                            }
                         }
-                    } else if !chipAssistant.goalText.isEmpty {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(Color.green)
-                                .font(.caption)
-                            Text("Ready")
-                                .font(.caption2)
-                                .foregroundColor(Color.green)
-                        }
                     }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 
-                // Subtle hint text about additional information
-                if chipAssistant.goalText.isEmpty {
-                    Text("Feel free to mention any injuries, equipment preferences, or schedule constraints")
-                        .font(.caption)
-                        .foregroundColor(Color.secondary)
-                        .padding(.top, 4)
-                }
+                // Helpful message (always visible, but moves position based on text presence)
+                Text("Feel free to mention any injuries, equipment preferences, or schedule constraints")
+                    .font(.caption)
+                    .foregroundColor(Color.secondary)
+                    .padding(.leading, 7.0)
+                    .transition(.move(edge: .bottom))
+                    .animation(.easeInOut(duration: 0.3), value: chipAssistant.goalText.isEmpty)
             }
         }
     }
@@ -277,7 +279,7 @@ struct GoalInputView: View {
                             .foregroundColor(.green)
                     }
                 } else {
-                    Image(systemName: "plus.circle.fill")
+                    Image(systemName: "plus.circle")
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
