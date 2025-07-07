@@ -30,7 +30,7 @@ struct EssentialChip: Identifiable, Equatable {
     /// The final completed text after user makes a selection
     var completedText: String? {
         guard let selectedOption = selectedOption else { return nil }
-        return promptTemplate + selectedOption.displayText
+        return selectedOption.displayText
     }
 }
 
@@ -153,8 +153,8 @@ class EssentialChipAssistant: ObservableObject {
     func insertPromptForChip(type: ChipType) {
         guard let chip = getChip(for: type), !chip.isCompleted else { return }
         
-        // Add the prompt template to the goal text
-        let insertion = chip.insertionText
+        // Add the placeholder token to the goal text (this will trigger inline options in the UI)
+        let insertion = chip.promptTemplate
         
         // Smart insertion - add proper spacing and punctuation
         if goalText.isEmpty {
@@ -167,7 +167,7 @@ class EssentialChipAssistant: ObservableObject {
             goalText = trimmed + separator + insertion
         }
         
-        print("➕ Inserted prompt for: \(type.displayTitle)")
+        print("➕ Inserted placeholder for: \(type.displayTitle)")
     }
     
     /// Get available options for inline selection
@@ -200,11 +200,11 @@ class EssentialChipAssistant: ObservableObject {
                 type: .fitnessLevel,
                 title: "Fitness Level",
                 icon: "figure.strengthtraining.traditional",
-                promptTemplate: "My fitness level is ",
+                promptTemplate: "{{FITNESS_LEVEL_PLACEHOLDER}}",
                 options: [
-                    ChipSelectionOption("beginner", displayText: "beginner", description: "New to fitness or returning after a long break"),
-                    ChipSelectionOption("intermediate", displayText: "intermediate", description: "Exercise regularly, comfortable with basic movements"),
-                    ChipSelectionOption("advanced", displayText: "advanced", description: "Very experienced, ready for challenging workouts")
+                    ChipSelectionOption(value: "beginner", displayText: "My fitness level is beginner", description: "New to fitness or returning after a long break"),
+                    ChipSelectionOption(value: "intermediate", displayText: "My fitness level is intermediate", description: "Exercise regularly, comfortable with basic movements"),
+                    ChipSelectionOption(value: "advanced", displayText: "My fitness level is advanced", description: "Very experienced, ready for challenging workouts")
                 ]
             ),
             
@@ -213,11 +213,11 @@ class EssentialChipAssistant: ObservableObject {
                 type: .sex,
                 title: "Sex",
                 icon: "person.2",
-                promptTemplate: "I am ",
+                promptTemplate: "{{SEX_PLACEHOLDER}}",
                 options: [
-                    ChipSelectionOption("male", displayText: "male"),
-                    ChipSelectionOption("female", displayText: "female"),
-                    ChipSelectionOption("prefer not to say", displayText: "prefer not to specify")
+                    ChipSelectionOption(value: "male", displayText: "I am a male"),
+                    ChipSelectionOption(value: "female", displayText: "I am a female"),
+                    ChipSelectionOption(value: "prefer not to say", displayText: "I am a person who prefers not to specify")
                 ]
             ),
             
@@ -226,14 +226,14 @@ class EssentialChipAssistant: ObservableObject {
                 type: .physicalStats,
                 title: "Height & Weight",
                 icon: "ruler.fill",
-                promptTemplate: "I am ",
+                promptTemplate: "{{PHYSICAL_STATS_PLACEHOLDER}}",
                 options: [
-                    ChipSelectionOption("5'0\", 120 lbs", displayText: "5'0\", 120 lbs"),
-                    ChipSelectionOption("5'3\", 130 lbs", displayText: "5'3\", 130 lbs"),
-                    ChipSelectionOption("5'6\", 140 lbs", displayText: "5'6\", 140 lbs"),
-                    ChipSelectionOption("5'9\", 160 lbs", displayText: "5'9\", 160 lbs"),
-                    ChipSelectionOption("6'0\", 180 lbs", displayText: "6'0\", 180 lbs"),
-                    ChipSelectionOption("custom", displayText: "enter my measurements", description: "Tap to enter custom height and weight")
+                    ChipSelectionOption(value: "5'0\", 120 lbs", displayText: "My height and weight are 5'0\", 120 lbs"),
+                    ChipSelectionOption(value: "5'3\", 130 lbs", displayText: "My height and weight are 5'3\", 130 lbs"),
+                    ChipSelectionOption(value: "5'6\", 140 lbs", displayText: "My height and weight are 5'6\", 140 lbs"),
+                    ChipSelectionOption(value: "5'9\", 160 lbs", displayText: "My height and weight are 5'9\", 160 lbs"),
+                    ChipSelectionOption(value: "6'0\", 180 lbs", displayText: "My height and weight are 6'0\", 180 lbs"),
+                    ChipSelectionOption(value: "custom", displayText: "My height and weight are custom measurements", description: "Tap to enter custom height and weight")
                 ]
             ),
             
@@ -242,12 +242,12 @@ class EssentialChipAssistant: ObservableObject {
                 type: .timeAvailable,
                 title: "Time Per Workout",
                 icon: "clock",
-                promptTemplate: "I can work out for ",
+                promptTemplate: "{{TIME_AVAILABLE_PLACEHOLDER}}",
                 options: [
-                    ChipSelectionOption("15-30 minutes", displayText: "15-30 minutes", description: "Quick, efficient workouts"),
-                    ChipSelectionOption("30-45 minutes", displayText: "30-45 minutes", description: "Standard workout duration"),
-                    ChipSelectionOption("45-60 minutes", displayText: "45-60 minutes", description: "Longer, comprehensive sessions"),
-                    ChipSelectionOption("60+ minutes", displayText: "60+ minutes", description: "Extended training sessions")
+                    ChipSelectionOption(value: "15-30 minutes", displayText: "I can work out for 15-30 minutes", description: "Quick, efficient workouts"),
+                    ChipSelectionOption(value: "30-45 minutes", displayText: "I can work out for 30-45 minutes", description: "Standard workout duration"),
+                    ChipSelectionOption(value: "45-60 minutes", displayText: "I can work out for 45-60 minutes", description: "Longer, comprehensive sessions"),
+                    ChipSelectionOption(value: "60+ minutes", displayText: "I can work out for 60+ minutes", description: "Extended training sessions")
                 ]
             ),
             
@@ -256,12 +256,12 @@ class EssentialChipAssistant: ObservableObject {
                 type: .workoutLocation,
                 title: "Workout Location",
                 icon: "location",
-                promptTemplate: "I will be working out ",
+                promptTemplate: "{{WORKOUT_LOCATION_PLACEHOLDER}}",
                 options: [
-                    ChipSelectionOption("at home", displayText: "at home", description: "Bodyweight and minimal equipment exercises"),
-                    ChipSelectionOption("at the gym", displayText: "at the gym", description: "Full equipment access"),
-                    ChipSelectionOption("outdoors", displayText: "outdoors", description: "Running, hiking, outdoor activities"),
-                    ChipSelectionOption("at home and gym", displayText: "at home and the gym", description: "Flexible between locations")
+                    ChipSelectionOption(value: "at home", displayText: "I will be working out at home", description: "Bodyweight and minimal equipment exercises"),
+                    ChipSelectionOption(value: "at the gym", displayText: "I will be working out at the gym", description: "Full equipment access"),
+                    ChipSelectionOption(value: "outdoors", displayText: "I will be working out outdoors", description: "Running, hiking, outdoor activities"),
+                    ChipSelectionOption(value: "at home and gym", displayText: "I will be working out at home and the gym", description: "Flexible between locations")
                 ]
             ),
             
@@ -270,12 +270,12 @@ class EssentialChipAssistant: ObservableObject {
                 type: .weeklyFrequency,
                 title: "Days Per Week",
                 icon: "calendar",
-                promptTemplate: "I can work out ",
+                promptTemplate: "{{WEEKLY_FREQUENCY_PLACEHOLDER}}",
                 options: [
-                    ChipSelectionOption("3 days per week", displayText: "3 days per week", description: "Balanced approach with recovery time"),
-                    ChipSelectionOption("4-5 days per week", displayText: "4-5 days per week", description: "Regular, consistent training"),
-                    ChipSelectionOption("6+ days per week", displayText: "6+ days per week", description: "High-frequency training"),
-                    ChipSelectionOption("on a flexible schedule", displayText: "on a flexible schedule", description: "Adapt based on availability")
+                    ChipSelectionOption(value: "3 days per week", displayText: "I can work out 3 days per week", description: "Balanced approach with recovery time"),
+                    ChipSelectionOption(value: "4-5 days per week", displayText: "I can work out 4-5 days per week", description: "Regular, consistent training"),
+                    ChipSelectionOption(value: "6+ days per week", displayText: "I can work out 6+ days per week", description: "High-frequency training"),
+                    ChipSelectionOption(value: "on a flexible schedule", displayText: "I can work out on a flexible schedule", description: "Adapt based on availability")
                 ]
             )
         ]
@@ -312,8 +312,7 @@ class EssentialChipAssistant: ObservableObject {
             var matchingOption: ChipSelectionOption?
             
             for option in chip.options {
-                let completedPhrase = chip.promptTemplate + option.displayText
-                if goalText.contains(completedPhrase) {
+                if goalText.contains(option.displayText) {
                     isNowCompleted = true
                     matchingOption = option
                     break

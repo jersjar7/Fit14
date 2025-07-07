@@ -13,14 +13,12 @@ struct GoalInputView: View {
     
     // MARK: - Smart Chip System State
     @StateObject private var analysisService = GoalAnalysisService()
+    @StateObject private var chipAssistant = EssentialChipAssistant()
     
     // MARK: - UI State
-    @State private var goalsText = ""
     @State private var showingHelpSheet = false
     @State private var hasUserInteracted = false
     @State private var showQualityIndicator = false
-    
-    @FocusState private var isTextFieldFocused: Bool
     
     // MARK: - Computed Properties
     
@@ -32,25 +30,24 @@ struct GoalInputView: View {
         return analysisService.getQualityAssessment(for: viewModel.userGoalData)
     }
     
-    private var shouldShowChips: Bool {
-        return hasUserInteracted || !goalsText.isEmpty
-    }
-    
     // MARK: - Body
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) { // Increased from 20 to 24
+                VStack(spacing: 24) {
                     // Header Section
                     headerSection
                     
-                    // Goal Input Section
-                    goalInputSection
+                    // Smart Goal Input Section
+                    smartGoalInputSection
                     
-                    // Smart Chips Section
-                    if shouldShowChips {
-                        smartChipsSection
+                    // Essential Information Section (Always Show)
+                    essentialInformationSection
+                    
+                    // Additional Chips Section (Show after user starts typing)
+                    if hasUserInteracted {
+                        additionalChipsSection
                     }
                     
                     // Quality Guidance Section
@@ -60,18 +57,18 @@ struct GoalInputView: View {
                     
                     // Generation Button
                     generateButtonSection
-                        .padding(.top, 20) // Add explicit top padding to button section
+                        .padding(.top, 20)
                     
                     // Existing Plan Notice
                     if viewModel.hasActivePlan && !viewModel.isGenerating {
                         existingPlanSection
                     }
                     
-                    Spacer(minLength: 60) // Increased from 40 to 60
+                    Spacer(minLength: 60)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
-                .padding(.bottom, 20) // Add bottom padding to entire content
+                .padding(.bottom, 20)
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
@@ -93,7 +90,7 @@ struct GoalInputView: View {
         .onAppear {
             setupInitialState()
         }
-        .onChange(of: goalsText) { _, newText in
+        .onChange(of: chipAssistant.goalText) { _, newText in
             handleTextChange(newText)
         }
         .sheet(isPresented: $showingHelpSheet) {
@@ -158,177 +155,172 @@ struct GoalInputView: View {
         .padding(.horizontal, 4)
     }
     
-    // MARK: - Goal Input Section
+    // MARK: - Smart Goal Input Section
     
-    private var goalInputSection: some View {
+    private var smartGoalInputSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Input Field
-            VStack(alignment: .leading, spacing: 8) {
-                TextField(
-                    "e.g., Lose 5 pounds and build strength at home...",
-                    text: $goalsText,
-                    axis: .vertical
-                )
-                .textFieldStyle(PlainTextFieldStyle())
-                .font(.body)
-                .foregroundColor(Color.primary)
-                .lineLimit(4, reservesSpace: true)
-                .focused($isTextFieldFocused)
-                .disabled(viewModel.isGenerating)
-                .onChange(of: isTextFieldFocused) { _, focused in
-                    if focused && !hasUserInteracted {
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            hasUserInteracted = true
-                        }
+            SmartGoalTextEditor(
+                chipAssistant: chipAssistant,
+                placeholder: "e.g., Lose 5 pounds and build strength at home...",
+                minHeight: 120
+            )
+            .disabled(viewModel.isGenerating)
+            .onChange(of: chipAssistant.goalText) { _, newText in
+                // Trigger interaction state when user starts typing
+                if !newText.isEmpty && !hasUserInteracted {
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        hasUserInteracted = true
                     }
                 }
+            }
+            
+            // Character count and analysis status
+            HStack {
+                if !chipAssistant.goalText.isEmpty {
+                    Text("\(chipAssistant.goalText.count) characters")
+                        .font(.caption2)
+                        .foregroundColor(Color.secondary)
+                }
                 
-                // Character count and analysis status
-                HStack {
-                    if !goalsText.isEmpty {
-                        Text("\(goalsText.count) characters")
+                Spacer()
+                
+                // Real-time analysis indicator
+                if analysisService.isAnalyzing {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                        Text("Analyzing...")
                             .font(.caption2)
                             .foregroundColor(Color.secondary)
                     }
-                    
-                    Spacer()
-                    
-                    // Real-time analysis indicator
-                    if analysisService.isAnalyzing {
-                        HStack(spacing: 4) {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                            Text("Analyzing...")
-                                .font(.caption2)
-                                .foregroundColor(Color.secondary)
-                        }
-                    } else if !goalsText.isEmpty {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(Color.green)
-                                .font(.caption)
-                            Text("Ready")
-                                .font(.caption2)
-                                .foregroundColor(Color.green)
-                        }
+                } else if !chipAssistant.goalText.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(Color.green)
+                            .font(.caption)
+                        Text("Ready")
+                            .font(.caption2)
+                            .foregroundColor(Color.green)
                     }
                 }
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemBackground))
-                    .stroke(
-                        isTextFieldFocused ? Color.blue : Color(.systemGray4),
-                        lineWidth: isTextFieldFocused ? 2 : 1
-                    )
-            )
-            .animation(.easeInOut(duration: 0.2), value: isTextFieldFocused)
         }
     }
     
-    // MARK: - Smart Chips Section (Updated with Progressive Disclosure)
+    // MARK: - Essential Information Section
     
-    private var smartChipsSection: some View {
-        VStack(spacing: 20) { // Increased spacing from 16 to 20
-            // Always show what we need, regardless of current state
-            VStack(alignment: .leading, spacing: 12) {
+    private var essentialInformationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "star.fill")
+                    .foregroundColor(.orange)
+                    .font(.caption)
+                Text("Essential Information")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+            
+            // Interactive Essential Chips
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(chipAssistant.sortedChips, id: \.id) { chip in
+                    interactiveChipRow(for: chip)
+                }
+            }
+            
+            if !hasUserInteracted {
+                Text("Tap the + buttons to add information to your goal")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+            } else {
+                // Completion Progress
                 HStack {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.orange)
-                        .font(.caption)
-                    Text("Essential Information")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    Spacer()
-                }
-                
-                // Show preview of what we need even before user types
-                VStack(alignment: .leading, spacing: 8) {
-                    quickInfoRow(
-                        icon: "figure.strengthtraining.traditional",
-                        title: "Fitness Level",
-                        isCompleted: viewModel.userGoalData.isChipSelected(.fitnessLevel)
-                    )
-                    
-                    quickInfoRow(
-                        icon: "person.2",
-                        title: "Sex",
-                        isCompleted: viewModel.userGoalData.isChipSelected(.sex)
-                    )
-                    
-                    quickInfoRow(
-                        icon: "ruler.fill",
-                        title: "Height & Weight",
-                        isCompleted: viewModel.userGoalData.isChipSelected(.physicalStats)
-                    )
-                    
-                    quickInfoRow(
-                        icon: "clock",
-                        title: "Time Per Workout",
-                        isCompleted: viewModel.userGoalData.isChipSelected(.timeAvailable)
-                    )
-                    
-                    quickInfoRow(
-                        icon: "location",
-                        title: "Workout Location",
-                        isCompleted: viewModel.userGoalData.isChipSelected(.workoutLocation)
-                    )
-                    
-                    quickInfoRow(
-                        icon: "calendar",
-                        title: "Days Per Week",
-                        isCompleted: viewModel.userGoalData.isChipSelected(.weeklyFrequency)
-                    )
-                }
-                
-                if !hasUserInteracted {
-                    Text("Start typing your goal above and selection options will appear")
+                    Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .italic()
+                    
+                    Spacer()
+                    
+                    // Progress bar
+                    ProgressView(value: chipAssistant.completionPercentage)
+                        .frame(width: 60)
+                        .tint(.green)
                 }
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            
-            // Show actual chips once user starts interacting
-            if hasUserInteracted {
-                ChipSelectorView(
-                    userGoalData: .constant(viewModel.userGoalData),
-                    layout: .adaptive,
-                    style: .standard,
-                    showSectionHeaders: false, // Hide section headers to avoid duplication
-                    onSelectionChanged: { chipData in
-                        handleChipSelection(chipData)
-                    }
-                )
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
         }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+    
+    // MARK: - Additional Chips Section
+    
+    private var additionalChipsSection: some View {
+        ChipSelectorView(
+            userGoalData: .constant(viewModel.userGoalData),
+            layout: .adaptive,
+            style: .standard,
+            showSectionHeaders: true,
+            onSelectionChanged: { chipData in
+                handleChipSelection(chipData)
+            }
+        )
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: hasUserInteracted)
     }
     
-    // MARK: - Quick Info Row Helper
+    // MARK: - Interactive Chip Row Helper
     
-    private func quickInfoRow(icon: String, title: String, isCompleted: Bool) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(.blue)
-                .frame(width: 16)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(.caption)
-                .foregroundColor(isCompleted ? .green : .gray)
+    private func interactiveChipRow(for chip: EssentialChip) -> some View {
+        Button(action: {
+            if chip.isCompleted {
+                // Reset the chip if already completed
+                chipAssistant.resetChip(type: chip.type)
+            } else {
+                // Insert prompt for this chip
+                chipAssistant.insertPromptForChip(type: chip.type)
+                
+                // Provide haptic feedback
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: chip.icon)
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                    .frame(width: 16)
+                
+                Text(chip.title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                // Show + or checkmark based on completion
+                if chip.isCompleted {
+                    HStack(spacing: 4) {
+                        if let selectedOption = chip.selectedOption {
+                            Text(selectedOption.displayText)
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                                .lineLimit(1)
+                        }
+                        
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                } else {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+            }
+            .contentShape(Rectangle()) // Make entire row tappable
         }
+        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Quality Guidance Section
@@ -460,15 +452,14 @@ struct GoalInputView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        if goalsText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            requirementRow("Describe your fitness goal", completed: false)
-                        } else {
-                            requirementRow("Describe your fitness goal", completed: true)
-                        }
+                        requirementRow(
+                            "Describe your fitness goal",
+                            completed: !chipAssistant.goalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
                         
                         requirementRow(
-                            "Add your fitness level and available time",
-                            completed: viewModel.userGoalData.completenessScore >= 0.3
+                            "Add essential information (\(chipAssistant.completedCount)/\(chipAssistant.totalCount))",
+                            completed: chipAssistant.completionPercentage >= 0.5
                         )
                     }
                 }
@@ -547,6 +538,9 @@ struct GoalInputView: View {
         
         // Set up analysis service
         analysisService.analyzeText("", with: viewModel.userGoalData)
+        
+        // Initialize chip assistant with empty text
+        chipAssistant.updateGoalText("")
     }
     
     private func handleTextChange(_ newText: String) {
@@ -573,7 +567,7 @@ struct GoalInputView: View {
         
         // Re-trigger analysis with updated data
         Task {
-            await analysisService.forceAnalysis(for: goalsText, with: viewModel.userGoalData)
+            await analysisService.forceAnalysis(for: chipAssistant.goalText, with: viewModel.userGoalData)
         }
         
         // Haptic feedback for successful selection
@@ -600,7 +594,7 @@ struct GoalInputView: View {
     }
     
     private func resetForm() {
-        goalsText = ""
+        chipAssistant.reset()
         hasUserInteracted = false
         showQualityIndicator = false
         setupInitialState()
@@ -610,10 +604,14 @@ struct GoalInputView: View {
     
     private func generatePlan() async {
         print("🎯 Generate Plan button tapped")
-        print("📝 Complete goal text: \(viewModel.userGoalData.completeGoalText)")
+        print("📝 Complete goal text: \(chipAssistant.goalText)")
         print("📊 Quality score: \(qualityAssessment.overallScore)")
+        print("✅ Essential chips completed: \(chipAssistant.completedCount)/\(chipAssistant.totalCount)")
         
-        // Use ViewModel's new parameterless method
+        // Ensure the ViewModel has the latest goal text from chip assistant
+        viewModel.updateGoalText(chipAssistant.goalText)
+        
+        // Use ViewModel's generation method
         await viewModel.generatePlanFromGoals()
         
         // Clear the form after successful generation
