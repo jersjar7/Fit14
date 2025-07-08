@@ -266,20 +266,20 @@ struct GoalInputView: View {
             VStack(spacing: 20) {
                 // Header
                 VStack(spacing: 8) {
-                    Text("Select Start Date")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+//                    Text("Select Start Date")
+//                        .font(.headline)
+//                        .fontWeight(.semibold)
                     
                     Text("Choose when your 14-day fitness challenge begins")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 20)
+                .padding(.top, 10)
                 
                 // Date Picker
                 DatePicker(
-                    "Start Date",
+                    "",
                     selection: Binding(
                         get: { viewModel.selectedStartDate },
                         set: { newDate in
@@ -289,8 +289,8 @@ struct GoalInputView: View {
                     in: Date()...,
                     displayedComponents: .date
                 )
-                .datePickerStyle(.wheel)
-                .padding(.horizontal, 20)
+                .datePickerStyle(.graphical)
+                .padding(.horizontal, 60)
                 
                 // Reset to default option
                 if viewModel.hasExplicitStartDate {
@@ -309,7 +309,7 @@ struct GoalInputView: View {
                 
                 Spacer()
             }
-            .navigationTitle("Start Date")
+            .navigationTitle("Select Start Date")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -332,7 +332,7 @@ struct GoalInputView: View {
     // MARK: - Essential Information Section
     
     private var essentialInformationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 20) {
             HStack {
                 Image(systemName: "star.fill")
                     .foregroundColor(.orange)
@@ -365,7 +365,6 @@ struct GoalInputView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 20)
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }
