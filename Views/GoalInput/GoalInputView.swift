@@ -369,8 +369,8 @@ struct GoalInputView: View {
         .cornerRadius(12)
     }
     
-    // MARK: - Interactive Chip Row Helper
-    
+    // MARK: - Interactive Chip Row Helper (Thread-Safe Fix)
+
     private func interactiveChipRow(for chip: EssentialChip) -> some View {
         Button(action: {
             if chip.isCompleted {
@@ -400,7 +400,9 @@ struct GoalInputView: View {
                 // Show + or checkmark based on completion
                 if chip.isCompleted {
                     HStack(spacing: 4) {
-                        if let selectedOption = chip.selectedOption {
+                        // ⚠️ FIX: Safely access selectedOption.displayText
+                        if let selectedOption = chip.selectedOption,
+                           !selectedOption.displayText.isEmpty {
                             Text(selectedOption.displayText)
                                 .font(.caption2)
                                 .foregroundColor(.green)
@@ -417,7 +419,7 @@ struct GoalInputView: View {
                         .foregroundColor(.blue)
                 }
             }
-            .contentShape(Rectangle()) // Make entire row tappable
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
