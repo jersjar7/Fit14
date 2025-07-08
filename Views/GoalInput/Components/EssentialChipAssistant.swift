@@ -128,13 +128,24 @@ class EssentialChipAssistant: ObservableObject {
     func completeChip(type: ChipType, selectedOption: ChipSelectionOption) {
         guard let index = chips.firstIndex(where: { $0.type == type }) else { return }
         
+        let chip = chips[index]
+        
+        // Set the selection
         chips[index].selectedOption = selectedOption
-        chips[index].isCompleted = true
         
-        // Update the goal text with the completed phrase
-        updateGoalTextWithCompletion(for: chips[index])
+        // Replace prompt with completed text
+        let completedText = chip.promptTemplate + selectedOption.displayText
+        goalText = goalText.replacingOccurrences(of: chip.promptTemplate, with: completedText)
         
-        print("✅ Completed essential chip: \(type.displayTitle) -> \(selectedOption.displayText)")
+        // Add period if needed
+        if !goalText.hasSuffix(".") && !goalText.hasSuffix("!") && !goalText.hasSuffix("?") {
+            goalText += "."
+        }
+        
+        // Clean up
+        goalText = goalText.replacingOccurrences(of: "  ", with: " ")
+        
+        print("✅ Completed: \(completedText)")
     }
     
     /// Reset a chip to uncompleted state
@@ -156,9 +167,12 @@ class EssentialChipAssistant: ObservableObject {
     
     /// Insert prompt text for a chip into the goal text
     func insertPromptForChip(type: ChipType) {
-        guard let chip = getChip(for: type), !chip.isCompleted else { return }
+        guard let chip = getChip(for: type), !chip.isCompleted else {
+            print("❌ Cannot insert prompt for \(type.displayTitle): chip not found or already completed")
+            return
+        }
         
-        // Add the placeholder token to the goal text (this will trigger inline options in the UI)
+        // Add the prompt template to the goal text (this will trigger inline options in the UI)
         let insertion = chip.promptTemplate
         
         // Smart insertion - add proper spacing and punctuation
@@ -172,7 +186,8 @@ class EssentialChipAssistant: ObservableObject {
             goalText = trimmed + separator + insertion
         }
         
-        print("➕ Inserted placeholder for essential chip: \(type.displayTitle)")
+        print("➕ Inserted prompt for essential chip: \(type.displayTitle)")
+        print("📝 Current goal text: '\(goalText)'")
     }
     
     /// Get available options for inline selection
@@ -210,7 +225,7 @@ class EssentialChipAssistant: ObservableObject {
     }
     
     // MARK: - Private Methods
-    
+
     /// Set up the 6 essential chips with their options
     private func setupEssentialChips() {
         chips = [
@@ -219,11 +234,11 @@ class EssentialChipAssistant: ObservableObject {
                 type: .fitnessLevel,
                 title: "Fitness Level",
                 icon: "figure.strengthtraining.traditional",
-                promptTemplate: "{{FITNESS_LEVEL_PLACEHOLDER}}",
+                promptTemplate: "My fitness level is ", // FIXED: Was {{FITNESS_LEVEL_PLACEHOLDER}}
                 options: [
-                    ChipSelectionOption(value: "beginner", displayText: "My fitness level is beginner", description: "New to fitness or returning after a long break"),
-                    ChipSelectionOption(value: "intermediate", displayText: "My fitness level is intermediate", description: "Exercise regularly, comfortable with basic movements"),
-                    ChipSelectionOption(value: "advanced", displayText: "My fitness level is advanced", description: "Very experienced, ready for challenging workouts")
+                    ChipSelectionOption(value: "beginner", displayText: "beginner", description: "New to fitness or returning after a long break"),
+                    ChipSelectionOption(value: "intermediate", displayText: "intermediate", description: "Exercise regularly, comfortable with basic movements"),
+                    ChipSelectionOption(value: "advanced", displayText: "advanced", description: "Very experienced, ready for challenging workouts")
                 ]
             ),
             
@@ -232,11 +247,11 @@ class EssentialChipAssistant: ObservableObject {
                 type: .sex,
                 title: "Sex",
                 icon: "person.2",
-                promptTemplate: "{{SEX_PLACEHOLDER}}",
+                promptTemplate: "I am a ", // FIXED: Was {{SEX_PLACEHOLDER}}
                 options: [
-                    ChipSelectionOption(value: "male", displayText: "I am a male"),
-                    ChipSelectionOption(value: "female", displayText: "I am a female"),
-                    ChipSelectionOption(value: "prefer not to say", displayText: "I am a person who prefers not to specify")
+                    ChipSelectionOption(value: "male", displayText: "male"),
+                    ChipSelectionOption(value: "female", displayText: "female"),
+                    ChipSelectionOption(value: "prefer not to say", displayText: "person who prefers not to specify")
                 ]
             ),
             
@@ -245,14 +260,14 @@ class EssentialChipAssistant: ObservableObject {
                 type: .physicalStats,
                 title: "Height & Weight",
                 icon: "ruler.fill",
-                promptTemplate: "{{PHYSICAL_STATS_PLACEHOLDER}}",
+                promptTemplate: "My height and weight are ", // FIXED: Was {{PHYSICAL_STATS_PLACEHOLDER}}
                 options: [
-                    ChipSelectionOption(value: "5'0\", 120 lbs", displayText: "My height and weight are 5'0\", 120 lbs"),
-                    ChipSelectionOption(value: "5'3\", 130 lbs", displayText: "My height and weight are 5'3\", 130 lbs"),
-                    ChipSelectionOption(value: "5'6\", 140 lbs", displayText: "My height and weight are 5'6\", 140 lbs"),
-                    ChipSelectionOption(value: "5'9\", 160 lbs", displayText: "My height and weight are 5'9\", 160 lbs"),
-                    ChipSelectionOption(value: "6'0\", 180 lbs", displayText: "My height and weight are 6'0\", 180 lbs"),
-                    ChipSelectionOption(value: "custom", displayText: "My height and weight are ", description: "Tap to enter custom height and weight")
+                    ChipSelectionOption(value: "5'0\", 120 lbs", displayText: "5'0\", 120 lbs"),
+                    ChipSelectionOption(value: "5'3\", 130 lbs", displayText: "5'3\", 130 lbs"),
+                    ChipSelectionOption(value: "5'6\", 140 lbs", displayText: "5'6\", 140 lbs"),
+                    ChipSelectionOption(value: "5'9\", 160 lbs", displayText: "5'9\", 160 lbs"),
+                    ChipSelectionOption(value: "6'0\", 180 lbs", displayText: "6'0\", 180 lbs"),
+                    ChipSelectionOption(value: "custom", displayText: " ' \" and  lbs", description: "Tap to enter custom height and weight")
                 ]
             ),
             
@@ -261,12 +276,12 @@ class EssentialChipAssistant: ObservableObject {
                 type: .timeAvailable,
                 title: "Time Per Workout",
                 icon: "clock",
-                promptTemplate: "{{TIME_AVAILABLE_PLACEHOLDER}}",
+                promptTemplate: "I can work out for ", // FIXED: Was {{TIME_AVAILABLE_PLACEHOLDER}}
                 options: [
-                    ChipSelectionOption(value: "15-30 minutes", displayText: "I can work out for 15-30 minutes", description: "Quick, efficient workouts"),
-                    ChipSelectionOption(value: "30-45 minutes", displayText: "I can work out for 30-45 minutes", description: "Standard workout duration"),
-                    ChipSelectionOption(value: "45-60 minutes", displayText: "I can work out for 45-60 minutes", description: "Longer, comprehensive sessions"),
-                    ChipSelectionOption(value: "60+ minutes", displayText: "I can work out for 60+ minutes", description: "Extended training sessions")
+                    ChipSelectionOption(value: "15-30 minutes", displayText: "15-30 minutes", description: "Quick, efficient workouts"),
+                    ChipSelectionOption(value: "30-45 minutes", displayText: "30-45 minutes", description: "Standard workout duration"),
+                    ChipSelectionOption(value: "45-60 minutes", displayText: "45-60 minutes", description: "Longer, comprehensive sessions"),
+                    ChipSelectionOption(value: "60+ minutes", displayText: "60+ minutes", description: "Extended training sessions")
                 ]
             ),
             
@@ -275,12 +290,12 @@ class EssentialChipAssistant: ObservableObject {
                 type: .workoutLocation,
                 title: "Workout Location",
                 icon: "location",
-                promptTemplate: "{{WORKOUT_LOCATION_PLACEHOLDER}}",
+                promptTemplate: "I will be working out ", // FIXED: Was {{WORKOUT_LOCATION_PLACEHOLDER}}
                 options: [
-                    ChipSelectionOption(value: "at home", displayText: "I will be working out at home", description: "Bodyweight and minimal equipment exercises"),
-                    ChipSelectionOption(value: "at the gym", displayText: "I will be working out at the gym", description: "Full equipment access"),
-                    ChipSelectionOption(value: "outdoors", displayText: "I will be working out outdoors", description: "Running, hiking, outdoor activities"),
-                    ChipSelectionOption(value: "at home and gym", displayText: "I will be working out at home and the gym", description: "Flexible between locations")
+                    ChipSelectionOption(value: "at home", displayText: "at home", description: "Bodyweight and minimal equipment exercises"),
+                    ChipSelectionOption(value: "at the gym", displayText: "at the gym", description: "Full equipment access"),
+                    ChipSelectionOption(value: "outdoors", displayText: "outdoors", description: "Running, hiking, outdoor activities"),
+                    ChipSelectionOption(value: "at home and gym", displayText: "at home and the gym", description: "Flexible between locations")
                 ]
             ),
             
@@ -289,12 +304,12 @@ class EssentialChipAssistant: ObservableObject {
                 type: .weeklyFrequency,
                 title: "Days Per Week",
                 icon: "calendar",
-                promptTemplate: "{{WEEKLY_FREQUENCY_PLACEHOLDER}}",
+                promptTemplate: "I can exercise ", // FIXED: Was {{WEEKLY_FREQUENCY_PLACEHOLDER}}
                 options: [
-                    ChipSelectionOption(value: "3 days per week", displayText: "I can exercise 3 days per week", description: "Balanced approach with recovery time"),
-                    ChipSelectionOption(value: "4-5 days per week", displayText: "I can exercise 4-5 days per week", description: "Regular, consistent training"),
-                    ChipSelectionOption(value: "6+ days per week", displayText: "I can exercise 6+ days per week", description: "High-frequency training"),
-                    ChipSelectionOption(value: "daily except Sunday", displayText: "I can exercise daily except Sunday", description: "6 days per week with Sunday rest")
+                    ChipSelectionOption(value: "3 days per week", displayText: "3 days per week", description: "Balanced approach with recovery time"),
+                    ChipSelectionOption(value: "4-5 days per week", displayText: "4-5 days per week", description: "Regular, consistent training"),
+                    ChipSelectionOption(value: "6+ days per week", displayText: "6+ days per week", description: "High-frequency training"),
+                    ChipSelectionOption(value: "daily except Sunday", displayText: "daily except Sunday", description: "6 days per week with Sunday rest")
                 ]
             )
         ]
@@ -328,133 +343,36 @@ class EssentialChipAssistant: ObservableObject {
         for index in chips.indices {
             let chip = chips[index]
             
-            var isPatternDetected = false
-            var matchingOption: ChipSelectionOption?
+            // Check for trigger phrases
+            var isCompleted = false
             
-            // Check if the detectable pattern is found in text
             switch chip.type {
             case .fitnessLevel:
-                // Look for the complete phrase "my fitness level is [level]"
-                if lowercaseText.contains("my fitness level is") && !lowercaseText.contains("{{fitness_level_placeholder}}") {
-                    print("🔍 Detected fitness level pattern")
-                    if lowercaseText.contains("beginner") {
-                        matchingOption = chip.options.first { $0.value.contains("beginner") }
-                    } else if lowercaseText.contains("intermediate") {
-                        matchingOption = chip.options.first { $0.value.contains("intermediate") }
-                    } else if lowercaseText.contains("advanced") {
-                        matchingOption = chip.options.first { $0.value.contains("advanced") }
-                    } else {
-                        matchingOption = chip.options.first
-                    }
-                    isPatternDetected = true
-                    print("🔍 Fitness level pattern found: \(matchingOption?.displayText ?? "none")")
-                }
-                
-            case .sex:
-                // Look for the complete phrase "i am a [male/female]"
-                if (lowercaseText.contains("i am a male") ||
-                    lowercaseText.contains("i am a female") ||
-                    lowercaseText.contains("i am a person")) &&
-                   !lowercaseText.contains("{{sex_placeholder}}") {
-                    print("🔍 Detected sex pattern")
-                    if lowercaseText.contains("female") {
-                        matchingOption = chip.options.first { $0.value.contains("female") }
-                    } else if lowercaseText.contains("male") && !lowercaseText.contains("female") {
-                        matchingOption = chip.options.first { $0.value.contains("male") }
-                    } else {
-                        matchingOption = chip.options.first { $0.value.contains("prefer not to say") }
-                    }
-                    isPatternDetected = true
-                    print("🔍 Sex pattern found: \(matchingOption?.displayText ?? "none")")
-                }
-                
-            case .physicalStats:
-                // Look for the complete phrase "my height and weight are"
-                if lowercaseText.contains("my height and weight are") && !lowercaseText.contains("{{physical_stats_placeholder}}") {
-                    print("🔍 Detected physical stats pattern")
-                    matchingOption = chip.options.first
-                    isPatternDetected = true
-                    print("🔍 Physical stats pattern found: \(matchingOption?.displayText ?? "none")")
-                }
+                isCompleted = lowercaseText.contains("fitness level")
                 
             case .timeAvailable:
-                // Look for the complete phrase "i can work out for [time]"
-                if lowercaseText.contains("i can work out for") && !lowercaseText.contains("{{time_available_placeholder}}") {
-                    print("🔍 Detected time available pattern")
-                    if lowercaseText.contains("15-30") || (lowercaseText.contains("15") && lowercaseText.contains("30")) {
-                        matchingOption = chip.options.first { $0.value.contains("15-30") }
-                    } else if lowercaseText.contains("30-45") || (lowercaseText.contains("30") && lowercaseText.contains("45")) {
-                        matchingOption = chip.options.first { $0.value.contains("30-45") }
-                    } else if lowercaseText.contains("45-60") || (lowercaseText.contains("45") && lowercaseText.contains("60")) {
-                        matchingOption = chip.options.first { $0.value.contains("45-60") }
-                    } else if lowercaseText.contains("60+") || lowercaseText.contains("hour") {
-                        matchingOption = chip.options.first { $0.value.contains("60+") }
-                    } else {
-                        matchingOption = chip.options.first
-                    }
-                    isPatternDetected = true
-                    print("🔍 Time available pattern found: \(matchingOption?.displayText ?? "none")")
-                }
+                isCompleted = lowercaseText.contains("can work out ")
+                
+            case .sex:
+                isCompleted = lowercaseText.contains("i am a")
                 
             case .workoutLocation:
-                // Look for the complete phrase "i will be working out [location]"
-                if lowercaseText.contains("i will be working out") && !lowercaseText.contains("{{workout_location_placeholder}}") {
-                    print("🔍 Detected workout location pattern")
-                    if lowercaseText.contains("at home") {
-                        matchingOption = chip.options.first { $0.value.contains("at home") }
-                    } else if lowercaseText.contains("at the gym") {
-                        matchingOption = chip.options.first { $0.value.contains("at the gym") }
-                    } else if lowercaseText.contains("outdoors") {
-                        matchingOption = chip.options.first { $0.value.contains("outdoors") }
-                    } else if lowercaseText.contains("home and gym") {
-                        matchingOption = chip.options.first { $0.value.contains("home and gym") }
-                    } else {
-                        matchingOption = chip.options.first
-                    }
-                    isPatternDetected = true
-                    print("🔍 Workout location pattern found: \(matchingOption?.displayText ?? "none")")
-                }
+                isCompleted = lowercaseText.contains("will be working out")
+                
+            case .physicalStats:
+                isCompleted = lowercaseText.contains("height and weight")
                 
             case .weeklyFrequency:
-                // Look for the actual completed phrases, not just "can exercise"
-                if (lowercaseText.contains("i can exercise 3 days") ||
-                    lowercaseText.contains("i can exercise 4-5 days") ||
-                    lowercaseText.contains("i can exercise 6+ days") ||
-                    lowercaseText.contains("i can exercise daily except sunday")) &&
-                   !lowercaseText.contains("{{weekly_frequency_placeholder}}") {
-                    print("🔍 Detected weekly frequency pattern")
-                    if lowercaseText.contains("3 days") || lowercaseText.contains("three days") {
-                        matchingOption = chip.options.first { $0.value.contains("3 days") }
-                    } else if lowercaseText.contains("4-5") || (lowercaseText.contains("4") && lowercaseText.contains("5")) {
-                        matchingOption = chip.options.first { $0.value.contains("4-5") }
-                    } else if lowercaseText.contains("daily except sunday") {
-                        matchingOption = chip.options.first { $0.value.contains("daily except Sunday") }
-                    } else if lowercaseText.contains("6+") || lowercaseText.contains("daily") {
-                        matchingOption = chip.options.first { $0.value.contains("6+") }
-                    } else {
-                        matchingOption = chip.options.first
-                    }
-                    isPatternDetected = true
-                    print("🔍 Weekly frequency pattern found: \(matchingOption?.displayText ?? "none")")
-                }
+                isCompleted = lowercaseText.contains("i can exercise")
             }
             
-            // Update chip completion status:
-            // 1. If pattern is detected, mark as completed
-            // 2. If pattern is NOT detected BUT chip was already completed, keep it completed
-            // 3. Only reset to incomplete through explicit user action (resetChip method)
-            if isPatternDetected {
-                chips[index].isCompleted = true
-                chips[index].selectedOption = matchingOption
-                print("✅ Chip \(chip.title) marked as completed (pattern detected)")
-            } else if chip.isCompleted {
-                // Keep as completed even if pattern is not detected anymore
-                print("🔒 Chip \(chip.title) staying completed (preserving previous state)")
+            chips[index].isCompleted = isCompleted
+            
+            if isCompleted && chips[index].selectedOption == nil {
+                // Set a default option if completed but no selection made
+                chips[index].selectedOption = chip.options.first
             }
-            // If not detected AND not already completed, chip remains incomplete (no action needed)
         }
-        
-        print("📊 Total completed: \(completedCount)/\(totalCount) (preserving completed state)")
     }
     
     // MARK: - Debug Helpers

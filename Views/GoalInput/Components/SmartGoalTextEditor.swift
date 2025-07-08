@@ -32,19 +32,18 @@ struct SmartGoalTextEditor: View {
     private var activePromptInfo: (type: ChipType, template: String)? {
         let text = chipAssistant.goalText
         
-        // Check if text ends with any user-friendly prompts (order matters - longer prompts first)
-        let promptMappings: [(String, ChipType)] = [
-            ("My fitness level is ", .fitnessLevel),
+        let prompts: [(String, ChipType)] = [
             ("My height and weight are ", .physicalStats),
-            ("I can work out for ", .timeAvailable),
             ("I will be working out ", .workoutLocation),
+            ("My fitness level is ", .fitnessLevel),
+            ("I can work out for ", .timeAvailable),
             ("I can exercise ", .weeklyFrequency),
             ("I am a ", .sex)
         ]
         
-        for (prompt, chipType) in promptMappings {
+        for (prompt, chipType) in prompts {
             if text.hasSuffix(prompt) {
-                if let chip = chipAssistant.getChip(for: chipType), !chip.isCompleted {
+                if let chip = chipAssistant.getChip(for: chipType) {
                     return (chipType, chip.promptTemplate)
                 }
             }
@@ -61,7 +60,17 @@ struct SmartGoalTextEditor: View {
     
     /// Whether to show inline selection chips
     private var shouldShowInlineSelection: Bool {
-        return isEditing && activePromptInfo != nil && !inlineOptions.isEmpty
+        let hasActivePrompt = activePromptInfo != nil
+        let hasOptions = !inlineOptions.isEmpty
+        let result = isEditing && hasActivePrompt && hasOptions
+        
+        print("🔍 shouldShowInlineSelection check:")
+        print("   - isEditing: \(isEditing)")
+        print("   - hasActivePrompt: \(hasActivePrompt)")
+        print("   - hasOptions: \(hasOptions) (count: \(inlineOptions.count))")
+        print("   - result: \(result)")
+        
+        return result
     }
     
     // MARK: - Initialization
