@@ -425,34 +425,36 @@ struct GoalInputView: View {
     // MARK: - Generate Button Section
     
     private var generateButtonSection: some View {
-        VStack(spacing: 12) {
-            
-            Button(action: {
-                Task {
-                    await generatePlan()
-                }
-            }) {
-                HStack {
-                    if viewModel.isGenerating {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .foregroundColor(Color.white)
-                    } else {
-                        Image(systemName: "sparkles")
+        VStack(spacing: 20) {
+            UltraInstinctButton.generatePlan(
+                action: {
+                    Task {
+                        await generatePlan()
                     }
-                    Text(viewModel.isGenerating ? "Creating Your Plan..." : "Generate AI Workout Plan")
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(canGeneratePlan ? Color.blue : Color.gray)
-                .foregroundColor(Color.white)
-                .cornerRadius(12)
-            }
-            .disabled(!canGeneratePlan)
-            .animation(.easeInOut(duration: 0.2), value: canGeneratePlan)
+                },
+                isGenerating: viewModel.isGenerating,
+                canGenerate: canGeneratePlan
+            )
         }
     }
+    
+    // MARK: - Alternative: Custom Usage Example
+//    private var customGenerateButtonSection: some View {
+//        VStack(spacing: 12) {
+//            UltraInstinctButton.custom(
+//                action: {
+//                    Task {
+//                        await generatePlan()
+//                    }
+//                },
+//                isLoading: viewModel.isGenerating,
+//                isEnabled: canGeneratePlan,
+//                loadingText: "Creating Your Plan...",
+//                defaultText: "Generate AI Workout Plan",
+//                icon: "sparkles"
+//            )
+//        }
+//    }
     
     // MARK: - Existing Plan Section
     
