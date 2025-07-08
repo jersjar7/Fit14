@@ -5,6 +5,7 @@
 //  Created by Jerson on 7/6/25.
 //  Enhanced with structured chip data support for essential information
 //  Updated to support user-specified start dates
+//  Enhanced with explicit start date prioritization
 //
 
 import Foundation
@@ -12,7 +13,7 @@ import Foundation
 struct AIPrompts {
     
     // MARK: - Version Tracking
-    static let promptVersion = "2.2.0"
+    static let promptVersion = "2.3.0"
     static let lastUpdated = "2025-07-07"
     
     // MARK: - Enhanced Workout Generation Prompt
@@ -27,13 +28,8 @@ struct AIPrompts {
         USER'S COMPLETE GOALS:
         {USER_GOALS}
         
-        START DATE HANDLING:
-        - CAREFULLY parse the user's goal text for any mention of when they want to start
-        - Look for phrases like: "starting Monday", "begin next week", "start tomorrow", "starting on [date]"
-        - If NO start date is mentioned, default to "today"
-        - Consider day-of-week preferences when interpreting start dates (e.g., if they say "no Sundays" and want to start Monday)
-        - Use YYYY-MM-DD format for specific dates, or "today" for immediate start
-        - The startDay you choose will determine Day 1 of the 14-day plan
+        START DATE HANDLING (PRIORITY ORDER):
+        {EXPLICIT_START_DATE}
         
         WORKOUT PLAN REQUIREMENTS:
         - Create exactly 14 days of workouts optimized for the user's profile
@@ -69,7 +65,6 @@ struct AIPrompts {
         
         NATURAL LANGUAGE PROCESSING:
         - Carefully read the user's goal text for mentions of:
-          * START DATE/TIMING: "starting Monday", "begin next week", "start tomorrow", "starting on [specific date]"
           * Injuries or physical limitations (e.g., "bad knee", "shoulder injury")
           * Equipment preferences (e.g., "resistance bands", "no weights")
           * Schedule constraints (e.g., "busy mornings", "weekends only")
@@ -77,7 +72,7 @@ struct AIPrompts {
           * Training preferences (e.g., "hate running", "love swimming")
           * Day-of-week preferences (e.g., "no workouts on Sundays", "gym only on weekdays")
         - Incorporate these natural language details into the workout design
-        - MOST IMPORTANTLY: Use start date preferences to align rest days and schedule preferences correctly
+        - Use start date preferences to align rest days and schedule preferences correctly
         
         REST DAY GUIDELINES:
         - Rest days are crucial for recovery and should be included
@@ -160,10 +155,11 @@ struct AIPrompts {
         
         START DAY FIELD REQUIREMENTS:
         - "startDay" must be either "today" or a date in YYYY-MM-DD format (e.g., "2025-01-13")
-        - If user mentions "starting Monday" or similar, calculate the appropriate date
+        - If user explicitly selected a start date, prioritize that date
+        - If user mentions "starting Monday" or similar in text, calculate the appropriate date
         - If user mentions "tomorrow", use "tomorrow" as the value
         - If user mentions "next week" or "next Monday", calculate the specific date
-        - If NO start timing is mentioned in their goals, use "today"
+        - If NO start timing is mentioned anywhere, use "today"
         - Consider the current context - if generating on Friday and user says "starting Monday", use the upcoming Monday's date
         
         CRITICAL FOR FIT14 APP - JSON REQUIREMENTS:
@@ -186,8 +182,10 @@ struct AIPrompts {
     static func buildUserProfile(from goalData: UserGoalData) -> String {
         var profileComponents: [String] = []
         
-        // Extract structured data using the existing method
-        let structuredData = goalData.structuredData
+        // Add start date information first if explicitly set
+        if goalData.hasExplicitStartDate {
+            profileComponents.append("START DATE: User explicitly selected \(goalData.startDateDisplayText) (\(goalData.startDateForPrompt))")
+        }
         
         // Build profile sections based on selected essential chips only
         for chip in goalData.selectedChips {
@@ -216,11 +214,42 @@ struct AIPrompts {
         }
         
         // If no structured data, provide minimal profile
-        if profileComponents.isEmpty {
-            return "No essential information provided. Please create a balanced, beginner-friendly plan suitable for home workouts. Parse the user's goal text carefully for any additional constraints, equipment, or preferences mentioned naturally."
+        if profileComponents.isEmpty || (profileComponents.count == 1 && goalData.hasExplicitStartDate) {
+            let baseProfile = "No essential information provided. Please create a balanced, beginner-friendly plan suitable for home workouts. Parse the user's goal text carefully for any additional constraints, equipment, or preferences mentioned naturally."
+            
+            if goalData.hasExplicitStartDate {
+                return "\(profileComponents.first!)\n\n\(baseProfile)"
+            } else {
+                return baseProfile
+            }
         }
         
         return profileComponents.joined(separator: "\n")
+    }
+    
+    /// Build explicit start date instructions for AI prompt
+    static func buildStartDateInstructions(from goalData: UserGoalData) -> String {
+        if goalData.hasExplicitStartDate {
+            return """
+            1. PRIORITY: User explicitly selected start date as \(goalData.startDateDisplayText) (\(goalData.startDateForPrompt))
+            2. USE THIS EXACT DATE: Set "startDay" to "\(goalData.startDateForPrompt)" in your JSON response
+            3. SECONDARY: If the user's goal text mentions additional start date preferences, consider them for scheduling rest days and workout timing, but maintain the explicitly selected start date
+            4. FALLBACK: If something goes wrong with the explicit date, default to "today"
+            
+            IMPORTANT: The user specifically chose \(goalData.startDateDisplayText) as their start date. Honor this choice exactly.
+            """
+        } else {
+            return """
+            1. CAREFULLY parse the user's goal text for any mention of when they want to start
+            2. Look for phrases like: "starting Monday", "begin next week", "start tomorrow", "starting on [date]"
+            3. If NO start date is mentioned in the goal text, default to "today"
+            4. Consider day-of-week preferences when interpreting start dates (e.g., if they say "no Sundays" and want to start Monday)
+            5. Use YYYY-MM-DD format for specific dates, or "today" for immediate start
+            6. The startDay you choose will determine Day 1 of the 14-day plan
+            
+            Since no explicit start date was selected, rely on natural language processing of the goal text.
+            """
+        }
     }
     
     // MARK: - Enhanced Prompt Building Methods
@@ -229,10 +258,12 @@ struct AIPrompts {
     static func buildWorkoutPrompt(from goalData: UserGoalData) -> String {
         let userProfile = buildUserProfile(from: goalData)
         let userGoals = goalData.completeGoalText
+        let startDateInstructions = buildStartDateInstructions(from: goalData)
         
         return workoutGenerationPrompt
             .replacingOccurrences(of: "{USER_PROFILE}", with: userProfile)
             .replacingOccurrences(of: "{USER_GOALS}", with: userGoals)
+            .replacingOccurrences(of: "{EXPLICIT_START_DATE}", with: startDateInstructions)
     }
     
     /// Legacy method for backward compatibility - uses just text
@@ -245,7 +276,7 @@ struct AIPrompts {
     
     // MARK: - Alternative Prompts (Enhanced)
     
-    static let regenerationPrompt: String = """
+    static let regenerationPromptTemplate: String = """
         You are regenerating a workout plan while preserving user customizations. Follow the same JSON format and unit restrictions as the original workout generation prompt.
         
         USER PROFILE:
@@ -253,13 +284,16 @@ struct AIPrompts {
         
         Original user goals: {USER_GOALS}
         
+        START DATE HANDLING:
+        {EXPLICIT_START_DATE}
+        
         Use the same 11 allowed units: reps, seconds, minutes, hours, meters, yards, feet, kilometers, miles, steps, laps.
-        Include the "startDay" field in your response - parse the user's goals for start date preferences or default to "today".
+        Include the "startDay" field in your response - follow the start date instructions above.
         
         Create a fresh 14-day plan that's different from the previous generation but maintains the same quality, difficulty level, and structure appropriate for the user's profile. Parse the user's goal text for any naturally mentioned constraints.
         """
     
-    static let quickWorkoutPrompt: String = """
+    static let quickWorkoutPromptTemplate: String = """
         Generate a single day quick workout based on these constraints:
         
         USER PROFILE:
@@ -268,6 +302,9 @@ struct AIPrompts {
         User goals: {USER_GOALS}
         Time available: {TIME_AVAILABLE}
         Equipment: {EQUIPMENT}
+        
+        START DATE HANDLING:
+        {EXPLICIT_START_DATE}
         
         Return only JSON format with the same structure as the 14-day plan, but with just one day.
         Use only the 11 allowed units: reps, seconds, minutes, hours, meters, yards, feet, kilometers, miles, steps, laps.
@@ -281,10 +318,12 @@ struct AIPrompts {
     static func regenerationPrompt(from goalData: UserGoalData) -> String {
         let userProfile = buildUserProfile(from: goalData)
         let userGoals = goalData.completeGoalText
+        let startDateInstructions = buildStartDateInstructions(from: goalData)
         
-        return regenerationPrompt
+        return regenerationPromptTemplate
             .replacingOccurrences(of: "{USER_PROFILE}", with: userProfile)
             .replacingOccurrences(of: "{USER_GOALS}", with: userGoals)
+            .replacingOccurrences(of: "{EXPLICIT_START_DATE}", with: startDateInstructions)
     }
     
     /// Legacy regeneration method for backward compatibility
@@ -298,12 +337,14 @@ struct AIPrompts {
     static func quickWorkoutPrompt(from goalData: UserGoalData, timeAvailable: String, equipment: String) -> String {
         let userProfile = buildUserProfile(from: goalData)
         let userGoals = goalData.completeGoalText
+        let startDateInstructions = buildStartDateInstructions(from: goalData)
         
-        return quickWorkoutPrompt
+        return quickWorkoutPromptTemplate
             .replacingOccurrences(of: "{USER_PROFILE}", with: userProfile)
             .replacingOccurrences(of: "{USER_GOALS}", with: userGoals)
             .replacingOccurrences(of: "{TIME_AVAILABLE}", with: timeAvailable)
             .replacingOccurrences(of: "{EQUIPMENT}", with: equipment)
+            .replacingOccurrences(of: "{EXPLICIT_START_DATE}", with: startDateInstructions)
     }
     
     /// Legacy quick workout method for backward compatibility
@@ -341,6 +382,11 @@ struct AIPrompts {
             suggestions.append("Add your fitness level and available workout time")
         }
         
+        // Check explicit start date
+        if goalData.hasExplicitStartDate {
+            strengths.append("Start date explicitly selected (\(goalData.startDateDisplayText))")
+        }
+        
         // Check for safety information in text
         let lowercaseText = goalData.freeFormText.lowercased()
         if lowercaseText.contains("injury") || lowercaseText.contains("pain") || lowercaseText.contains("hurt") {
@@ -359,9 +405,13 @@ struct AIPrompts {
             suggestions.append("Consider mentioning your timeline (2 weeks recommended)")
         }
         
-        // Check for start date mentions in text
-        if lowercaseText.contains("starting") || lowercaseText.contains("begin") || lowercaseText.contains("start") {
-            strengths.append("Start timing preferences specified")
+        // Check for start date mentions in text (if no explicit date)
+        if !goalData.hasExplicitStartDate {
+            if lowercaseText.contains("starting") || lowercaseText.contains("begin") || lowercaseText.contains("start") {
+                strengths.append("Start timing preferences mentioned in text")
+            } else {
+                suggestions.append("Consider using the start date picker for precise timing")
+            }
         }
         
         // Overall completeness
@@ -476,6 +526,7 @@ struct AIPrompts {
         - Enhanced user profiling
         - 2-week goal focus
         - Data quality assessment
+        - EXPLICIT START DATE PRIORITIZATION
         - Start date parsing and handling
         - Backward compatibility maintained
         
@@ -490,6 +541,7 @@ struct AIPrompts {
         - Recognizes schedule restrictions
         - Processes specific performance goals and timelines
         - Parses start date preferences and timing
+        - PRIORITIZES explicit start date selections over text parsing
         """
     }
     
@@ -497,6 +549,7 @@ struct AIPrompts {
     static func debugPromptGeneration(from goalData: UserGoalData) -> String {
         let profile = buildUserProfile(from: goalData)
         let goals = goalData.completeGoalText
+        let startDateInstructions = buildStartDateInstructions(from: goalData)
         let quality = assessDataQuality(goalData)
         
         return """
@@ -504,6 +557,7 @@ struct AIPrompts {
         
         Free-form text: "\(goalData.freeFormText)"
         Selected essential chips: \(goalData.selectedChips.count)
+        Explicit start date: \(goalData.hasExplicitStartDate ? goalData.startDateDisplayText : "None")
         Completeness: \(Int(goalData.completenessScore * 100))%
         Quality: \(quality.score.rawValue)
         
@@ -512,6 +566,9 @@ struct AIPrompts {
         
         === COMPLETE GOALS ===
         \(goals)
+        
+        === START DATE INSTRUCTIONS ===
+        \(startDateInstructions)
         
         === QUALITY ASSESSMENT ===
         Sufficient for AI: \(goalData.isSufficientForAI)

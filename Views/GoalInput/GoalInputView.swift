@@ -17,6 +17,8 @@ struct GoalInputView: View {
     
     // MARK: - UI State
     @State private var showingHelpSheet = false
+    @State private var showingStartDateHelp = false
+    @State private var showingDatePicker = false
     
     // MARK: - Computed Properties
     
@@ -85,6 +87,12 @@ struct GoalInputView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingStartDateHelp) {
+            StartDateHelpSheet()
+        }
+        .sheet(isPresented: $showingDatePicker) {
+            startDatePickerSheet
+        }
         .alert(errorAlertTitle, isPresented: $viewModel.showError) {
             Button("Try Again") {
                 viewModel.clearError()
@@ -151,8 +159,8 @@ struct GoalInputView: View {
             )
             .disabled(viewModel.isGenerating)
             
-            // Start Date Warning Notice
-            startDateWarningSection
+            // Start Date Section (New Implementation)
+            startDateSection
             
             // Status and hint text
             VStack(alignment: .leading, spacing: 8) {
@@ -202,66 +210,123 @@ struct GoalInputView: View {
         }
     }
     
-    // MARK: - Start Date Warning Section
+    // MARK: - Start Date Section (NEW)
     
-    private var startDateWarningSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private var startDateSection: some View {
+        HStack(spacing: 8) {
+            Spacer()
+            
+            // All elements grouped together on the right
             HStack(spacing: 8) {
-                Image(systemName: "calendar.badge.exclamationmark")
-                    .foregroundColor(.blue)
-                    .font(.caption)
+                // Information icon with help action
+                Button(action: {
+                    showingStartDateHelp = true
+                }) {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.blue)
+                        .font(.caption)
+                }
+                .buttonStyle(PlainButtonStyle())
                 
-                Text("Start Date Planning")
+                // "Your plan starts" text
+                Text("Your plan will start")
                     .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.secondary)
+                
+                // Date display with edit action
+                Button(action: {
+                    showingDatePicker = true
+                }) {
+                    HStack(spacing: 6) {
+                        Text(viewModel.startDateDisplayText)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(viewModel.hasExplicitStartDate ? .blue : .primary)
+                        
+                        Image(systemName: "pencil")
+                            .foregroundColor(.blue)
+                            .font(.caption2)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+    }
+    
+    // MARK: - Start Date Picker Sheet
+    
+    private var startDatePickerSheet: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("Select Start Date")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Text("Choose when your 14-day fitness challenge begins")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 20)
+                
+                // Date Picker
+                DatePicker(
+                    "Start Date",
+                    selection: Binding(
+                        get: { viewModel.selectedStartDate },
+                        set: { newDate in
+                            viewModel.updateStartDate(newDate)
+                        }
+                    ),
+                    in: Date()...,
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.wheel)
+                .padding(.horizontal, 20)
+                
+                // Reset to default option
+                if viewModel.hasExplicitStartDate {
+                    Button(action: {
+                        viewModel.clearStartDate()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("Reset to Today")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.orange)
+                    }
+                    .padding(.horizontal, 20)
+                }
                 
                 Spacer()
             }
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text("💡 Want to start on a specific day? Include it in your description:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.leading, 7.0)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    startDateExample("\"...starting next Monday\"")
-                    startDateExample("\"...begin tomorrow\"")
-                    startDateExample("\"...start on January 15th\"")
+            .navigationTitle("Start Date")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        showingDatePicker = false
+                    }
                 }
-                .padding(.leading, 14)
                 
-                Text("⚠️ If not mentioned, your plan will start today")
-                    .font(.caption)
-                    .foregroundColor(.orange)
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        showingDatePicker = false
+                    }
                     .fontWeight(.medium)
-                    .padding(.leading, 7.0)
+                }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.blue.opacity(0.05))
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-        )
-    }
-    
-    private func startDateExample(_ text: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
-                .font(.caption2)
-            
-            Text(text)
-                .font(.caption)
-                .italic()
-                .foregroundColor(.secondary)
-            
-            Spacer()
-        }
+        .presentationDetents([.height(400)])
     }
     
     // MARK: - Essential Information Section
@@ -469,6 +534,7 @@ struct GoalInputView: View {
         print("🎯 Generate Plan button tapped")
         print("📝 Complete goal text: \(chipAssistant.goalText)")
         print("✅ Essential chips completed: \(chipAssistant.completedCount)/\(chipAssistant.totalCount)")
+        print("📅 Start date: \(viewModel.startDateDisplayText) (explicit: \(viewModel.hasExplicitStartDate))")
         
         // Ensure the ViewModel has the latest goal text from chip assistant
         viewModel.updateGoalText(chipAssistant.goalText)

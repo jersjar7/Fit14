@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 6/30/25.
 //  Updated to use Google Gemini API and structured UserGoalData with essential chips only
+//  Enhanced with start date support
 //
 
 import Foundation
@@ -50,6 +51,7 @@ class WorkoutPlanViewModel: ObservableObject {
             print("🚀 Starting Gemini AI plan generation with essential chip data...")
             print("📊 Data completeness: \(Int(userGoalData.completenessScore * 100))%")
             print("📝 Selected essential chips: \(userGoalData.selectedChips.count)")
+            print("📅 Start date: \(userGoalData.hasExplicitStartDate ? userGoalData.startDateDisplayText + " (explicit)" : "No explicit date - will parse from text")")
             
             // Build enhanced prompt with structured data
             let prompt = AIPrompts.buildWorkoutPrompt(from: userGoalData)
@@ -96,6 +98,45 @@ class WorkoutPlanViewModel: ObservableObject {
         userGoalData.updateChip(chipData)
         print("💰 Updated essential chip: \(chipData.type.displayTitle) -> \(chipData.selectedText ?? "none")")
     }
+    
+    // MARK: - Start Date Management
+    
+    /// Update the explicit start date in goal data
+    func updateStartDate(_ date: Date?) {
+        userGoalData.updateStartDate(date)
+        if let date = date {
+            print("📅 Updated start date: \(userGoalData.startDateDisplayText) (\(userGoalData.startDateForPrompt))")
+        } else {
+            print("📅 Cleared explicit start date")
+        }
+    }
+    
+    /// Clear the explicit start date
+    func clearStartDate() {
+        updateStartDate(nil)
+    }
+    
+    /// Get the selected start date (or default to today)
+    var selectedStartDate: Date {
+        return userGoalData.getSelectedStartDate()
+    }
+    
+    /// Whether user has explicitly selected a start date
+    var hasExplicitStartDate: Bool {
+        return userGoalData.hasExplicitStartDate
+    }
+    
+    /// Get user-friendly display text for start date
+    var startDateDisplayText: String {
+        return userGoalData.startDateDisplayText
+    }
+    
+    /// Get formatted start date for AI prompt
+    var startDateForPrompt: String {
+        return userGoalData.startDateForPrompt
+    }
+    
+    // MARK: - Smart Suggestions & Data Quality
     
     /// Get smart suggestions for essential chips based on current text
     var suggestedChips: [ChipType] {
@@ -206,6 +247,7 @@ class WorkoutPlanViewModel: ObservableObject {
         }
         
         print("🔄 Regenerating plan using essential chip data...")
+        print("📅 Start date for regeneration: \(startDateDisplayText)")
         isGenerating = true
         
         do {
@@ -556,6 +598,12 @@ class WorkoutPlanViewModel: ObservableObject {
         - Has Suggested Plan: \(hasSuggestedPlan)
         - Is Generating: \(isGenerating)
         - Goal Input Active: \(isGoalInputActive)
+        
+        Start Date Information:
+        - Has Explicit Start Date: \(hasExplicitStartDate)
+        - Start Date Display: \(startDateDisplayText)
+        - Start Date for Prompt: \(startDateForPrompt)
+        - Selected Date: \(selectedStartDate)
         
         Essential Chip Data:
         - Completeness: \(Int(userGoalData.completenessScore * 100))%

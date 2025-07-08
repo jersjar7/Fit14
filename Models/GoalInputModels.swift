@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 7/6/25.
 //  Updated for essential chips only approach
+//  Enhanced with start date support
 //
 
 import Foundation
@@ -155,6 +156,7 @@ struct ChipData: Identifiable, Codable, Equatable {
 struct UserGoalData: Codable, Equatable {
     var freeFormText: String = ""
     var chips: [ChipType: ChipData] = [:]
+    var startDate: Date? = nil         // Explicitly selected start date
     let createdAt: Date
     var lastModified: Date
     
@@ -162,6 +164,61 @@ struct UserGoalData: Codable, Equatable {
         let now = Date()
         self.createdAt = now
         self.lastModified = now
+    }
+    
+    // MARK: - Start Date Management
+    
+    /// Update the explicitly selected start date
+    mutating func updateStartDate(_ date: Date?) {
+        startDate = date
+        lastModified = Date()
+    }
+    
+    /// Get the selected start date, or default to today if none selected
+    func getSelectedStartDate() -> Date {
+        return startDate ?? Date()
+    }
+    
+    /// Whether user has explicitly selected a start date
+    var hasExplicitStartDate: Bool {
+        return startDate != nil
+    }
+    
+    /// Get formatted start date for AI prompt
+    var startDateForPrompt: String {
+        if let date = startDate {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            return formatter.string(from: date)
+        }
+        return "today"
+    }
+    
+    /// Get user-friendly display text for start date
+    var startDateDisplayText: String {
+        guard let date = startDate else { return "Today" }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        
+        if calendar.isDate(date, inSameDayAs: now) {
+            return "Today"
+        } else if calendar.isDate(date, inSameDayAs: calendar.date(byAdding: .day, value: 1, to: now) ?? now) {
+            return "Tomorrow"
+        } else if calendar.isDate(date, equalTo: now, toGranularity: .weekOfYear) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            return "This \(formatter.string(from: date))"
+        } else if let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: now),
+                  calendar.isDate(date, equalTo: nextWeek, toGranularity: .weekOfYear) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            return "Next \(formatter.string(from: date))"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            return formatter.string(from: date)
+        }
     }
     
     // MARK: - Chip Management
@@ -262,6 +319,10 @@ struct UserGoalData: Codable, Equatable {
         
         data["free_form_goal"] = freeFormText.trimmingCharacters(in: .whitespacesAndNewlines)
         
+        // Include start date information
+        data["explicit_start_date"] = hasExplicitStartDate ? startDateForPrompt : nil
+        data["start_date_preference"] = startDateDisplayText
+        
         return data
     }
     
@@ -314,6 +375,10 @@ struct UserGoalData: Codable, Equatable {
         
         if lowercaseText.contains("week") || lowercaseText.contains("month") || lowercaseText.contains("day") {
             info.append("Timeline specified")
+        }
+        
+        if hasExplicitStartDate {
+            info.append("Start date explicitly selected")
         }
         
         return info
