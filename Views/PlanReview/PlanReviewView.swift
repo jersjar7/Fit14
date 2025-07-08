@@ -35,22 +35,6 @@ struct PlanReviewView: View {
                                 .lineLimit(3)
                         }
                         
-//                        // 2-Week Benefits Badge
-//                        HStack(spacing: 8) {
-//                            Image(systemName: "target")
-//                                .foregroundColor(.blue)
-//                                .font(.caption)
-//                            
-//                            Text("14 days • Perfect for building habits • Achievable results")
-//                                .font(.caption)
-//                                .foregroundColor(.blue)
-//                                .fontWeight(.medium)
-//                        }
-//                        .padding(.horizontal, 12)
-//                        .padding(.vertical, 6)
-//                        .background(Color.blue.opacity(0.1))
-//                        .cornerRadius(16)
-                        
                         Divider()
                             .padding(.bottom, 5.0)
                         

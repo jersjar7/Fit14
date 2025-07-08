@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 7/3/25.
 //  Updated to use Google Gemini API with structured prompt support
+//  Enhanced with start date parsing from AI response
 //
 
 import Foundation
@@ -65,6 +66,7 @@ enum AIServiceError: Error, LocalizedError {
     case geminiError(String)
     case incompleteResponse
     case invalidJSONStructure(String)
+    case invalidStartDate(String)
     
     var errorDescription: String? {
         switch self {
@@ -84,6 +86,8 @@ enum AIServiceError: Error, LocalizedError {
             return "The AI response was cut off unexpectedly. This usually means the workout plan was too complex. Please try simplifying your goals and try again."
         case .invalidJSONStructure(let details):
             return "The AI generated an invalid workout plan format. Please try again with slightly different wording.\n\nTechnical details: \(details)"
+        case .invalidStartDate(let details):
+            return "The AI provided an invalid start date format. Please try again.\n\nDetails: \(details)"
         }
     }
 }
@@ -280,6 +284,19 @@ class AIWorkoutGenerationService: ObservableObject {
             throw AIServiceError.invalidJSONStructure("Expected 14 days, got \(response.days.count) days")
         }
         
+        // Validate startDay field exists and has a reasonable value
+        if let startDay = response.startDay, !startDay.isEmpty {
+            // Validate the start day format
+            let validFormats = ["today", "tomorrow"]
+            let isValidFormat = validFormats.contains(startDay.lowercased()) || isValidDateFormat(startDay)
+            
+            guard isValidFormat else {
+                throw AIServiceError.invalidJSONStructure("Invalid startDay format: '\(startDay)'. Expected 'today', 'tomorrow', or YYYY-MM-DD format")
+            }
+        } else {
+            print("⚠️ No startDay provided, will default to today")
+        }
+        
         // Validate basic structural integrity
         for (index, day) in response.days.enumerated() {
             guard day.dayNumber == index + 1 else {
@@ -314,6 +331,50 @@ class AIWorkoutGenerationService: ObservableObject {
         
         print("✅ Workout plan validation passed - trusting AI fitness expertise")
         print("📊 Validated \(response.days.count) days with all 11 supported unit types")
+    }
+    
+    // MARK: - Start Date Parsing
+    
+    private func parseStartDate(from startDay: String?) -> Date {
+        guard let startDay = startDay, !startDay.isEmpty else {
+            print("📅 No startDay provided, defaulting to today")
+            return Date()
+        }
+        
+        print("📅 Parsing startDay: '\(startDay)'")
+        
+        let lowercaseStartDay = startDay.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        switch lowercaseStartDay {
+        case "today":
+            print("📅 Start date: Today")
+            return Date()
+            
+        case "tomorrow":
+            print("📅 Start date: Tomorrow")
+            return Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            
+        default:
+            // Try to parse as YYYY-MM-DD format
+            if let parsedDate = parseISODate(startDay) {
+                print("📅 Start date: \(parsedDate)")
+                return parsedDate
+            } else {
+                print("⚠️ Failed to parse startDay '\(startDay)', defaulting to today")
+                return Date()
+            }
+        }
+    }
+    
+    private func parseISODate(_ dateString: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.date(from: dateString)
+    }
+    
+    private func isValidDateFormat(_ dateString: String) -> Bool {
+        return parseISODate(dateString) != nil
     }
     
     private func formatDecodingError(_ error: DecodingError) -> String {
@@ -384,12 +445,25 @@ class AIWorkoutGenerationService: ObservableObject {
             cleaned = cleaned.replacingOccurrences(of: "\"exercises\": []", with: restExercise)
         }
         
+        // Ensure startDay field exists if missing
+        if !cleaned.contains("\"startDay\"") {
+            // Insert startDay field after the opening brace
+            if let openBraceIndex = cleaned.firstIndex(of: "{") {
+                let insertionPoint = cleaned.index(after: openBraceIndex)
+                cleaned.insert(contentsOf: "\n  \"startDay\": \"today\",", at: insertionPoint)
+            }
+        }
+        
         return cleaned
     }
     
     private func convertToWorkoutPlan(aiResponse: GeminiWorkoutResponse, fromPrompt prompt: String) -> WorkoutPlan {
         var days: [Day] = []
-        let startDate = Date()
+        
+        // Parse the start date from AI response
+        let startDate = parseStartDate(from: aiResponse.startDay)
+        
+        print("📅 Using start date: \(startDate) for Day 1")
         
         for aiDay in aiResponse.days {
             let exercises = aiDay.exercises.compactMap { aiExercise -> Exercise? in
@@ -425,6 +499,7 @@ class AIWorkoutGenerationService: ObservableObject {
                 )
             }
             
+            // Calculate the actual date for this day based on the AI-provided start date
             let dayDate = Calendar.current.date(byAdding: .day, value: aiDay.dayNumber - 1, to: startDate) ?? startDate
             
             let day = Day(
@@ -500,12 +575,14 @@ class AIWorkoutGenerationService: ObservableObject {
         - Enhanced prompt parsing for user goals extraction
         - Structured data support
         - 2-week goal focus integration
+        - Start date parsing and handling
         """
     }
 }
 
-// MARK: - Gemini Response Models (Unchanged)
+// MARK: - Gemini Response Models
 struct GeminiWorkoutResponse: Codable {
+    let startDay: String?          // NEW: AI-provided start date
     let summary: String?
     let days: [GeminiWorkoutDay]
 }

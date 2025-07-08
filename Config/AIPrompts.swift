@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 7/6/25.
 //  Enhanced with structured chip data support for essential information
+//  Updated to support user-specified start dates
 //
 
 import Foundation
@@ -11,7 +12,7 @@ import Foundation
 struct AIPrompts {
     
     // MARK: - Version Tracking
-    static let promptVersion = "2.1.0"
+    static let promptVersion = "2.2.0"
     static let lastUpdated = "2025-07-07"
     
     // MARK: - Enhanced Workout Generation Prompt
@@ -25,6 +26,14 @@ struct AIPrompts {
         
         USER'S COMPLETE GOALS:
         {USER_GOALS}
+        
+        START DATE HANDLING:
+        - CAREFULLY parse the user's goal text for any mention of when they want to start
+        - Look for phrases like: "starting Monday", "begin next week", "start tomorrow", "starting on [date]"
+        - If NO start date is mentioned, default to "today"
+        - Consider day-of-week preferences when interpreting start dates (e.g., if they say "no Sundays" and want to start Monday)
+        - Use YYYY-MM-DD format for specific dates, or "today" for immediate start
+        - The startDay you choose will determine Day 1 of the 14-day plan
         
         WORKOUT PLAN REQUIREMENTS:
         - Create exactly 14 days of workouts optimized for the user's profile
@@ -60,24 +69,29 @@ struct AIPrompts {
         
         NATURAL LANGUAGE PROCESSING:
         - Carefully read the user's goal text for mentions of:
+          * START DATE/TIMING: "starting Monday", "begin next week", "start tomorrow", "starting on [specific date]"
           * Injuries or physical limitations (e.g., "bad knee", "shoulder injury")
           * Equipment preferences (e.g., "resistance bands", "no weights")
           * Schedule constraints (e.g., "busy mornings", "weekends only")
           * Specific goals (e.g., "beat my 5K time", "first pull-up")
           * Training preferences (e.g., "hate running", "love swimming")
+          * Day-of-week preferences (e.g., "no workouts on Sundays", "gym only on weekdays")
         - Incorporate these natural language details into the workout design
+        - MOST IMPORTANTLY: Use start date preferences to align rest days and schedule preferences correctly
         
         REST DAY GUIDELINES:
         - Rest days are crucial for recovery and should be included
         - Rest day activities should be 15-30 minutes in duration
         - Label rest days with focus like "Active Recovery", "Rest and Recovery", "Mobility Day"
         - Rest days typically have 1-2 light activities (stretching, walking, etc.)
+        - RESPECT day-of-week preferences (e.g., if user wants Sundays off, plan accordingly based on start date)
         
         WORKOUT DAY GUIDELINES:
         - Regular workout days should have 4-6 exercises
         - Focus areas can include: Upper Body, Lower Body, Full Body, Cardio, Strength, etc.
         - Workout days should fit within the user's available time
         - Progress difficulty throughout the 14 days
+        - CONSIDER day-of-week patterns (e.g., easier workouts on weekends if user mentions time constraints)
         
         CRITICAL UNIT RESTRICTIONS:
         You MUST only use these exact 11 units in your JSON response:
@@ -98,6 +112,7 @@ struct AIPrompts {
         
         RESPONSE FORMAT (JSON):
         {
+          "startDay": "today",
           "summary": "Brief description of the plan tailored to user's profile",
           "days": [
             {
@@ -143,7 +158,16 @@ struct AIPrompts {
           ]
         }
         
+        START DAY FIELD REQUIREMENTS:
+        - "startDay" must be either "today" or a date in YYYY-MM-DD format (e.g., "2025-01-13")
+        - If user mentions "starting Monday" or similar, calculate the appropriate date
+        - If user mentions "tomorrow", use "tomorrow" as the value
+        - If user mentions "next week" or "next Monday", calculate the specific date
+        - If NO start timing is mentioned in their goals, use "today"
+        - Consider the current context - if generating on Friday and user says "starting Monday", use the upcoming Monday's date
+        
         CRITICAL FOR FIT14 APP - JSON REQUIREMENTS:
+        - "startDay" must be present and either "today", "tomorrow", or YYYY-MM-DD format
         - "quantity" must ALWAYS be a positive integer (1, 2, 3, etc.) - NEVER text or decimals
         - "sets" must ALWAYS be a positive integer (1, 2, 3, etc.)
         - "unit" must be exactly one of the 11 allowed units listed above
@@ -230,6 +254,7 @@ struct AIPrompts {
         Original user goals: {USER_GOALS}
         
         Use the same 11 allowed units: reps, seconds, minutes, hours, meters, yards, feet, kilometers, miles, steps, laps.
+        Include the "startDay" field in your response - parse the user's goals for start date preferences or default to "today".
         
         Create a fresh 14-day plan that's different from the previous generation but maintains the same quality, difficulty level, and structure appropriate for the user's profile. Parse the user's goal text for any naturally mentioned constraints.
         """
@@ -332,6 +357,11 @@ struct AIPrompts {
             strengths.append("Timeline considerations included")
         } else {
             suggestions.append("Consider mentioning your timeline (2 weeks recommended)")
+        }
+        
+        // Check for start date mentions in text
+        if lowercaseText.contains("starting") || lowercaseText.contains("begin") || lowercaseText.contains("start") {
+            strengths.append("Start timing preferences specified")
         }
         
         // Overall completeness
@@ -446,6 +476,7 @@ struct AIPrompts {
         - Enhanced user profiling
         - 2-week goal focus
         - Data quality assessment
+        - Start date parsing and handling
         - Backward compatibility maintained
         
         Allowed Units: \(allowedUnits.sorted().joined(separator: ", "))
@@ -458,6 +489,7 @@ struct AIPrompts {
         - Identifies equipment preferences and constraints
         - Recognizes schedule restrictions
         - Processes specific performance goals and timelines
+        - Parses start date preferences and timing
         """
     }
     
