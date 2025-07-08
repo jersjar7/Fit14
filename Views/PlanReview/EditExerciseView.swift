@@ -193,31 +193,8 @@ struct EditExerciseView: View {
                 .padding(.horizontal, 4)
                 
                 Spacer()
-                
-                // Action Buttons
-                VStack(spacing: 12) {
-                    Button(action: saveChanges) {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                            Text("Save Changes")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(isFormValid && hasChanges ? Color.blue : Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
-                    .disabled(!isFormValid || !hasChanges)
-                    
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(.secondary)
-                }
             }
             .padding(.horizontal, 20)
-            .navigationTitle("Edit Exercise")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

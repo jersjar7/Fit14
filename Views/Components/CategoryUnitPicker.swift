@@ -9,9 +9,9 @@ import SwiftUI
 
 // MARK: - Unit Category Enum
 enum UnitCategory: String, CaseIterable {
-    case count = "Count"
-    case time = "Time"
-    case distance = "Distance"
+    case count = " Count"
+    case time = " Time"
+    case distance = " Distance"
     
     var displayName: String {
         return self.rawValue
@@ -62,51 +62,28 @@ struct CategoryUnitPicker: View {
                 Picker("Category", selection: $selectedCategory) {
                     ForEach(UnitCategory.allCases, id: \.self) { category in
                         HStack {
-                            Image(systemName: category.systemImage)
-                            Text(category.displayName)
+                            Image(systemName: category.systemImage).font(.caption)
+                            Text(category.displayName).font(.headline)
                         }
                         .tag(category)
                     }
                 }
-                .pickerStyle(.wheel)
+                .pickerStyle(.automatic)
                 .frame(maxWidth: .infinity)
                 .clipped()
                 
                 // Unit Picker (Right Wheel)
                 Picker("Unit", selection: $selectedUnitInCategory) {
                     ForEach(unitsForSelectedCategory, id: \.self) { unit in
-                        Text(unit.displayName.capitalized)
+                        Text(unit.displayName.capitalized).font(.title3)
                             .tag(unit)
                     }
                 }
-                .pickerStyle(.wheel)
+                .pickerStyle(.automatic)
                 .frame(maxWidth: .infinity)
                 .clipped()
             }
-            .frame(height: 150)
-            
-            // Selected Unit Display
-            HStack {
-                Image(systemName: selectedCategory.systemImage)
-                    .foregroundColor(.blue)
-                    .font(.caption)
-                
-                Text("\(selectedUnitInCategory.displayName.capitalized)")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.blue)
-                
-                Spacer()
-                
-                Text("(\(selectedCategory.displayName))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
-            .padding(.top, 8)
+            .frame(height: 50)
         }
         .onChange(of: selectedCategory) { oldCategory, newCategory in
             handleCategoryChange(from: oldCategory, to: newCategory)

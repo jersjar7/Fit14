@@ -77,7 +77,7 @@ struct AddExerciseView: View {
                     }
                     
                     // Unit Selection with CategoryUnitPicker
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading) {
                         Text("Measurement Type")
                             .font(.headline)
                             .foregroundColor(.primary)
@@ -132,31 +132,8 @@ struct AddExerciseView: View {
                 .padding(.horizontal, 4)
                 
                 Spacer()
-                
-                // Action Buttons
-                VStack(spacing: 12) {
-                    Button(action: saveExercise) {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                            Text("Add Exercise")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(isFormValid ? Color.blue : Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
-                    .disabled(!isFormValid)
-                    
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(.secondary)
-                }
             }
             .padding(.horizontal, 20)
-            .navigationTitle("Add Exercise")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
