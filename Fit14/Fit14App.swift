@@ -3,6 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
+//  Updated to use MainTabView as root
 //
 
 import SwiftUI
@@ -25,7 +26,7 @@ struct Fit14App: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
         }
         .modelContainer(sharedModelContainer)
     }

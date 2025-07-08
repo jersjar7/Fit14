@@ -4,7 +4,7 @@
 //
 //  Created by Jerson on 6/30/25.
 //  Updated to use Google Gemini API and structured UserGoalData with essential chips only
-//  Enhanced with start date support
+//  Enhanced with start date support and challenge history management
 //
 
 import Foundation
@@ -20,6 +20,10 @@ class WorkoutPlanViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showError = false
     
+    // MARK: - Challenge History Properties
+    @Published var completedChallenges: [CompletedChallenge] = []
+    @Published var isLoadingHistory = false
+    
     // MARK: - Goal Input Management
     @Published var userGoalData = UserGoalData() // Structured goal data with essential chips
     @Published var isGoalInputActive = false     // Whether user is actively inputting goals
@@ -30,6 +34,230 @@ class WorkoutPlanViewModel: ObservableObject {
     
     init() {
         loadSavedPlan()
+        loadChallengeHistory()
+    }
+    
+    // MARK: - Challenge History Management
+    
+    /// Load completed challenges from storage
+    func loadChallengeHistory() {
+        isLoadingHistory = true
+        
+        Task { @MainActor in
+            do {
+                let challenges = storageService.loadCompletedChallenges()
+                self.completedChallenges = challenges.sorted { $0.completionDate > $1.completionDate }
+                print("📚 Loaded \(challenges.count) completed challenges")
+            } catch {
+                print("❌ Failed to load challenge history: \(error)")
+                // Don't show error to user for history loading failure
+                self.completedChallenges = []
+            }
+            
+            self.isLoadingHistory = false
+        }
+    }
+    
+    /// Archive the current completed plan as a challenge
+    func archiveCompletedPlan() {
+        guard let plan = currentPlan, plan.isCompleted else {
+            print("❌ Cannot archive plan - plan is not completed")
+            return
+        }
+        
+        print("📁 Archiving completed plan...")
+        
+        // Create completed challenge from the plan
+        let completedChallenge = CompletedChallenge(from: plan)
+        
+        // Add to memory
+        completedChallenges.insert(completedChallenge, at: 0) // Add at beginning (most recent first)
+        
+        // Save to storage
+        do {
+            try storageService.saveCompletedChallenge(completedChallenge)
+            print("✅ Successfully archived challenge: \(completedChallenge.challengeTitle)")
+            print("📊 Final stats: \(completedChallenge.completedDays)/\(completedChallenge.totalDays) days (\(Int(completedChallenge.successRate))%)")
+        } catch {
+            print("❌ Failed to save archived challenge: \(error)")
+            // Remove from memory if save failed
+            completedChallenges.removeFirst()
+            showErrorMessage("Failed to save your completed challenge")
+        }
+    }
+    
+    /// Complete current plan and archive it
+    func completeAndArchivePlan() {
+        guard let plan = currentPlan else {
+            print("❌ No current plan to complete")
+            return
+        }
+        
+        // Archive if plan is completed
+        if plan.isCompleted {
+            archiveCompletedPlan()
+            
+            // Clear current plan after archiving
+            currentPlan = nil
+            storageService.clearWorkoutPlan()
+            
+            print("🎉 Plan completed and archived successfully!")
+        } else {
+            print("⚠️ Plan is not fully completed yet")
+            showErrorMessage("Complete all days to archive your challenge")
+        }
+    }
+    
+    /// Force archive current plan (even if not 100% complete)
+    func forceArchiveCurrentPlan() {
+        guard let plan = currentPlan else {
+            print("❌ No current plan to archive")
+            return
+        }
+        
+        print("🔄 Force archiving current plan...")
+        
+        // Create completed challenge from current state
+        let completedChallenge = CompletedChallenge(from: plan)
+        
+        // Add to memory
+        completedChallenges.insert(completedChallenge, at: 0)
+        
+        // Save to storage
+        do {
+            try storageService.saveCompletedChallenge(completedChallenge)
+            
+            // Clear current plan
+            currentPlan = nil
+            storageService.clearWorkoutPlan()
+            
+            print("✅ Force archived challenge with \(completedChallenge.completedDays)/\(completedChallenge.totalDays) days completed")
+        } catch {
+            print("❌ Failed to force archive challenge: \(error)")
+            // Remove from memory if save failed
+            completedChallenges.removeFirst()
+            showErrorMessage("Failed to archive your challenge")
+        }
+    }
+    
+    /// Delete a completed challenge from history
+    func deleteCompletedChallenge(_ challenge: CompletedChallenge) {
+        guard let index = completedChallenges.firstIndex(where: { $0.id == challenge.id }) else {
+            print("❌ Challenge not found in history")
+            return
+        }
+        
+        // Remove from memory
+        completedChallenges.remove(at: index)
+        
+        // Remove from storage
+        do {
+            try storageService.deleteCompletedChallenge(challenge.id)
+            print("🗑️ Deleted challenge: \(challenge.challengeTitle)")
+        } catch {
+            print("❌ Failed to delete challenge from storage: \(error)")
+            // Re-add to memory if delete failed
+            completedChallenges.insert(challenge, at: index)
+            showErrorMessage("Failed to delete challenge")
+        }
+    }
+    
+    /// Get a specific completed challenge by ID
+    func getCompletedChallenge(by id: UUID) -> CompletedChallenge? {
+        return completedChallenges.first { $0.id == id }
+    }
+    
+    /// Get challenge history statistics
+    var historyStats: (totalChallenges: Int, averageSuccessRate: Double, totalDaysCompleted: Int) {
+        let totalChallenges = completedChallenges.count
+        guard totalChallenges > 0 else { return (0, 0.0, 0) }
+        
+        let totalSuccessRate = completedChallenges.reduce(0.0) { $0 + $1.successRate }
+        let averageSuccessRate = totalSuccessRate / Double(totalChallenges)
+        
+        let totalDaysCompleted = completedChallenges.reduce(0) { $0 + $1.completedDays }
+        
+        return (totalChallenges, averageSuccessRate, totalDaysCompleted)
+    }
+    
+    /// Check if user has any completed challenges
+    var hasCompletedChallenges: Bool {
+        return !completedChallenges.isEmpty
+    }
+    
+    /// Get most recent completed challenge
+    var mostRecentChallenge: CompletedChallenge? {
+        return completedChallenges.first
+    }
+    
+    /// Get challenges completed in the last 30 days
+    var recentChallenges: [CompletedChallenge] {
+        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        return completedChallenges.filter { $0.completionDate >= thirtyDaysAgo }
+    }
+    
+    /// Check if current plan should show completion prompt
+    var shouldShowCompletionPrompt: Bool {
+        guard let plan = currentPlan else { return false }
+        return plan.isCompleted && plan.isActive
+    }
+    
+    // MARK: - Enhanced Completion Calculations
+    
+    /// Get detailed progress for current plan including exercise-level completion
+    var detailedProgress: (dayProgress: Double, exerciseProgress: Double, overallHealth: String) {
+        guard let plan = currentPlan else { return (0.0, 0.0, "No Active Plan") }
+        
+        let dayProgress = plan.progressPercentage
+        let exerciseProgress = plan.exerciseCompletionPercentage
+        
+        // Calculate overall health message
+        let overallHealth: String
+        if dayProgress >= 90 && exerciseProgress >= 90 {
+            overallHealth = "Excellent Progress!"
+        } else if dayProgress >= 70 && exerciseProgress >= 70 {
+            overallHealth = "Good Progress"
+        } else if dayProgress >= 50 || exerciseProgress >= 50 {
+            overallHealth = "Making Progress"
+        } else {
+            overallHealth = "Getting Started"
+        }
+        
+        return (dayProgress, exerciseProgress, overallHealth)
+    }
+    
+    /// Get current streak information
+    var currentStreak: (days: Int, isActive: Bool) {
+        guard let plan = currentPlan else { return (0, false) }
+        
+        // Count consecutive completed days from the beginning
+        var streak = 0
+        for day in plan.days.sorted(by: { $0.dayNumber < $1.dayNumber }) {
+            if day.isCompleted {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        
+        let isActive = streak > 0
+        return (streak, isActive)
+    }
+    
+    /// Get completion momentum (trend over last few days)
+    var completionMomentum: String {
+        guard let plan = currentPlan, plan.days.count >= 3 else { return "Not enough data" }
+        
+        let sortedDays = plan.days.sorted { $0.dayNumber < $1.dayNumber }
+        let recentDays = Array(sortedDays.suffix(3))
+        let completedRecent = recentDays.filter { $0.isCompleted }.count
+        
+        switch completedRecent {
+        case 3: return "Strong momentum! 🔥"
+        case 2: return "Good momentum 📈"
+        case 1: return "Building momentum"
+        default: return "Need to rebuild momentum"
+        }
     }
     
     // MARK: - AI Plan Generation
@@ -457,6 +685,12 @@ class WorkoutPlanViewModel: ObservableObject {
             // Save to storage
             storageService.saveWorkoutPlan(plan)
             print("💾 Plan saved to storage")
+            
+            // Check if plan is now completed and should be archived
+            if plan.isCompleted {
+                print("🎉 Plan completed! Ready for archiving.")
+                // Note: We don't auto-archive here, let the UI handle the completion flow
+            }
         } else {
             print("❌ Failed to find exercise to toggle")
         }
@@ -539,6 +773,9 @@ class WorkoutPlanViewModel: ObservableObject {
             return
         }
         
+        // Archive the completed plan first
+        archiveCompletedPlan()
+        
         // Keep some context from the completed plan for progression
         let previousGoalData = userGoalData
         userGoalData = UserGoalData()
@@ -598,6 +835,20 @@ class WorkoutPlanViewModel: ObservableObject {
         - Has Suggested Plan: \(hasSuggestedPlan)
         - Is Generating: \(isGenerating)
         - Goal Input Active: \(isGoalInputActive)
+        - Completed Challenges: \(completedChallenges.count)
+        
+        Challenge History:
+        - Total Challenges: \(historyStats.totalChallenges)
+        - Average Success Rate: \(String(format: "%.1f", historyStats.averageSuccessRate))%
+        - Total Days Completed: \(historyStats.totalDaysCompleted)
+        - Has Recent Challenges: \(recentChallenges.count)
+        
+        Current Plan Progress:
+        - Day Progress: \(String(format: "%.1f", detailedProgress.dayProgress))%
+        - Exercise Progress: \(String(format: "%.1f", detailedProgress.exerciseProgress))%
+        - Health Status: \(detailedProgress.overallHealth)
+        - Current Streak: \(currentStreak.days) days (\(currentStreak.isActive ? "active" : "inactive"))
+        - Momentum: \(completionMomentum)
         
         Start Date Information:
         - Has Explicit Start Date: \(hasExplicitStartDate)

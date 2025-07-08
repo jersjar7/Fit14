@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 6/30/25.
 //  Enhanced with 2-week completion and next challenge features
+//  Updated with challenge history integration
 //
 
 import SwiftUI
@@ -12,6 +13,7 @@ struct PlanListView: View {
     @EnvironmentObject var viewModel: WorkoutPlanViewModel
     @State private var showingNextChallengeSheet = false
     @State private var showingCompletionCelebration = false
+    @State private var hasArchivedCurrentPlan = false // Track if we've archived this completion
     
     var body: some View {
         NavigationView {
@@ -43,6 +45,13 @@ struct PlanListView: View {
                                     showingNextChallengeSheet = true
                                 }) {
                                     Label("Start New Challenge", systemImage: "plus.circle")
+                                }
+                                
+                                Button(action: {
+                                    // Switch to history tab to show this achievement
+                                    NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
+                                }) {
+                                    Label("View Challenge History", systemImage: "trophy")
                                 }
                                 
                                 Divider()
@@ -89,6 +98,17 @@ struct PlanListView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             showingCompletionCelebration = true
                         }
+                        
+                        // Archive the completed plan (only once per completion)
+                        if !hasArchivedCurrentPlan {
+                            archiveCompletedPlan()
+                        }
+                    }
+                }
+                .onChange(of: workoutPlan.isCompleted) { isCompleted in
+                    // Archive when plan transitions to completed state
+                    if isCompleted && !hasArchivedCurrentPlan {
+                        archiveCompletedPlan()
                     }
                 }
             } else {
@@ -96,6 +116,21 @@ struct PlanListView: View {
                 emptyStateSection
             }
         }
+    }
+    
+    // MARK: - Challenge Archiving
+    
+    private func archiveCompletedPlan() {
+        // Archive the completed challenge
+        viewModel.archiveCompletedPlan()
+        hasArchivedCurrentPlan = true
+        
+        // Show completion celebration with history option
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            showingCompletionCelebration = true
+        }
+        
+        print("🏆 Challenge completed and archived!")
     }
     
     // MARK: - Completion Celebration Banner
@@ -127,6 +162,44 @@ struct PlanListView: View {
                 }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.secondary)
+                }
+            }
+            
+            // Add View History button
+            HStack(spacing: 12) {
+                Button(action: {
+                    // Switch to history tab
+                    NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
+                }) {
+                    HStack {
+                        Image(systemName: "trophy.fill")
+                        Text("View Your Achievement")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    showingNextChallengeSheet = true
+                }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Next Challenge")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(8)
                 }
             }
         }
@@ -205,9 +278,16 @@ struct PlanListView: View {
                     Spacer()
                     
                     if workoutPlan.isCompleted {
-                        Text("Congratulations! 🏆")
-                            .font(.subheadline)
-                            .foregroundColor(.green)
+                        Button(action: {
+                            NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
+                        }) {
+                            HStack(spacing: 4) {
+                                Text("View Achievement")
+                                Image(systemName: "trophy.fill")
+                            }
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        }
                     } else {
                         Text("\(workoutPlan.remainingDays) days remaining")
                             .font(.subheadline)
@@ -286,6 +366,45 @@ struct PlanListView: View {
                     .multilineTextAlignment(.leading)
             }
             
+            // Achievement and History Section
+            HStack(spacing: 12) {
+                Button(action: {
+                    NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
+                }) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "trophy.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.orange)
+                        
+                        Text("View Achievement")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                
+                Button(action: {
+                    showingNextChallengeSheet = true
+                }) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.green)
+                        
+                        Text("New Challenge")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(8)
+                }
+            }
+            
             // Next Challenge Suggestions Preview
             VStack(alignment: .leading, spacing: 8) {
                 Text("Suggested next challenges:")
@@ -305,22 +424,6 @@ struct PlanListView: View {
                         Spacer()
                     }
                 }
-            }
-            
-            // CTA Button
-            Button(action: {
-                showingNextChallengeSheet = true
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Start New 2-Week Challenge")
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(12)
             }
         }
         .padding(16)
@@ -359,6 +462,38 @@ struct PlanListView: View {
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
+            }
+            
+            // Show history hint if user has completed challenges
+            if viewModel.hasCompletedChallenges {
+                VStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "trophy.fill")
+                            .foregroundColor(.orange)
+                        Text("You've completed challenges before!")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Spacer()
+                    }
+                    
+                    Button(action: {
+                        NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
+                    }) {
+                        HStack {
+                            Image(systemName: "trophy.circle")
+                            Text("View Your Challenge History")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.orange)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
             }
             
             // Main CTA Button
@@ -440,7 +575,7 @@ struct PlanListView: View {
                             Text("Celebrate & Level Up")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                            Text("Complete your challenge and start your next 2-week goal!")
+                            Text("Complete your challenge and check your history!")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -482,6 +617,41 @@ struct NextChallengeSheet: View {
                     }
                     .padding()
                     .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    
+                    // View Achievement Section
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "trophy.fill")
+                                .foregroundColor(.orange)
+                            Text("Your Achievement")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                            Spacer()
+                        }
+                        
+                        Button(action: {
+                            dismiss()
+                            // Switch to history tab to view achievement
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "trophy.circle.fill")
+                                Text("View Your Completed Challenge")
+                            }
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.orange)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(12)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
                     .cornerRadius(12)
                     
                     // Next Challenge Suggestions

@@ -3,12 +3,13 @@
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
+//  Updated for tab navigation integration
 //
 
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var viewModel = WorkoutPlanViewModel()
+    @EnvironmentObject var viewModel: WorkoutPlanViewModel
     @State private var hasAppeared = false
     
     var body: some View {
@@ -42,6 +43,20 @@ struct ContentView: View {
         } message: {
             Text("A critical error occurred. Restarting will clear your data and return you to the beginning.")
         }
+        .onReceive(NotificationCenter.default.publisher(for: .challengeCompleted)) { _ in
+            // Handle challenge completion notification from within tab context
+            handleChallengeCompletion()
+        }
+    }
+    
+    // MARK: - Challenge Completion Handling
+    
+    private func handleChallengeCompletion() {
+        // Archive the completed challenge
+        viewModel.completeAndArchivePlan()
+        
+        // Post notification to switch to history tab
+        NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
     }
     
     // MARK: - Error Handling
@@ -71,6 +86,12 @@ struct ActivePlanView: View {
             if let currentPlan = viewModel.currentPlan, currentPlan.isValid {
                 PlanListView()
                     .environmentObject(viewModel)
+                    .overlay(alignment: .bottom) {
+                        // Show completion prompt if challenge is finished
+                        if viewModel.shouldShowCompletionPrompt {
+                            completionPromptOverlay
+                        }
+                    }
             } else {
                 ErrorRecoveryView(
                     title: "Plan Data Corrupted",
@@ -85,6 +106,40 @@ struct ActivePlanView: View {
             insertion: .move(edge: .trailing).combined(with: .opacity),
             removal: .move(edge: .leading).combined(with: .opacity)
         ))
+    }
+    
+    // MARK: - Completion Prompt Overlay
+    
+    private var completionPromptOverlay: some View {
+        VStack(spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("🎉 Challenge Complete!")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    
+                    Text("Great job! Ready to start your next challenge?")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Button("View History") {
+                    // Archive and switch to history tab
+                    NotificationCenter.default.post(name: .challengeCompleted, object: nil)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+            }
+            .padding()
+            .background(Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+        }
+        .padding()
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: viewModel.shouldShowCompletionPrompt)
     }
 }
 
@@ -172,8 +227,8 @@ struct ErrorRecoveryView: View {
                 Spacer()
             }
             .padding(24)
-            .navigationTitle("Fit14")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Current Challenge")
+            .navigationBarTitleDisplayMode(.large)
         }
     }
 }
@@ -182,6 +237,7 @@ struct ErrorRecoveryView: View {
 
 #Preview("Default State") {
     ContentView()
+        .environmentObject(WorkoutPlanViewModel())
 }
 
 #Preview("Generating State") {
@@ -189,6 +245,15 @@ struct ErrorRecoveryView: View {
     viewModel.isGenerating = true
     
     return GoalInputView()
+        .environmentObject(viewModel)
+}
+
+#Preview("Active Plan with Completion") {
+    let viewModel = WorkoutPlanViewModel()
+    // Simulate completed challenge
+    // viewModel.currentPlan = someCompletedPlan
+    
+    return ActivePlanView()
         .environmentObject(viewModel)
 }
 
