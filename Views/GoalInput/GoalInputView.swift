@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 6/30/25.
-//  Enhanced with essential information chip system
+//  Enhanced with essential information chip system and start date support
 //
 
 import SwiftUI
@@ -143,13 +143,16 @@ struct GoalInputView: View {
     // MARK: - Smart Goal Input Section
 
     private var smartGoalInputSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             SmartGoalTextEditor(
                 chipAssistant: chipAssistant,
-                placeholder: "e.g., Lose 5 pounds and build strength at home...",
+                placeholder: "e.g., Lose 5 pounds starting next Monday, build strength at home with bodyweight exercises...",
                 minHeight: 120
             )
             .disabled(viewModel.isGenerating)
+            
+            // Start Date Warning Notice
+            startDateWarningSection
             
             // Status and hint text
             VStack(alignment: .leading, spacing: 8) {
@@ -196,6 +199,68 @@ struct GoalInputView: View {
                     .transition(.move(edge: .bottom))
                     .animation(.easeInOut(duration: 0.3), value: chipAssistant.goalText.isEmpty)
             }
+        }
+    }
+    
+    // MARK: - Start Date Warning Section
+    
+    private var startDateWarningSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "calendar.badge.exclamationmark")
+                    .foregroundColor(.blue)
+                    .font(.caption)
+                
+                Text("Start Date Planning")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("💡 Want to start on a specific day? Include it in your description:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 7.0)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    startDateExample("\"...starting next Monday\"")
+                    startDateExample("\"...begin tomorrow\"")
+                    startDateExample("\"...start on January 15th\"")
+                }
+                .padding(.leading, 14)
+                
+                Text("⚠️ If not mentioned, your plan will start today")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                    .fontWeight(.medium)
+                    .padding(.leading, 7.0)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.blue.opacity(0.05))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func startDateExample(_ text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green)
+                .font(.caption2)
+            
+            Text(text)
+                .font(.caption)
+                .italic()
+                .foregroundColor(.secondary)
+            
+            Spacer()
         }
     }
     

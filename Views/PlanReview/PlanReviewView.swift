@@ -3,7 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/3/25.
-//  Enhanced with 2-week focus messaging
+//  Enhanced with 2-week focus messaging and AI-determined start date support
 //
 
 import SwiftUI
@@ -34,6 +34,9 @@ struct PlanReviewView: View {
                                 .multilineTextAlignment(.center)
                                 .lineLimit(3)
                         }
+                        
+                        // Start Date Info Section
+                        startDateInfoSection
                         
                         Divider()
                             .padding(.bottom, 5.0)
@@ -98,9 +101,6 @@ struct PlanReviewView: View {
                 
                 // Bottom CTA Section - Enhanced
                 VStack(spacing: 5) {
-//                    Divider()
-                    
-
                     // Primary CTA - Accept Plan
                     Button(action: acceptPlan) {
                         HStack {
@@ -114,8 +114,6 @@ struct PlanReviewView: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
-                    
-
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 15)
@@ -177,6 +175,92 @@ struct PlanReviewView: View {
                 Text("This will generate a completely new 2-week plan and remove your current customizations. Are you sure?")
             }
         }
+    }
+    
+    // MARK: - Start Date Info Section
+    
+    private var startDateInfoSection: some View {
+        Group {
+            if let suggestedPlan = viewModel.suggestedPlan,
+               let firstDay = suggestedPlan.days.first {
+                
+                let startDate = firstDay.date
+                let isStartingToday = Calendar.current.isDate(startDate, inSameDayAs: Date())
+                let isStartingTomorrow = Calendar.current.isDate(startDate, inSameDayAs: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date())
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.blue)
+                        .font(.caption)
+                    
+                    if isStartingToday {
+                        Text("Starting today")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.green)
+                        
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(startDate, style: .date)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else if isStartingTomorrow {
+                        Text("Starting tomorrow")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.blue)
+                        
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(startDate, style: .date)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Starting")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(formatStartDate(startDate))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Spacer()
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func formatStartDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Check if it's this week
+        if calendar.isDate(date, equalTo: now, toGranularity: .weekOfYear) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE" // Full day name
+            return "this \(formatter.string(from: date))"
+        }
+        
+        // Check if it's next week
+        if let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: now),
+           calendar.isDate(date, equalTo: nextWeek, toGranularity: .weekOfYear) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE" // Full day name
+            return "next \(formatter.string(from: date))"
+        }
+        
+        // For dates further out, show full date
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return "on \(formatter.string(from: date))"
     }
     
     // MARK: - Actions
@@ -252,7 +336,7 @@ struct TwoWeekInfoSheet: View {
                         )
                     }
                     
-                    // Success Quote
+                    // Success Quote - Updated to be generic about start date
                     VStack(spacing: 12) {
                         Text("\"The best time to plant a tree was 20 years ago. The second best time is now.\"")
                             .font(.body)
@@ -260,7 +344,7 @@ struct TwoWeekInfoSheet: View {
                             .multilineTextAlignment(.center)
                             .foregroundColor(.secondary)
                         
-                        Text("Your 2-week journey starts today!")
+                        Text("Your 2-week journey is about to begin!")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.blue)
