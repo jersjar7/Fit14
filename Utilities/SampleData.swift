@@ -86,6 +86,25 @@ struct SampleData {
         [upperBodyExercises[1], lowerBodyExercises[0], timeBased[0]] // Tricep Dips, Squats, Cardio Intervals
     ]
     
+    // MARK: - Focus Descriptions (NEW)
+    
+    static let focusDescriptions: [String] = [
+        "Upper body strength",           // Day 1
+        "Lower body power",              // Day 2
+        "Cardio conditioning",           // Day 3
+        "Full body workout",             // Day 4
+        "Core strengthening",            // Day 5
+        "Strength building",             // Day 6
+        "Active recovery",               // Day 7
+        "Upper body endurance",          // Day 8
+        "Lower body stability",          // Day 9
+        "High intensity training",       // Day 10
+        "Dynamic movement",              // Day 11
+        "Advanced strength",             // Day 12
+        "Cardio & balance",             // Day 13
+        "Complete conditioning"          // Day 14
+    ]
+    
     // MARK: - Sample Workout Plans
     
     /// Basic sample workout plan (suggested status)
@@ -97,8 +116,9 @@ struct SampleData {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
             let combinationIndex = (i - 1) % exerciseCombinations.count
             let exercisesForDay = exerciseCombinations[combinationIndex]
+            let focusForDay = focusDescriptions[(i - 1) % focusDescriptions.count] // NEW: Add focus
             
-            let day = Day(dayNumber: i, date: dayDate, exercises: exercisesForDay)
+            let day = Day(dayNumber: i, date: dayDate, focus: focusForDay, exercises: exercisesForDay) // NEW: Include focus
             days.append(day)
         }
         
@@ -118,16 +138,18 @@ struct SampleData {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
             let combinationIndex = (i - 1) % exerciseCombinations.count
             let exercisesForDay = exerciseCombinations[combinationIndex]
+            let focusForDay = focusDescriptions[(i - 1) % focusDescriptions.count] // NEW: Add focus
             
-            let day = Day(dayNumber: i, date: dayDate, exercises: exercisesForDay)
+            let day = Day(dayNumber: i, date: dayDate, focus: focusForDay, exercises: exercisesForDay) // NEW: Include focus
             days.append(day)
         }
         
         return WorkoutPlan(
-            userGoals: "I want to lose 5 pounds in 2 weeks. I'm 28, female, 140 lbs, 5'4\", and can work out 30-45 minutes daily except Sunday.",
-            days: days,
-            status: .suggested
-        )
+                userGoals: "I want to lose 5 pounds in 2 weeks. I'm 28, female, 140 lbs, 5'4\", and can work out 30-45 minutes daily except Sunday.",
+                summary: "Balanced cardio and strength plan to support healthy weight loss",  // ADDED: AI-style summary
+                days: days,
+                status: .suggested
+            )
     }()
     
     /// Sample active plan for daily tracking
@@ -139,6 +161,7 @@ struct SampleData {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
             let combinationIndex = (i - 1) % exerciseCombinations.count
             var exercisesForDay = exerciseCombinations[combinationIndex]
+            let focusForDay = focusDescriptions[(i - 1) % focusDescriptions.count] // NEW: Add focus
             
             // Mark some exercises as completed for first few days
             if i <= 3 {
@@ -150,16 +173,16 @@ struct SampleData {
                 exercisesForDay[0] = exercisesForDay[0].updated(isCompleted: true)
             }
             
-            let day = Day(dayNumber: i, date: dayDate, exercises: exercisesForDay)
+            let day = Day(dayNumber: i, date: dayDate, focus: focusForDay, exercises: exercisesForDay) // NEW: Include focus
             days.append(day)
         }
         
         return WorkoutPlan(
-            userGoals: "Build strength and endurance with bodyweight exercises",
-            days: days,
-            status: .active
-        )
-    }()
+                userGoals: "Build strength and endurance with bodyweight exercises",
+                summary: "Progressive bodyweight training program focused on building functional strength and cardiovascular endurance",  // ADDED: AI-style summary
+                days: days,
+                status: .active
+            )    }()
     
     /// Sample completed plan for progress showcase
     static let sampleCompletedWorkoutPlan: WorkoutPlan = {
@@ -170,6 +193,7 @@ struct SampleData {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
             let combinationIndex = (i - 1) % exerciseCombinations.count
             var exercisesForDay = exerciseCombinations[combinationIndex]
+            let focusForDay = focusDescriptions[(i - 1) % focusDescriptions.count] // NEW: Add focus
             
             // Mark most exercises as completed (90% completion rate)
             for index in exercisesForDay.indices {
@@ -177,15 +201,16 @@ struct SampleData {
                 exercisesForDay[index] = exercisesForDay[index].updated(isCompleted: isCompleted)
             }
             
-            let day = Day(dayNumber: i, date: dayDate, exercises: exercisesForDay)
+            let day = Day(dayNumber: i, date: dayDate, focus: focusForDay, exercises: exercisesForDay) // NEW: Include focus
             days.append(day)
         }
         
         return WorkoutPlan(
-            userGoals: "Complete a 14-day fitness challenge and build healthy habits",
-            days: days,
-            status: .active
-        )
+                userGoals: "Complete a full-body fitness transformation in 14 days",
+                summary: "Comprehensive full-body program combining strength training, cardio, and flexibility work",  // ADDED: AI-style summary
+                days: days,
+                status: .active
+            )
     }()
     
     // MARK: - Sample Plan Variations for Different Goals
@@ -203,12 +228,15 @@ struct SampleData {
             [cardioExercises[1], cardioExercises[4], coreExercises[1]], // Cardio focus + core
         ]
         
+        let weightLossFocus = ["High intensity cardio", "Fat burning circuit", "Cardio strength combo", "Metabolic conditioning"]
+        
         for i in 1...14 {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
             let combinationIndex = (i - 1) % weightLossCombinations.count
             let exercisesForDay = weightLossCombinations[combinationIndex]
+            let focusForDay = weightLossFocus[combinationIndex] // NEW: Add focus
             
-            let day = Day(dayNumber: i, date: dayDate, exercises: exercisesForDay)
+            let day = Day(dayNumber: i, date: dayDate, focus: focusForDay, exercises: exercisesForDay) // NEW: Include focus
             days.append(day)
         }
         
@@ -232,12 +260,15 @@ struct SampleData {
             [lowerBodyExercises[2], lowerBodyExercises[3], coreExercises[3]], // Lower + core holds
         ]
         
+        let strengthFocus = ["Upper body power", "Lower body strength", "Advanced upper body", "Lower body endurance"]
+        
         for i in 1...14 {
             let dayDate = Calendar.current.date(byAdding: .day, value: i-1, to: startDate) ?? startDate
             let combinationIndex = (i - 1) % strengthCombinations.count
             let exercisesForDay = strengthCombinations[combinationIndex]
+            let focusForDay = strengthFocus[combinationIndex] // NEW: Add focus
             
-            let day = Day(dayNumber: i, date: dayDate, exercises: exercisesForDay)
+            let day = Day(dayNumber: i, date: dayDate, focus: focusForDay, exercises: exercisesForDay) // NEW: Include focus
             days.append(day)
         }
         
@@ -253,7 +284,7 @@ struct SampleData {
     /// Sample day for previews
     static let sampleDay: Day = {
         let exercises = [sampleExercises[0], sampleExercises[4], sampleExercises[9]]
-        return Day(dayNumber: 1, date: Date(), exercises: exercises)
+        return Day(dayNumber: 1, date: Date(), focus: "Upper body strength", exercises: exercises) // NEW: Add focus
     }()
     
     /// Sample completed day for previews
@@ -262,7 +293,7 @@ struct SampleData {
         for index in exercises.indices {
             exercises[index] = exercises[index].updated(isCompleted: true)
         }
-        return Day(dayNumber: 5, date: Date(), exercises: exercises)
+        return Day(dayNumber: 5, date: Date(), focus: "Core strengthening", exercises: exercises) // NEW: Add focus
     }()
     
     /// Sample partially completed day for previews
@@ -271,7 +302,7 @@ struct SampleData {
         exercises[0] = exercises[0].updated(isCompleted: true)
         exercises[1] = exercises[1].updated(isCompleted: true)
         // Leave last exercise incomplete
-        return Day(dayNumber: 3, date: Date(), exercises: exercises)
+        return Day(dayNumber: 3, date: Date(), focus: "Cardio conditioning", exercises: exercises) // NEW: Add focus
     }()
     
     /// Sample day with mixed units for preview
@@ -281,7 +312,7 @@ struct SampleData {
             Exercise(name: "Plank Hold", sets: 1, quantity: 45, unit: .seconds),
             Exercise(name: "Cardio Walk", sets: 1, quantity: 10, unit: .minutes)
         ]
-        return Day(dayNumber: 8, date: Date(), exercises: exercises)
+        return Day(dayNumber: 8, date: Date(), focus: "Mixed training", exercises: exercises) // NEW: Add focus
     }()
     
     // MARK: - Preview Helpers

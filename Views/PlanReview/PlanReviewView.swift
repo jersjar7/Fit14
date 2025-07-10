@@ -28,7 +28,7 @@ struct PlanReviewView: View {
                             .fontWeight(.bold)
                         
                         if let suggestedPlan = viewModel.suggestedPlan {
-                            Text(suggestedPlan.userGoals)
+                            Text(suggestedPlan.displayDescription)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)

@@ -31,17 +31,23 @@ struct GoalInputView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Header Section
+                VStack(spacing: 10) {
+                    // Header Section (STAYS THE SAME)
                     headerSection
                     
-                    // Smart Goal Input Section
-                    smartGoalInputSection
-                    
-                    // Essential Information Section (Always Show)
+                    // Essential Information Section (MOVED UP)
                     essentialInformationSection
                     
-                    // Generation Button
+                    // Start Date Section (MOVED DOWN, SEPARATED)
+                    startDateSection
+                    
+                    // Text Editor Section (REORGANIZED)
+                    textEditorSection
+                    
+                    // Hint Text Section (SEPARATED OUT)
+                    hintTextSection
+                    
+                    // Generation Button (STAYS AT BOTTOM)
                     generateButtonSection
                         .padding(.top, 20)
                     
@@ -148,73 +154,52 @@ struct GoalInputView: View {
         .padding(.horizontal, 4)
     }
     
-    // MARK: - Smart Goal Input Section
-
-    private var smartGoalInputSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SmartGoalTextEditor(
-                chipAssistant: chipAssistant,
-                placeholder: "e.g., Lose 5 pounds starting next Monday, build strength at home with bodyweight exercises...",
-                minHeight: 120
-            )
-            .disabled(viewModel.isGenerating)
-            
-            // Start Date Section (New Implementation)
-            startDateSection
-            
-            // Status and hint text
-            VStack(alignment: .leading, spacing: 8) {
-                // Character count and analysis status (only show when there's text)
-                if !chipAssistant.goalText.isEmpty {
-                    HStack {
-                        Text("\(chipAssistant.goalText.count) characters")
-                            .padding(.leading, 7.0)
-                            .font(.caption2)
-                            .foregroundColor(Color.secondary)
-                        
-                        Spacer()
-                        
-                        // Real-time analysis indicator
-                        if analysisService.isAnalyzing {
-                            HStack(spacing: 4) {
-                                ProgressView()
-                                    .scaleEffect(0.6)
-                                Text("Analyzing...")
-                                    .padding(.trailing, 2.0)
-                                    .font(.caption2)
-                                    .foregroundColor(Color.secondary)
-                            }
-                        } else {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(Color.green)
-                                    .font(.caption)
-                                Text("Ready")
-                                    .padding(.trailing, 2.0)
-                                    .font(.caption2)
-                                    .foregroundColor(Color.green)
-                            }
-                        }
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-                
-                // Helpful message (always visible, but moves position based on text presence)
-                Text("Feel free to mention any injuries, equipment preferences, or schedule constraints")
+    // MARK: - Essential Information Section
+    
+    private var essentialInformationSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "star.fill")
+                    .foregroundColor(.orange)
                     .font(.caption)
-                    .foregroundColor(Color.secondary)
-                    .padding(.leading, 7.0)
-                    .transition(.move(edge: .bottom))
-                    .animation(.easeInOut(duration: 0.3), value: chipAssistant.goalText.isEmpty)
+                Text("Essential Information")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+            
+            // Interactive Essential Chips
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(chipAssistant.sortedChips, id: \.id) { chip in
+                    interactiveChipRow(for: chip)
+                }
+            }
+            
+            // Completion Progress
+            HStack {
+                Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                // Progress bar
+                ProgressView(value: chipAssistant.completionPercentage)
+                    .frame(width: 60)
+                    .tint(.blue)
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 5)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
     
-    // MARK: - Start Date Section (NEW)
+    // MARK: - Start Date Section
     
     private var startDateSection: some View {
         HStack(spacing: 8) {
-            Spacer()
+            
             
             // All elements grouped together on the right
             HStack(spacing: 8) {
@@ -254,9 +239,70 @@ struct GoalInputView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
+            Spacer()
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+//        .padding(.vertical, 0)
+    }
+    
+    // MARK: - Text Editor Section (NEW - Extracted from smartGoalInputSection)
+
+    private var textEditorSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SmartGoalTextEditor(
+                chipAssistant: chipAssistant,
+                placeholder: "e.g., Lose 5 pounds starting next Monday, build strength at home with bodyweight exercises...",
+                minHeight: 120
+            )
+            .disabled(viewModel.isGenerating)
+            
+            // Character count and analysis status (only show when there's text)
+            if !chipAssistant.goalText.isEmpty {
+                HStack {
+                    Text("\(chipAssistant.goalText.count) characters")
+                        .padding(.leading, 7.0)
+                        .font(.caption2)
+                        .foregroundColor(Color.secondary)
+                    
+                    Spacer()
+                    
+                    // Real-time analysis indicator
+                    if analysisService.isAnalyzing {
+                        HStack(spacing: 4) {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                            Text("Analyzing...")
+                                .padding(.trailing, 2.0)
+                                .font(.caption2)
+                                .foregroundColor(Color.secondary)
+                        }
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(Color.green)
+                                .font(.caption)
+                            Text("Ready")
+                                .padding(.trailing, 2.0)
+                                .font(.caption2)
+                                .foregroundColor(Color.green)
+                        }
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+    
+    // MARK: - Hint Text Section (NEW - Extracted and separated)
+
+    private var hintTextSection: some View {
+        HStack {
+            Text("Feel free to mention any injuries, equipment preferences, or schedule constraints")
+                .font(.caption)
+                .foregroundColor(Color.secondary)
+                .padding(.leading, 7.0)
+            Spacer()
+        }
     }
     
     // MARK: - Start Date Picker Sheet
@@ -270,10 +316,10 @@ struct GoalInputView: View {
 //                        .font(.headline)
 //                        .fontWeight(.semibold)
                     
-                    Text("Choose when your 14-day fitness challenge begins")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+//                    Text("Choose when your 14-day fitness challenge begins")
+//                        .font(.subheadline)
+//                        .foregroundColor(.secondary)
+//                        .multilineTextAlignment(.center)
                 }
                 .padding(.top, 10)
                 
@@ -327,46 +373,6 @@ struct GoalInputView: View {
             }
         }
         .presentationDetents([.height(400)])
-    }
-    
-    // MARK: - Essential Information Section
-    
-    private var essentialInformationSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Image(systemName: "star.fill")
-                    .foregroundColor(.orange)
-                    .font(.caption)
-                Text("Essential Information")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
-            
-            // Interactive Essential Chips
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(chipAssistant.sortedChips, id: \.id) { chip in
-                    interactiveChipRow(for: chip)
-                }
-            }
-            
-            // Completion Progress
-            HStack {
-                Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                // Progress bar
-                ProgressView(value: chipAssistant.completionPercentage)
-                    .frame(width: 60)
-                    .tint(.blue)
-            }
-        }
-        .padding(.horizontal, 16)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
     }
     
     // MARK: - Interactive Chip Row Helper (Thread-Safe Fix)

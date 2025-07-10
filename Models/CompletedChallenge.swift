@@ -107,7 +107,7 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
     
     init(from workoutPlan: WorkoutPlan, completionDate: Date = Date()) {
         self.originalPlanId = workoutPlan.id
-        self.challengeTitle = workoutPlan.userGoals // This will be replaced with AI summary when available
+        self.challengeTitle = workoutPlan.summary ?? workoutPlan.userGoals // This will be replaced with AI summary when available
         self.userGoals = workoutPlan.userGoals
         self.startDate = workoutPlan.createdDate
         self.completionDate = completionDate

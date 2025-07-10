@@ -303,7 +303,7 @@ struct PlanListView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text(workoutPlan.userGoals)
+                    Text(workoutPlan.displayDescription)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.leading)
@@ -311,7 +311,7 @@ struct PlanListView: View {
                     
                     Spacer()
                 }
-                .accessibilityLabel("Your goal: \(workoutPlan.userGoals)")
+                .accessibilityLabel("Your goal: \(workoutPlan.displayDescription)")
             }
         }
         .padding(16)

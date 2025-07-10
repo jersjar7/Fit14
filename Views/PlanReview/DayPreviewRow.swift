@@ -30,7 +30,8 @@ struct DayPreviewRow: View {
                 // Day Info
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("Day \(day.dayNumber)")
+                        // UPDATED: Show focus instead of "Day X"
+                        Text((day.focus ?? "Day \(day.dayNumber)").capitalized)
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)

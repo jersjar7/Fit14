@@ -11,6 +11,7 @@ struct Day: Identifiable, Codable, Equatable {
     let id: UUID
     let dayNumber: Int
     let date: Date
+    let focus: String?  // NEW: AI-provided focus description (e.g., "Upper body strength")
     var exercises: [Exercise]
     
     var isCompleted: Bool {
@@ -18,27 +19,30 @@ struct Day: Identifiable, Codable, Equatable {
     }
     
     // Main initializer with automatic ID generation
-    init(dayNumber: Int, date: Date, exercises: [Exercise] = []) {
+    init(dayNumber: Int, date: Date, focus: String? = nil, exercises: [Exercise] = []) {
         self.id = UUID()
         self.dayNumber = dayNumber
         self.date = date
+        self.focus = focus  // NEW: Include focus
         self.exercises = exercises
     }
     
     // Enhanced initializer that allows ID preservation
-    init(id: UUID = UUID(), dayNumber: Int, date: Date, exercises: [Exercise] = []) {
+    init(id: UUID = UUID(), dayNumber: Int, date: Date, focus: String? = nil, exercises: [Exercise] = []) {
         self.id = id
         self.dayNumber = dayNumber
         self.date = date
+        self.focus = focus  // NEW: Include focus
         self.exercises = exercises
     }
     
     // Convenience method to create an updated version with the same ID
-    func updated(dayNumber: Int? = nil, date: Date? = nil, exercises: [Exercise]? = nil) -> Day {
+    func updated(dayNumber: Int? = nil, date: Date? = nil, focus: String? = nil, exercises: [Exercise]? = nil) -> Day {
         return Day(
             id: self.id,
             dayNumber: dayNumber ?? self.dayNumber,
             date: date ?? self.date,
+            focus: focus ?? self.focus,  // NEW: Include focus in updates
             exercises: exercises ?? self.exercises
         )
     }
@@ -69,6 +73,7 @@ struct Day: Identifiable, Codable, Equatable {
         return lhs.id == rhs.id &&
                lhs.dayNumber == rhs.dayNumber &&
                lhs.date == rhs.date &&
+               lhs.focus == rhs.focus &&  // NEW: Include focus in equality check
                lhs.exercises == rhs.exercises
     }
 }

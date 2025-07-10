@@ -26,6 +26,7 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     let id = UUID()
     let userGoals: String
     let createdDate: Date
+    let summary: String?  // NEW: AI-generated summary from response
     var status: PlanStatus
     var days: [Day]
     
@@ -110,12 +111,26 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     
     // MARK: - Initialization
     
-    init(userGoals: String, days: [Day] = [], status: PlanStatus = .suggested) {
-        self.userGoals = userGoals
-        self.createdDate = Date()
-        self.days = days
-        self.status = status
-    }
+    init(userGoals: String, summary: String? = nil, days: [Day] = [], status: PlanStatus = .suggested) {
+            self.userGoals = userGoals
+            self.summary = summary  // NEW: Store AI summary
+            self.createdDate = Date()
+            self.days = days
+            self.status = status
+        }
+    
+    // MARK: - Display Properties (NEW)
+        
+        /// Get the best available description for display (summary preferred, userGoals as fallback)
+        var displayDescription: String {
+            return summary ?? userGoals
+        }
+        
+        /// Get a shorter version for compact displays
+        var compactDescription: String {
+            let description = displayDescription
+            return description.count > 100 ? String(description.prefix(97)) + "..." : description
+        }
     
     // MARK: - Plan Modification Methods
     

@@ -25,7 +25,8 @@ struct DayRowView: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Day \(day.dayNumber)")
+                // UPDATED: Show focus instead of "Day X"
+                Text((day.focus ?? "Day \(day.dayNumber)").capitalized)
                     .font(.headline)
                     .fontWeight(.semibold)
                 

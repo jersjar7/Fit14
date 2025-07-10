@@ -502,11 +502,15 @@ class AIWorkoutGenerationService: ObservableObject {
             // Calculate the actual date for this day based on the AI-provided start date
             let dayDate = Calendar.current.date(byAdding: .day, value: aiDay.dayNumber - 1, to: startDate) ?? startDate
             
+            // NEW: Include focus from AI response
             let day = Day(
                 dayNumber: aiDay.dayNumber,
                 date: dayDate,
+                focus: aiDay.focus,  // NEW: Pass focus from AI
                 exercises: exercises
             )
+            
+            print("✅ Created Day \(aiDay.dayNumber) with focus: '\(aiDay.focus ?? "none")'")
             
             days.append(day)
         }
@@ -515,7 +519,12 @@ class AIWorkoutGenerationService: ObservableObject {
         // Since the prompt contains structured data, we'll extract the goals section
         let userGoals = extractUserGoalsFromPrompt(prompt)
         
-        return WorkoutPlan(userGoals: userGoals, days: days)
+        // NEW: Use AI summary as the primary description
+        let aiSummary = aiResponse.summary
+        
+        print("✅ Creating WorkoutPlan with AI summary: \(aiSummary ?? "nil")")
+        
+        return WorkoutPlan(userGoals: userGoals, summary: aiSummary, days: days)
     }
     
     /// Extract user goals from structured prompt for WorkoutPlan creation
