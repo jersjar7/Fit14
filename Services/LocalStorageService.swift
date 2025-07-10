@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 6/30/25.
 //  Enhanced with completed challenge storage management
+//  UPDATED: Strengthened duplicate prevention and archiving safety
 //
 
 import Foundation
@@ -16,6 +17,9 @@ class LocalStorageService: ObservableObject {
     
     // Current data schema version - increment when making breaking changes
     private let currentDataVersion = 2
+    
+    // Thread safety for challenge archiving
+    private let archivingQueue = DispatchQueue(label: "com.fit14.archiving", qos: .userInitiated)
     
     init() {
         checkAndMigrateData()
@@ -153,35 +157,96 @@ class LocalStorageService: ObservableObject {
         }
     }
     
-    // MARK: - Completed Challenges Storage
+    // MARK: - Completed Challenges Storage (Thread-Safe Archiving)
     
-    /// Save a completed challenge to storage
+    /// Save a completed challenge to storage with enhanced duplicate prevention
     func saveCompletedChallenge(_ challenge: CompletedChallenge) throws {
-        do {
-            // Load existing challenges
-            var challenges = loadCompletedChallenges()
-            
-            // Check if challenge already exists (prevent duplicates)
-            if let existingIndex = challenges.firstIndex(where: { $0.id == challenge.id }) {
-                // Update existing challenge
-                challenges[existingIndex] = challenge
-                print("🔄 Updated existing challenge: \(challenge.challengeTitle)")
-            } else {
-                // Add new challenge
-                challenges.append(challenge)
-                print("➕ Added new challenge: \(challenge.challengeTitle)")
+        return try archivingQueue.sync {
+            do {
+                print("📁 Starting challenge archiving process for: \(challenge.challengeTitle)")
+                
+                // Load existing challenges
+                var challenges = loadCompletedChallenges()
+                let originalCount = challenges.count
+                
+                // Enhanced duplicate checking - check both ID and completion date to be extra safe
+                if let existingIndex = challenges.firstIndex(where: { $0.id == challenge.id }) {
+                    let existingChallenge = challenges[existingIndex]
+                    
+                    // Check if it's truly the same challenge completion
+                    if abs(existingChallenge.completionDate.timeIntervalSince(challenge.completionDate)) < 60 {
+                        print("🔄 Updating existing challenge (same completion): \(challenge.challengeTitle)")
+                        challenges[existingIndex] = challenge
+                    } else {
+                        print("⚠️ Found challenge with same ID but different completion date - this may indicate a duplicate archiving attempt")
+                        print("   Existing: \(existingChallenge.completionDate)")
+                        print("   New: \(challenge.completionDate)")
+                        // Still update to be safe, but log the potential issue
+                        challenges[existingIndex] = challenge
+                    }
+                } else {
+                    // Double-check for duplicates by comparing multiple fields
+                    let potentialDuplicates = challenges.filter { existing in
+                        existing.challengeTitle == challenge.challengeTitle &&
+                        abs(existing.completionDate.timeIntervalSince(challenge.completionDate)) < 3600 && // Within 1 hour
+                        existing.totalDays == challenge.totalDays &&
+                        existing.completedDays == challenge.completedDays
+                    }
+                    
+                    if !potentialDuplicates.isEmpty {
+                        print("🚨 Potential duplicate challenge detected - preventing archiving")
+                        print("   Found \(potentialDuplicates.count) similar challenges")
+                        throw StorageError.duplicateChallenge
+                    }
+                    
+                    // Add new challenge
+                    challenges.append(challenge)
+                    print("➕ Added new challenge: \(challenge.challengeTitle)")
+                }
+                
+                // Validate the challenge before saving
+                guard validateCompletedChallenge(challenge) else {
+                    print("❌ Challenge validation failed - not saving")
+                    throw StorageError.invalidData
+                }
+                
+                // Sort challenges by completion date (most recent first) for consistency
+                challenges.sort { $0.completionDate > $1.completionDate }
+                
+                // Encode and save
+                let encoded = try JSONEncoder().encode(challenges)
+                userDefaults.set(encoded, forKey: completedChallengesKey)
+                
+                print("✅ Challenge archiving completed successfully")
+                print("📊 Storage updated: \(originalCount) → \(challenges.count) challenges")
+                
+                // Verify the save worked by attempting to decode
+                if let _ = try? JSONDecoder().decode([CompletedChallenge].self, from: encoded) {
+                    print("✅ Archive integrity verified")
+                } else {
+                    print("❌ Archive integrity check failed")
+                    throw StorageError.saveFailed("Data integrity check failed")
+                }
+                
+            } catch {
+                print("❌ Challenge archiving failed: \(error)")
+                throw error
             }
-            
-            // Encode and save
-            let encoded = try JSONEncoder().encode(challenges)
-            userDefaults.set(encoded, forKey: completedChallengesKey)
-            
-            print("✅ Completed challenge saved successfully")
-            print("📊 Total challenges in storage: \(challenges.count)")
-            
-        } catch {
-            print("❌ Failed to save completed challenge: \(error)")
-            throw StorageError.saveFailed(error.localizedDescription)
+        }
+    }
+    
+    /// Check if a challenge already exists (for pre-archiving verification)
+    func challengeExists(_ challengeId: UUID) -> Bool {
+        let challenges = loadCompletedChallenges()
+        return challenges.contains { $0.id == challengeId }
+    }
+    
+    /// Check if a similar challenge was recently archived (additional safety check)
+    func hasSimilarRecentChallenge(title: String, completionDate: Date, tolerance: TimeInterval = 3600) -> Bool {
+        let challenges = loadCompletedChallenges()
+        return challenges.contains { existing in
+            existing.challengeTitle.lowercased() == title.lowercased() &&
+            abs(existing.completionDate.timeIntervalSince(completionDate)) < tolerance
         }
     }
     
@@ -195,7 +260,7 @@ class LocalStorageService: ObservableObject {
         do {
             let challenges = try JSONDecoder().decode([CompletedChallenge].self, from: data)
             
-            // Validate loaded challenges
+            // Validate loaded challenges and remove any invalid ones
             let validChallenges = challenges.filter { validateCompletedChallenge($0) }
             
             if validChallenges.count != challenges.count {
@@ -204,8 +269,25 @@ class LocalStorageService: ObservableObject {
                 saveFilteredChallenges(validChallenges)
             }
             
-            print("✅ Loaded \(validChallenges.count) completed challenges")
-            return validChallenges
+            // Check for any potential ID duplicates and log them
+            let challengeIds = validChallenges.map { $0.id }
+            let uniqueIds = Set(challengeIds)
+            if challengeIds.count != uniqueIds.count {
+                print("🚨 WARNING: Duplicate challenge IDs detected in storage!")
+                print("   Total challenges: \(challengeIds.count), Unique IDs: \(uniqueIds.count)")
+                // Remove duplicates, keeping the most recent
+                let deduplicatedChallenges = Dictionary(grouping: validChallenges, by: { $0.id })
+                    .compactMapValues { $0.max(by: { $0.completionDate < $1.completionDate }) }
+                    .values
+                    .sorted { $0.completionDate > $1.completionDate }
+                
+                print("🔧 Deduplicated to \(deduplicatedChallenges.count) challenges")
+                saveFilteredChallenges(Array(deduplicatedChallenges))
+                return Array(deduplicatedChallenges)
+            }
+            
+            print("✅ Loaded \(validChallenges.count) valid completed challenges")
+            return validChallenges.sorted { $0.completionDate > $1.completionDate }
             
         } catch let decodingError as DecodingError {
             print("❌ Failed to decode completed challenges: \(decodingError)")
@@ -219,26 +301,28 @@ class LocalStorageService: ObservableObject {
     
     /// Delete a specific completed challenge
     func deleteCompletedChallenge(_ challengeId: UUID) throws {
-        do {
-            var challenges = loadCompletedChallenges()
-            
-            guard let index = challenges.firstIndex(where: { $0.id == challengeId }) else {
-                print("⚠️ Challenge to delete not found: \(challengeId)")
-                throw StorageError.challengeNotFound
+        return try archivingQueue.sync {
+            do {
+                var challenges = loadCompletedChallenges()
+                
+                guard let index = challenges.firstIndex(where: { $0.id == challengeId }) else {
+                    print("⚠️ Challenge to delete not found: \(challengeId)")
+                    throw StorageError.challengeNotFound
+                }
+                
+                let deletedChallenge = challenges.remove(at: index)
+                
+                // Save updated challenges array
+                let encoded = try JSONEncoder().encode(challenges)
+                userDefaults.set(encoded, forKey: completedChallengesKey)
+                
+                print("🗑️ Deleted challenge: \(deletedChallenge.challengeTitle)")
+                print("📊 Remaining challenges: \(challenges.count)")
+                
+            } catch {
+                print("❌ Failed to delete completed challenge: \(error)")
+                throw error
             }
-            
-            let deletedChallenge = challenges.remove(at: index)
-            
-            // Save updated challenges array
-            let encoded = try JSONEncoder().encode(challenges)
-            userDefaults.set(encoded, forKey: completedChallengesKey)
-            
-            print("🗑️ Deleted challenge: \(deletedChallenge.challengeTitle)")
-            print("📊 Remaining challenges: \(challenges.count)")
-            
-        } catch {
-            print("❌ Failed to delete completed challenge: \(error)")
-            throw error
         }
     }
     
@@ -463,6 +547,7 @@ enum StorageError: LocalizedError {
     case saveFailed(String)
     case challengeNotFound
     case invalidData
+    case duplicateChallenge
     
     var errorDescription: String? {
         switch self {
@@ -472,6 +557,8 @@ enum StorageError: LocalizedError {
             return "Challenge not found"
         case .invalidData:
             return "Invalid data format"
+        case .duplicateChallenge:
+            return "Duplicate challenge detected"
         }
     }
 }

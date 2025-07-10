@@ -5,6 +5,7 @@
 //  Created by Jerson on 6/30/25.
 //  Updated to use Google Gemini API and structured UserGoalData with essential chips only
 //  Enhanced with start date support and challenge history management
+//  UPDATED: Cleaned up completion flow - removed UI timing logic, single archiving responsibility
 //
 
 import Foundation
@@ -58,7 +59,7 @@ class WorkoutPlanViewModel: ObservableObject {
         }
     }
     
-    /// Archive the current completed plan as a challenge
+    /// Archive the current completed plan as a challenge (PURE DATA OPERATION)
     func archiveCompletedPlan() {
         guard let plan = currentPlan, plan.isCompleted else {
             print("❌ Cannot archive plan - plan is not completed")
@@ -86,29 +87,14 @@ class WorkoutPlanViewModel: ObservableObject {
         }
     }
     
-    /// Complete current plan and archive it
-    func completeAndArchivePlan() {
-        guard let plan = currentPlan else {
-            print("❌ No current plan to complete")
-            return
-        }
-        
-        // Archive if plan is completed
-        if plan.isCompleted {
-            archiveCompletedPlan()
-            
-            // Clear current plan after archiving
-            currentPlan = nil
-            storageService.clearWorkoutPlan()
-            
-            print("🎉 Plan completed and archived successfully!")
-        } else {
-            print("⚠️ Plan is not fully completed yet")
-            showErrorMessage("Complete all days to archive your challenge")
-        }
+    /// Clear current plan (separate operation from archiving)
+    func clearCurrentPlan() {
+        currentPlan = nil
+        storageService.clearWorkoutPlan()
+        print("🗑️ Cleared current plan")
     }
     
-    /// Force archive current plan (even if not 100% complete)
+    /// Force archive current plan (even if not 100% complete) - for edge cases
     func forceArchiveCurrentPlan() {
         guard let plan = currentPlan else {
             print("❌ No current plan to archive")
@@ -126,11 +112,6 @@ class WorkoutPlanViewModel: ObservableObject {
         // Save to storage
         do {
             try storageService.saveCompletedChallenge(completedChallenge)
-            
-            // Clear current plan
-            currentPlan = nil
-            storageService.clearWorkoutPlan()
-            
             print("✅ Force archived challenge with \(completedChallenge.completedDays)/\(completedChallenge.totalDays) days completed")
         } catch {
             print("❌ Failed to force archive challenge: \(error)")
@@ -766,15 +747,12 @@ class WorkoutPlanViewModel: ObservableObject {
         return AIPrompts.getNextChallengeSuggestions(from: userGoalData)
     }
     
-    /// Start a new challenge based on completed plan
+    /// Start a new challenge - UI should handle archiving first
     func startNewChallenge() {
         guard let completedPlan = currentPlan, completedPlan.isCompleted else {
             showErrorMessage("Complete your current plan before starting a new challenge")
             return
         }
-        
-        // Archive the completed plan first
-        archiveCompletedPlan()
         
         // Keep some context from the completed plan for progression
         let previousGoalData = userGoalData

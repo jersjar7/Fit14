@@ -5,6 +5,7 @@
 //  Created by Jerson on 6/30/25.
 //  Enhanced with 2-week completion and next challenge features
 //  Updated with challenge history integration
+//  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing
 //
 
 import SwiftUI
@@ -19,7 +20,7 @@ struct PlanListView: View {
         NavigationView {
             if let workoutPlan = viewModel.currentPlan, workoutPlan.isActive {
                 VStack(spacing: 20) {
-                    // Completion Celebration (if plan is completed)
+                    // Completion Celebration Banner (shows naturally when user returns after completion)
                     if workoutPlan.isCompleted && !showingCompletionCelebration {
                         completionCelebrationBanner
                     }
@@ -92,23 +93,10 @@ struct PlanListView: View {
                 } message: {
                     Text(viewModel.errorMessage ?? "An unexpected error occurred")
                 }
-                .onAppear {
-                    // Show completion celebration if plan just completed
-                    if workoutPlan.isCompleted && !showingCompletionCelebration {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            showingCompletionCelebration = true
-                        }
-                        
-                        // Archive the completed plan (only once per completion)
-                        if !hasArchivedCurrentPlan {
-                            archiveCompletedPlan()
-                        }
-                    }
-                }
                 .onChange(of: workoutPlan.isCompleted) { isCompleted in
-                    // Archive when plan transitions to completed state
+                    // Single trigger point for completion flow
                     if isCompleted && !hasArchivedCurrentPlan {
-                        archiveCompletedPlan()
+                        handlePlanCompletion()
                     }
                 }
             } else {
@@ -118,19 +106,18 @@ struct PlanListView: View {
         }
     }
     
-    // MARK: - Challenge Archiving
+    // MARK: - Single Completion Flow Handler
     
-    private func archiveCompletedPlan() {
-        // Archive the completed challenge
-        viewModel.archiveCompletedPlan()
+    private func handlePlanCompletion() {
+        // Step 1: Immediate - Mark as archived to prevent duplicates
         hasArchivedCurrentPlan = true
         
-        // Show completion celebration with history option
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            showingCompletionCelebration = true
+        // Step 2: Show banner + Archive after 0.5s (only timing we use)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            showingCompletionCelebration = false // Ensure banner shows
+            viewModel.archiveCompletedPlan() // Archive once
+            print("🏆 Challenge completed and archived!")
         }
-        
-        print("🏆 Challenge completed and archived!")
     }
     
     // MARK: - Completion Celebration Banner
@@ -157,7 +144,7 @@ struct PlanListView: View {
                 
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        showingCompletionCelebration = true
+                        showingCompletionCelebration = true // Hide banner when dismissed
                     }
                 }) {
                     Image(systemName: "xmark.circle.fill")
@@ -682,6 +669,7 @@ struct NextChallengeSheet: View {
                     // CTA Button
                     Button(action: {
                         dismiss()
+                        // Note: UI will handle archiving before this is called
                         viewModel.startNewChallenge()
                     }) {
                         HStack {

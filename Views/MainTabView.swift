@@ -3,6 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/8/25.
+//  UPDATED: Removed auto-switching, improved "New" badge logic for user-controlled flow
 //
 
 import SwiftUI
@@ -65,21 +66,11 @@ struct MainTabView: View {
         .onAppear {
             configureTabBarAppearance()
         }
-        .onChange(of: viewModel.shouldShowCompletionPrompt) { shouldShow in
-            // Auto-switch to history tab when challenge is completed
-            if shouldShow {
-                handleChallengeCompletion()
-            }
-        }
         .onReceive(NotificationCenter.default.publisher(for: .switchToHistoryTab)) { _ in
-            // Switch to history tab when requested from other views
+            // Switch to history tab when requested from other views (user-controlled)
             withAnimation(.easeInOut(duration: 0.3)) {
                 selectedTab = .challengeHistory
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .challengeCompleted)) { _ in
-            // Handle challenge completion notification
-            handleChallengeCompletion()
         }
     }
     
@@ -120,23 +111,14 @@ struct MainTabView: View {
     }
     
     private var historyBadge: String? {
-        // Show "New" badge if there are recent challenges (within last 3 days)
-        let recentChallenges = viewModel.recentChallenges.filter {
-            Calendar.current.dateComponents([.day], from: $0.completionDate, to: Date()).day ?? 100 <= 3
+        // Show "New" badge if there are recently completed challenges (within last 3 days)
+        let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
+        
+        let newlyCompletedChallenges = viewModel.completedChallenges.filter { challenge in
+            challenge.completionDate >= threeDaysAgo
         }
         
-        return recentChallenges.isEmpty ? nil : "New"
-    }
-    
-    // MARK: - Challenge Completion Handling
-    
-    private func handleChallengeCompletion() {
-        // Give user time to see completion celebration, then switch to history
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation(.easeInOut(duration: 0.5)) {
-                selectedTab = .challengeHistory
-            }
-        }
+        return newlyCompletedChallenges.isEmpty ? nil : "New"
     }
     
     // MARK: - Tab Bar Appearance

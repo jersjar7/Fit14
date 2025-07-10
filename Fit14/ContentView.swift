@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 6/30/25.
 //  Updated for tab navigation integration
+//  UPDATED: Aligned with user-controlled completion flow, removed auto-handling
 //
 
 import SwiftUI
@@ -43,20 +44,6 @@ struct ContentView: View {
         } message: {
             Text("A critical error occurred. Restarting will clear your data and return you to the beginning.")
         }
-        .onReceive(NotificationCenter.default.publisher(for: .challengeCompleted)) { _ in
-            // Handle challenge completion notification from within tab context
-            handleChallengeCompletion()
-        }
-    }
-    
-    // MARK: - Challenge Completion Handling
-    
-    private func handleChallengeCompletion() {
-        // Archive the completed challenge
-        viewModel.completeAndArchivePlan()
-        
-        // Post notification to switch to history tab
-        NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
     }
     
     // MARK: - Error Handling
@@ -87,7 +74,7 @@ struct ActivePlanView: View {
                 PlanListView()
                     .environmentObject(viewModel)
                     .overlay(alignment: .bottom) {
-                        // Show completion prompt if challenge is finished
+                        // Show completion prompt if challenge is finished (user-controlled)
                         if viewModel.shouldShowCompletionPrompt {
                             completionPromptOverlay
                         }
@@ -108,7 +95,7 @@ struct ActivePlanView: View {
         ))
     }
     
-    // MARK: - Completion Prompt Overlay
+    // MARK: - User-Controlled Completion Prompt Overlay
     
     private var completionPromptOverlay: some View {
         VStack(spacing: 16) {
@@ -118,19 +105,28 @@ struct ActivePlanView: View {
                         .font(.headline)
                         .fontWeight(.bold)
                     
-                    Text("Great job! Ready to start your next challenge?")
+                    Text("Great job! Ready to explore your achievement?")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
-                Button("View History") {
-                    // Archive and switch to history tab
-                    NotificationCenter.default.post(name: .challengeCompleted, object: nil)
+                HStack(spacing: 12) {
+                    Button("View Achievement") {
+                        // User-controlled switch to history tab
+                        NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    
+                    Button("New Challenge") {
+                        // Note: PlanListView will handle archiving before starting new challenge
+                        viewModel.startNewChallenge()
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.green)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.orange)
             }
             .padding()
             .background(Color(.secondarySystemGroupedBackground))
