@@ -4,7 +4,7 @@
 //
 //  Created by Jerson on 6/30/25.
 //  Updated for tab navigation integration
-//  UPDATED: Aligned with user-controlled completion flow, removed auto-handling
+//  UPDATED: Removed completion overlay - PlanListView now handles all completion UI
 //
 
 import SwiftUI
@@ -73,12 +73,6 @@ struct ActivePlanView: View {
             if let currentPlan = viewModel.currentPlan, currentPlan.isValid {
                 PlanListView()
                     .environmentObject(viewModel)
-                    .overlay(alignment: .bottom) {
-                        // Show completion prompt if challenge is finished (user-controlled)
-                        if viewModel.shouldShowCompletionPrompt {
-                            completionPromptOverlay
-                        }
-                    }
             } else {
                 ErrorRecoveryView(
                     title: "Plan Data Corrupted",
@@ -93,49 +87,6 @@ struct ActivePlanView: View {
             insertion: .move(edge: .trailing).combined(with: .opacity),
             removal: .move(edge: .leading).combined(with: .opacity)
         ))
-    }
-    
-    // MARK: - User-Controlled Completion Prompt Overlay
-    
-    private var completionPromptOverlay: some View {
-        VStack(spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("🎉 Challenge Complete!")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                    
-                    Text("Great job! Ready to explore your achievement?")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                HStack(spacing: 12) {
-                    Button("View Achievement") {
-                        // User-controlled switch to history tab
-                        NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
-                    
-                    Button("New Challenge") {
-                        // Note: PlanListView will handle archiving before starting new challenge
-                        viewModel.startNewChallenge()
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.green)
-                }
-            }
-            .padding()
-            .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-        }
-        .padding()
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: viewModel.shouldShowCompletionPrompt)
     }
 }
 

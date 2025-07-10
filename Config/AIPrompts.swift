@@ -82,7 +82,7 @@ struct AIPrompts {
         - RESPECT day-of-week preferences (e.g., if user wants Sundays off, plan accordingly based on start date)
         
         WORKOUT DAY GUIDELINES:
-        - Regular workout days should have 4-6 exercises
+        - Regular workout days should have 4-6 exercises depending on user's time availability
         - Focus areas can include: Upper Body, Lower Body, Full Body, Cardio, Strength, etc.
         - Workout days should fit within the user's available time
         - Progress difficulty throughout the 14 days

@@ -3,6 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/8/25.
+//  UPDATED: Added Next Challenge Section for completed challenges
 //
 
 import SwiftUI
@@ -35,6 +36,15 @@ struct PlanHistoryView: View {
                 viewModel.loadChallengeHistory()
             }
         }
+    }
+    
+    // MARK: - Next Challenge Section Logic
+    
+    private var shouldShowNextChallengeSection: Bool {
+        // Show if user has completed challenges and doesn't have an active plan
+        return !viewModel.hasActivePlan &&
+               viewModel.hasCompletedChallenges &&
+               viewModel.recentChallenges.count > 0 // Has challenges completed in last 30 days
     }
     
     // MARK: - Loading View
@@ -118,11 +128,18 @@ struct PlanHistoryView: View {
     private var challengeGalleryView: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
+                // Next Challenge Section (if recently completed and no active plan)
+                if shouldShowNextChallengeSection {
+                    nextChallengeSection
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                }
+                
                 // Summary Stats Card (if there are multiple challenges)
                 if viewModel.completedChallenges.count > 1 {
                     summaryStatsCard
                         .padding(.horizontal)
-                        .padding(.top, 8)
+                        .padding(.top, shouldShowNextChallengeSection ? 0 : 8)
                 }
                 
                 // Challenge Cards
@@ -140,6 +157,82 @@ struct PlanHistoryView: View {
             }
             .padding(.top, 8)
         }
+    }
+    
+    // MARK: - Next Challenge Section
+    
+    private var nextChallengeSection: some View {
+        VStack(spacing: 16) {
+            // Header
+            VStack(spacing: 12) {
+                HStack {
+                    Image(systemName: "trophy.fill")
+                        .font(.title2)
+                        .foregroundColor(.yellow)
+                    
+                    Text("Ready for Your Next Challenge?")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    
+                    Spacer()
+                }
+                
+                Text("You've proven you can stick to a plan and see results. Build on your momentum with a new 2-week goal!")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            // Action Button
+            Button(action: {
+                viewModel.startGoalInput()
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Create New Challenge")
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.green)
+                .cornerRadius(12)
+            }
+            
+            // Next Challenge Suggestions Preview
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Suggested next challenges:")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                let suggestions = viewModel.getNextChallengeSuggestions()
+                ForEach(suggestions.prefix(3), id: \.self) { suggestion in
+                    HStack {
+                        Image(systemName: "arrow.right.circle")
+                            .foregroundColor(.blue)
+                            .font(.caption)
+                        Text(suggestion)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [Color.green.opacity(0.05), Color.blue.opacity(0.05)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.green.opacity(0.2), lineWidth: 1)
+        )
     }
     
     // MARK: - Summary Stats Card

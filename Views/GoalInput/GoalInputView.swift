@@ -32,31 +32,26 @@ struct GoalInputView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 10) {
-                    // Header Section (STAYS THE SAME)
+                    // Header Section
                     headerSection
                     
-                    // Essential Information Section (MOVED UP)
-                    essentialInformationSection
-                    
-                    // Start Date Section (MOVED DOWN, SEPARATED)
+                    // Start Date Section
                     startDateSection
                     
-                    // Text Editor Section (REORGANIZED)
+                    // Text Editor Section
                     textEditorSection
                     
-                    // Hint Text Section (SEPARATED OUT)
+                    // Essential Information Section
+                    essentialInformationSection
+                    
+                    // Hint Text Section
                     hintTextSection
                     
-                    // Generation Button (STAYS AT BOTTOM)
+                    // Generation Button
                     generateButtonSection
-                        .padding(.top, 20)
+                        .padding(.top, 10)
                     
-                    // Existing Plan Notice
-                    if viewModel.hasActivePlan && !viewModel.isGenerating {
-                        existingPlanSection
-                    }
-                    
-                    Spacer(minLength: 60)
+                    Spacer(minLength: 30)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -200,7 +195,7 @@ struct GoalInputView: View {
     private var startDateSection: some View {
         HStack(spacing: 8) {
             
-            
+            Spacer()
             // All elements grouped together on the right
             HStack(spacing: 8) {
                 // Information icon with help action
@@ -239,7 +234,7 @@ struct GoalInputView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            Spacer()
+            
         }
         .padding(.horizontal, 8)
 //        .padding(.vertical, 0)
@@ -310,19 +305,6 @@ struct GoalInputView: View {
     private var startDatePickerSheet: some View {
         NavigationView {
             VStack(spacing: 20) {
-                // Header
-                VStack(spacing: 8) {
-//                    Text("Select Start Date")
-//                        .font(.headline)
-//                        .fontWeight(.semibold)
-                    
-//                    Text("Choose when your 14-day fitness challenge begins")
-//                        .font(.subheadline)
-//                        .foregroundColor(.secondary)
-//                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, 10)
-                
                 // Date Picker
                 DatePicker(
                     "",
@@ -444,71 +426,6 @@ struct GoalInputView: View {
                 canGenerate: canGeneratePlan
             )
         }
-    }
-    
-    // MARK: - Alternative: Custom Usage Example
-//    private var customGenerateButtonSection: some View {
-//        VStack(spacing: 12) {
-//            UltraInstinctButton.custom(
-//                action: {
-//                    Task {
-//                        await generatePlan()
-//                    }
-//                },
-//                isLoading: viewModel.isGenerating,
-//                isEnabled: canGeneratePlan,
-//                loadingText: "Creating Your Plan...",
-//                defaultText: "Generate AI Workout Plan",
-//                icon: "sparkles"
-//            )
-//        }
-//    }
-    
-    // MARK: - Existing Plan Section
-    
-    private var existingPlanSection: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Image(systemName: "info.circle")
-                    .foregroundColor(Color.orange)
-                Text("You already have an active workout plan")
-                    .font(.subheadline)
-                    .foregroundColor(Color.secondary)
-                Spacer()
-            }
-            
-            HStack(spacing: 16) {
-                NavigationLink(destination: PlanListView().environmentObject(viewModel)) {
-                    HStack {
-                        Image(systemName: "list.bullet")
-                        Text("View Current Plan")
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.green)
-                    .foregroundColor(Color.white)
-                    .cornerRadius(8)
-                }
-                
-                Button(action: {
-                    viewModel.startOver()
-                    resetForm()
-                }) {
-                    HStack {
-                        Image(systemName: "arrow.uturn.left")
-                        Text("Start Fresh")
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.orange)
-                    .foregroundColor(Color.white)
-                    .cornerRadius(8)
-                }
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
     }
     
     // MARK: - Event Handlers

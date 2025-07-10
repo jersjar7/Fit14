@@ -5,7 +5,7 @@
 //  Created by Jerson on 6/30/25.
 //  Enhanced with 2-week completion and next challenge features
 //  Updated with challenge history integration
-//  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing
+//  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing, bottom popup
 //
 
 import SwiftUI
@@ -20,21 +20,11 @@ struct PlanListView: View {
         NavigationView {
             if let workoutPlan = viewModel.currentPlan, workoutPlan.isActive {
                 VStack(spacing: 20) {
-                    // Completion Celebration Banner (shows naturally when user returns after completion)
-                    if workoutPlan.isCompleted && !showingCompletionCelebration {
-                        completionCelebrationBanner
-                    }
-                    
                     // Progress Header
                     progressHeaderSection(for: workoutPlan)
                     
                     // Days List
                     daysListSection(for: workoutPlan)
-                    
-                    // Next Challenge Section (if plan is completed)
-                    if workoutPlan.isCompleted {
-                        nextChallengeSection
-                    }
                 }
                 .padding()
                 .navigationTitle("Fit14")
@@ -99,6 +89,14 @@ struct PlanListView: View {
                         handlePlanCompletion()
                     }
                 }
+                .overlay(alignment: .bottom) {
+                    if workoutPlan.isCompleted && !showingCompletionCelebration {
+                        completionPopupBanner
+                            .padding()
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingCompletionCelebration)
+                    }
+                }
             } else {
                 // No active plan found - show empty state
                 emptyStateSection
@@ -120,9 +118,9 @@ struct PlanListView: View {
         }
     }
     
-    // MARK: - Completion Celebration Banner
+    // MARK: - Completion Popup Banner
     
-    private var completionCelebrationBanner: some View {
+    private var completionPopupBanner: some View {
         VStack(spacing: 12) {
             HStack {
                 Image(systemName: "party.popper.fill")
@@ -151,62 +149,17 @@ struct PlanListView: View {
                         .foregroundColor(.secondary)
                 }
             }
-            
-            // Add View History button
-            HStack(spacing: 12) {
-                Button(action: {
-                    // Switch to history tab
-                    NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
-                }) {
-                    HStack {
-                        Image(systemName: "trophy.fill")
-                        Text("View Your Achievement")
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.orange)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.orange.opacity(0.1))
-                    .cornerRadius(8)
-                }
-                
-                Spacer()
-                
-                Button(action: {
-                    showingNextChallengeSheet = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Next Challenge")
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(8)
-                }
-            }
         }
         .padding(16)
         .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.green.opacity(0.1), Color.blue.opacity(0.1)]),
-                startPoint: .leading,
-                endPoint: .trailing
-            )
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: -5)
         )
-        .cornerRadius(12)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.green.opacity(0.3), lineWidth: 1)
         )
-        .transition(.asymmetric(
-            insertion: .scale.combined(with: .opacity),
-            removal: .opacity
-        ))
     }
     
     // MARK: - Progress Header Section
@@ -327,105 +280,6 @@ struct PlanListView: View {
             .padding(.horizontal)
         }
         .accessibilityLabel("Workout days list")
-    }
-    
-    // MARK: - Next Challenge Section
-    
-    private var nextChallengeSection: some View {
-        VStack(spacing: 16) {
-            // Success Message
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "trophy.fill")
-                        .font(.title2)
-                        .foregroundColor(.yellow)
-                    
-                    Text("Ready for Your Next Challenge?")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                    
-                    Spacer()
-                }
-                
-                Text("You've proven you can stick to a plan and see results. Build on your momentum with a new 2-week goal!")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.leading)
-            }
-            
-            // Achievement and History Section
-            HStack(spacing: 12) {
-                Button(action: {
-                    NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
-                }) {
-                    VStack(spacing: 6) {
-                        Image(systemName: "trophy.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.orange)
-                        
-                        Text("View Achievement")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.orange.opacity(0.1))
-                    .cornerRadius(8)
-                }
-                
-                Button(action: {
-                    showingNextChallengeSheet = true
-                }) {
-                    VStack(spacing: 6) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.green)
-                        
-                        Text("New Challenge")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(8)
-                }
-            }
-            
-            // Next Challenge Suggestions Preview
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Suggested next challenges:")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                
-                let suggestions = viewModel.getNextChallengeSuggestions()
-                ForEach(suggestions.prefix(3), id: \.self) { suggestion in
-                    HStack {
-                        Image(systemName: "arrow.right.circle")
-                            .foregroundColor(.blue)
-                            .font(.caption)
-                        Text(suggestion)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.green.opacity(0.05), Color.blue.opacity(0.05)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.green.opacity(0.2), lineWidth: 1)
-        )
     }
     
     // MARK: - Empty State Section
