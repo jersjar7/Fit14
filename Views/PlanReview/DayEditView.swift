@@ -3,6 +3,7 @@
 //  Fit14
 //
 //  Created by Jerson on 7/3/25.
+//  UPDATED: Added display of day focus text from AI response
 //
 
 import SwiftUI
@@ -50,6 +51,18 @@ struct DayEditView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                    }
+                    
+                    // Day Focus Display
+                    if let focus = currentDay.focus, !focus.isEmpty {
+                        HStack {
+                            Text((focus).capitalized)
+                                .font(.headline)
+                                .fontWeight(.medium)
+                            
+                        }
+                        .padding(.top, 8)
+                        .padding(.horizontal, 12)
                     }
                     
                     Text("Tap an exercise to edit, swipe left to delete")
@@ -137,11 +150,6 @@ struct DayEditView: View {
             .navigationTitle("Edit Day")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-//                ToolbarItem(placement: .navigationBarLeading) {
-//                    Button("Cancel") {
-//                        dismiss()
-//                    }
-//                }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
