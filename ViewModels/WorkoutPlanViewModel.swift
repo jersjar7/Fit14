@@ -183,10 +183,10 @@ class WorkoutPlanViewModel: ObservableObject {
         return completedChallenges.filter { $0.completionDate >= thirtyDaysAgo }
     }
     
-    /// Check if current plan should show completion prompt
+    /// Check if current plan should show completion prompt. Handles both completion and finish scenarios
     var shouldShowCompletionPrompt: Bool {
         guard let plan = currentPlan else { return false }
-        return plan.isCompleted && plan.isActive
+        return (plan.isCompleted || plan.isFinished) && plan.isActive
     }
     
     // MARK: - Enhanced Completion Calculations
@@ -244,6 +244,27 @@ class WorkoutPlanViewModel: ObservableObject {
         case 2: return "Good momentum 📈"
         case 1: return "Building momentum"
         default: return "Need to rebuild momentum"
+        }
+    }
+    
+    /// Check if current plan has finished its time period and auto-archive
+    @MainActor
+    func checkForFinishedPlan() {
+        guard let plan = currentPlan,
+              plan.isActive,
+              plan.isFinished else { return }
+        
+        print("📅 Plan time period ended - auto-archiving with \(plan.completedDays)/\(plan.totalDays) days completed")
+        
+        // Auto-archive the finished plan (regardless of completion percentage)
+        archiveCompletedPlan()
+        
+        // Show a different message for auto-archived vs manually completed plans
+        if plan.isCompleted {
+            print("🏆 Plan completed with 100% success!")
+        } else {
+            let percentage = Int(plan.progressPercentage)
+            print("📊 Plan finished with \(percentage)% completion")
         }
     }
     

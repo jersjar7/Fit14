@@ -68,7 +68,14 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
         return max(0, totalDays - completedDays)
     }
     
-    /// Whether the entire plan is completed
+    /// Whether the 14-day time period has elapsed (regardless of completion)
+    var isFinished: Bool {
+        guard let lastDay = days.max(by: { $0.date < $1.date }) else { return false }
+        let dayAfterLastDay = Calendar.current.date(byAdding: .day, value: 1, to: lastDay.date) ?? lastDay.date
+        return Date() >= Calendar.current.startOfDay(for: dayAfterLastDay)
+    }
+    
+    /// Whether the entire plan is completed (all days done within the 14-day period)
     var isCompleted: Bool {
         guard totalDays > 0 else { return false }
         return completedDays >= totalDays
@@ -77,7 +84,7 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     /// Progress as a decimal (0.0 to 1.0) for use with ProgressView
     var progressDecimal: Double {
         return progressPercentage / 100.0
-    }
+    }    
     
     // MARK: - Plan Status Properties
     

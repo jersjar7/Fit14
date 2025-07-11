@@ -6,9 +6,11 @@
 //  Enhanced with 2-week completion and next challenge features
 //  Updated with challenge history integration
 //  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing, bottom popup, inline see more
+//  UPDATED: Added missed days banner integration
 //
 
 import SwiftUI
+import UIKit // For UIApplication.willEnterForegroundNotification
 
 struct PlanListView: View {
     @EnvironmentObject var viewModel: WorkoutPlanViewModel
@@ -25,7 +27,7 @@ struct PlanListView: View {
                     // Progress Header
                     progressHeaderSection(for: workoutPlan)
                     
-                    // Days List
+                    // Days List (now includes missed days banner)
                     daysListSection(for: workoutPlan)
                 }
                 .padding()
@@ -97,7 +99,7 @@ struct PlanListView: View {
                     Text("Are you sure you want to start fresh? Your current challenge and all progress will be permanently lost.")
                 }
                 .onChange(of: workoutPlan.isCompleted) { isCompleted in
-                    // Single trigger point for completion flow
+                    // Handle 100% completion celebration
                     if isCompleted && !hasArchivedCurrentPlan {
                         handlePlanCompletion()
                     }
@@ -110,10 +112,38 @@ struct PlanListView: View {
                             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingCompletionCelebration)
                     }
                 }
+                .onAppear {
+                    // Check if plan should be auto-archived when view appears
+                    viewModel.checkForFinishedPlan()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                    // Check when app comes back to foreground (in case midnight passed while app was closed)
+                    viewModel.checkForFinishedPlan()
+                }
+                .onChange(of: workoutPlan.isFinished) { isFinished in
+                    // Handle auto-archiving when 14-day period ends
+                    if isFinished && !hasArchivedCurrentPlan && !workoutPlan.isCompleted {
+                        // Plan finished but not 100% completed - auto-archive without celebration
+                        handlePlanFinished()
+                    }
+                }
             } else {
                 // No active plan found - show empty state
                 emptyStateSection
             }
+        }
+    }
+    
+    // MARK: - Method to handle non-100% completion scenarios
+    private func handlePlanFinished() {
+        // Mark as archived to prevent duplicates
+        hasArchivedCurrentPlan = true
+        
+        // Archive after brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            viewModel.archiveCompletedPlan()
+            let percentage = Int(viewModel.currentPlan?.progressPercentage ?? 0)
+            print("📊 Challenge finished with \(percentage)% completion")
         }
     }
     
@@ -360,24 +390,35 @@ struct PlanListView: View {
         }
     }
     
-    // MARK: - Days List Section
+    // MARK: - Days List Section (UPDATED with Missed Days Banner)
     
     private func daysListSection(for workoutPlan: WorkoutPlan) -> some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(workoutPlan.days) { day in
-                    NavigationLink(destination: DayDetailView(dayId: day.id, viewModel: viewModel)) {
-                        DayRowView(day: day)
-                            .background(Color(.systemBackground))
-                            .cornerRadius(12)
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                            .accessibilityLabel("Day \(day.dayNumber), \(day.exercises.count) exercises, \(day.isCompleted ? "completed" : "not completed")")
-                            .accessibilityHint("Tap to view and track today's exercises")
-                    }
-                    .buttonStyle(PlainButtonStyle())
+            VStack(spacing: 12) {
+                // MISSED DAYS BANNER (NEW)
+                if viewModel.hasMissedDays {
+                    MissedDaysBanner()
+                        .padding(.horizontal)
+                        .transition(.slide.combined(with: .opacity))
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.hasMissedDays)
                 }
+                
+                // DAYS LIST
+                LazyVStack(spacing: 12) {
+                    ForEach(workoutPlan.days) { day in
+                        NavigationLink(destination: DayDetailView(dayId: day.id, viewModel: viewModel)) {
+                            DayRowView(day: day)
+                                .background(Color(.systemBackground))
+                                .cornerRadius(12)
+                                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                .accessibilityLabel("Day \(day.dayNumber), \(day.exercises.count) exercises, \(day.isCompleted ? "completed" : "not completed")")
+                                .accessibilityHint("Tap to view and track today's exercises")
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
         }
         .accessibilityLabel("Workout days list")
     }
@@ -692,5 +733,35 @@ struct NextChallengeSheet: View {
     viewModel.currentPlan = SampleData.sampleCompletedWorkoutPlan
     
     return NextChallengeSheet()
+        .environmentObject(viewModel)
+}
+
+// MARK: - Preview with Missed Days (NEW)
+#Preview("Plan with Missed Days") {
+    let viewModel = WorkoutPlanViewModel()
+    
+    // Create a sample plan with missed days for testing
+    var plan = SampleData.sampleActiveWorkoutPlan
+    
+    // Modify some days to be in the past and incomplete (missed)
+    let calendar = Calendar.current
+    plan.days = plan.days.enumerated().map { index, day in
+        if index < 8 {
+            // Make first 8 days past dates and incomplete (missed)
+            let pastDate = calendar.date(byAdding: .day, value: -(8-index), to: Date()) ?? Date()
+            return day.updated(date: pastDate)
+        } else if index == 8 {
+            // Make today
+            return day.updated(date: Date())
+        } else {
+            // Keep future days as future
+            let futureDate = calendar.date(byAdding: .day, value: index-8, to: Date()) ?? Date()
+            return day.updated(date: futureDate)
+        }
+    }
+    
+    viewModel.currentPlan = plan
+    
+    return PlanListView()
         .environmentObject(viewModel)
 }
