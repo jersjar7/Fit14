@@ -398,7 +398,7 @@ struct PlanListView: View {
                 // MISSED DAYS BANNER (NEW)
                 if viewModel.hasMissedDays {
                     MissedDaysBanner()
-                        .padding(.horizontal)
+//                        .padding(.horizontal)
                         .transition(.slide.combined(with: .opacity))
                         .animation(.easeInOut(duration: 0.3), value: viewModel.hasMissedDays)
                 }

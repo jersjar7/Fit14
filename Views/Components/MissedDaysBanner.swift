@@ -85,28 +85,6 @@ struct MissedDaysBanner: View {
     
     private var actionButtons: some View {
         HStack(spacing: 8) {
-            // Quick Action Button
-            if viewModel.suggestedCatchUpDays > 0 {
-                Button(action: {
-                    // TODO: Implement quick catch-up action
-                    print("Quick catch-up: \(viewModel.suggestedCatchUpDays) days")
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bolt.fill")
-                            .font(.caption2)
-                        Text("Catch Up")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.orange)
-                    .foregroundColor(.white)
-                    .cornerRadius(6)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            
             // Expand/Collapse Icon
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -164,17 +142,8 @@ struct MissedDaysBanner: View {
                             label: "Success Rate"
                         )
                     }
-                    
-                    Spacer()
                 }
                 .padding(.horizontal, 16)
-                
-                // Helpful tip
-                Text("💡 Tip: Tap the orange days below to catch up on missed workouts")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 16)
-                    .multilineTextAlignment(.center)
             }
             .padding(.bottom, 12)
         }
@@ -392,11 +361,6 @@ struct MissedDaysBanner: View {
             .cornerRadius(12)
         }
         .padding()
-        
-        Text("💡 Tip: Tap orange day rows below to catch up")
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .padding()
         
         Spacer()
     }
