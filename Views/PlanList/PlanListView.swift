@@ -16,6 +16,7 @@ struct PlanListView: View {
     @State private var showingCompletionCelebration = false
     @State private var hasArchivedCurrentPlan = false // Track if we've archived this completion
     @State private var showingFullDescription = false
+    @State private var showingStartFreshAlert = false
     
     var body: some View {
         NavigationView {
@@ -50,7 +51,7 @@ struct PlanListView: View {
                             }
                             
                             Button(action: {
-                                viewModel.startFresh()
+                                showingStartFreshAlert = true
                             }) {
                                 Label("Start Fresh", systemImage: "arrow.uturn.left")
                             }
@@ -86,6 +87,14 @@ struct PlanListView: View {
                     }
                 } message: {
                     Text(viewModel.errorMessage ?? "An unexpected error occurred")
+                }
+                .alert("Start Fresh?", isPresented: $showingStartFreshAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Start Fresh", role: .destructive) {
+                        viewModel.startFresh()
+                    }
+                } message: {
+                    Text("Are you sure you want to start fresh? Your current challenge and all progress will be permanently lost.")
                 }
                 .onChange(of: workoutPlan.isCompleted) { isCompleted in
                     // Single trigger point for completion flow
