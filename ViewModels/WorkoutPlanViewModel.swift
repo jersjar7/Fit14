@@ -123,23 +123,29 @@ class WorkoutPlanViewModel: ObservableObject {
     
     /// Delete a completed challenge from history
     func deleteCompletedChallenge(_ challenge: CompletedChallenge) {
+        print("🔍 Starting deletion for challenge: \(challenge.challengeTitle)")
+        print("🔍 Challenge ID: \(challenge.id)")
+        
         guard let index = completedChallenges.firstIndex(where: { $0.id == challenge.id }) else {
             print("❌ Challenge not found in history")
+            showErrorMessage("Challenge not found in history")
             return
         }
         
         // Remove from memory
         completedChallenges.remove(at: index)
+        print("✅ Removed from memory, new count: \(completedChallenges.count)")
         
         // Remove from storage
         do {
             try storageService.deleteCompletedChallenge(challenge.id)
-            print("🗑️ Deleted challenge: \(challenge.challengeTitle)")
+            print("✅ Successfully deleted from storage: \(challenge.challengeTitle)")
+            
         } catch {
             print("❌ Failed to delete challenge from storage: \(error)")
             // Re-add to memory if delete failed
             completedChallenges.insert(challenge, at: index)
-            showErrorMessage("Failed to delete challenge")
+            showErrorMessage("Failed to delete challenge: \(error.localizedDescription)")
         }
     }
     

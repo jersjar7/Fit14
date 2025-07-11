@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - Completed Challenge Model
 struct CompletedChallenge: Identifiable, Codable, Equatable {
-    let id = UUID()
+    let id: UUID // ✅ Fixed: Changed from `let id = UUID()` to persistent UUID
     
     // MARK: - Basic Challenge Info
     let originalPlanId: UUID           // Reference to original plan
@@ -106,6 +106,7 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
     // MARK: - Initialization
     
     init(from workoutPlan: WorkoutPlan, completionDate: Date = Date()) {
+        self.id = UUID() // ✅ Create UUID once during initialization
         self.originalPlanId = workoutPlan.id
         self.challengeTitle = workoutPlan.summary ?? workoutPlan.userGoals // This will be replaced with AI summary when available
         self.userGoals = workoutPlan.userGoals
@@ -125,7 +126,7 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
         }
     }
     
-    // MARK: - Custom initializer for manual creation
+    // MARK: - Custom initializer for manual creation (backward compatibility)
     init(
         originalPlanId: UUID,
         challengeTitle: String,
@@ -138,6 +139,35 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
         completedExercises: Int,
         dailyCompletionRecord: [DayCompletionRecord]
     ) {
+        self.id = UUID() // ✅ Generate new UUID for backward compatibility
+        self.originalPlanId = originalPlanId
+        self.challengeTitle = challengeTitle
+        self.userGoals = userGoals
+        self.startDate = startDate
+        self.completionDate = completionDate
+        self.createdDate = Date()
+        self.totalDays = totalDays
+        self.completedDays = completedDays
+        self.totalExercises = totalExercises
+        self.completedExercises = completedExercises
+        self.dailyCompletionRecord = dailyCompletionRecord
+    }
+    
+    // MARK: - Advanced initializer with custom ID
+    init(
+        id: UUID,
+        originalPlanId: UUID,
+        challengeTitle: String,
+        userGoals: String,
+        startDate: Date,
+        completionDate: Date = Date(),
+        totalDays: Int,
+        completedDays: Int,
+        totalExercises: Int,
+        completedExercises: Int,
+        dailyCompletionRecord: [DayCompletionRecord]
+    ) {
+        self.id = id
         self.originalPlanId = originalPlanId
         self.challengeTitle = challengeTitle
         self.userGoals = userGoals
@@ -154,7 +184,7 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
 
 // MARK: - Day Completion Record
 struct DayCompletionRecord: Identifiable, Codable, Equatable {
-    let id = UUID()
+    let id: UUID // ✅ Fixed: Changed from `let id = UUID()` to persistent UUID
     let dayNumber: Int
     let date: Date
     let totalExercises: Int
@@ -189,6 +219,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
     
     // MARK: - Initialization from Day model
     init(from day: Day) {
+        self.id = UUID() // ✅ Create UUID once during initialization
         self.dayNumber = day.dayNumber
         self.date = day.date
         self.totalExercises = day.exercises.count
@@ -198,7 +229,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
         }
     }
     
-    // MARK: - Manual initialization
+    // MARK: - Manual initialization (backward compatibility)
     init(
         dayNumber: Int,
         date: Date,
@@ -206,6 +237,24 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
         completedExercises: Int,
         exerciseCompletionRecord: [ExerciseCompletionRecord]
     ) {
+        self.id = UUID() // ✅ Generate new UUID for backward compatibility
+        self.dayNumber = dayNumber
+        self.date = date
+        self.totalExercises = totalExercises
+        self.completedExercises = completedExercises
+        self.exerciseCompletionRecord = exerciseCompletionRecord
+    }
+    
+    // MARK: - Advanced initialization with custom ID
+    init(
+        id: UUID,
+        dayNumber: Int,
+        date: Date,
+        totalExercises: Int,
+        completedExercises: Int,
+        exerciseCompletionRecord: [ExerciseCompletionRecord]
+    ) {
+        self.id = id
         self.dayNumber = dayNumber
         self.date = date
         self.totalExercises = totalExercises
@@ -216,7 +265,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
 
 // MARK: - Exercise Completion Record
 struct ExerciseCompletionRecord: Identifiable, Codable, Equatable {
-    let id = UUID()
+    let id: UUID // ✅ Fixed: Changed from `let id = UUID()` to persistent UUID
     let exerciseName: String
     let sets: Int
     let quantity: Int
@@ -230,6 +279,7 @@ struct ExerciseCompletionRecord: Identifiable, Codable, Equatable {
     
     // MARK: - Initialization from Exercise model
     init(from exercise: Exercise) {
+        self.id = UUID() // ✅ Create UUID once during initialization
         self.exerciseName = exercise.name
         self.sets = exercise.sets
         self.quantity = exercise.quantity
@@ -237,7 +287,7 @@ struct ExerciseCompletionRecord: Identifiable, Codable, Equatable {
         self.isCompleted = exercise.isCompleted
     }
     
-    // MARK: - Manual initialization
+    // MARK: - Manual initialization (backward compatibility)
     init(
         exerciseName: String,
         sets: Int,
@@ -245,6 +295,24 @@ struct ExerciseCompletionRecord: Identifiable, Codable, Equatable {
         unit: ExerciseUnit,
         isCompleted: Bool
     ) {
+        self.id = UUID() // ✅ Generate new UUID for backward compatibility
+        self.exerciseName = exerciseName
+        self.sets = sets
+        self.quantity = quantity
+        self.unit = unit
+        self.isCompleted = isCompleted
+    }
+    
+    // MARK: - Advanced initialization with custom ID
+    init(
+        id: UUID,
+        exerciseName: String,
+        sets: Int,
+        quantity: Int,
+        unit: ExerciseUnit,
+        isCompleted: Bool
+    ) {
+        self.id = id
         self.exerciseName = exerciseName
         self.sets = sets
         self.quantity = quantity

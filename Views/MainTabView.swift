@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 7/8/25.
 //  UPDATED: Removed auto-switching, improved "New" badge logic for user-controlled flow
+//  UPDATED: Added navigation support for Challenge History buttons
 //
 
 import SwiftUI
@@ -70,6 +71,12 @@ struct MainTabView: View {
             // Switch to history tab when requested from other views (user-controlled)
             withAnimation(.easeInOut(duration: 0.3)) {
                 selectedTab = .challengeHistory
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .switchToCurrentChallengeTab)) { _ in
+            // Switch to current challenge tab when requested from history view
+            withAnimation(.easeInOut(duration: 0.3)) {
+                selectedTab = .currentChallenge
             }
         }
     }
@@ -151,6 +158,7 @@ struct MainTabView: View {
 extension Notification.Name {
     static let challengeCompleted = Notification.Name("challengeCompleted")
     static let switchToHistoryTab = Notification.Name("switchToHistoryTab")
+    static let switchToCurrentChallengeTab = Notification.Name("switchToCurrentChallengeTab")
 }
 
 // MARK: - Preview

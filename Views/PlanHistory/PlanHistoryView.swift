@@ -38,15 +38,6 @@ struct PlanHistoryView: View {
         }
     }
     
-    // MARK: - Next Challenge Section Logic
-    
-    private var shouldShowNextChallengeSection: Bool {
-        // Show if user has completed challenges and doesn't have an active plan
-        return !viewModel.hasActivePlan &&
-               viewModel.hasCompletedChallenges &&
-               viewModel.recentChallenges.count > 0 // Has challenges completed in last 30 days
-    }
-    
     // MARK: - Loading View
     
     private var loadingView: some View {
@@ -93,7 +84,8 @@ struct PlanHistoryView: View {
                         .foregroundColor(.secondary)
                     
                     Button(action: {
-                        // This will be handled by parent tab view switching
+                        // Switch to current challenge tab to continue active challenge
+                        NotificationCenter.default.post(name: .switchToCurrentChallengeTab, object: nil)
                     }) {
                         Text("Continue Current Challenge")
                             .font(.headline)
@@ -108,6 +100,8 @@ struct PlanHistoryView: View {
             } else {
                 Button(action: {
                     viewModel.startGoalInput()
+                    // Switch to current challenge tab to start goal input
+                    NotificationCenter.default.post(name: .switchToCurrentChallengeTab, object: nil)
                 }) {
                     Text("Start Your First Challenge")
                         .font(.headline)
@@ -128,18 +122,12 @@ struct PlanHistoryView: View {
     private var challengeGalleryView: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                // Next Challenge Section (if recently completed and no active plan)
-                if shouldShowNextChallengeSection {
-                    nextChallengeSection
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-                }
-                
+        
                 // Summary Stats Card (if there are multiple challenges)
                 if viewModel.completedChallenges.count > 1 {
                     summaryStatsCard
                         .padding(.horizontal)
-                        .padding(.top, shouldShowNextChallengeSection ? 0 : 8)
+                        .padding(.top, 8)
                 }
                 
                 // Challenge Cards
@@ -157,82 +145,6 @@ struct PlanHistoryView: View {
             }
             .padding(.top, 8)
         }
-    }
-    
-    // MARK: - Next Challenge Section
-    
-    private var nextChallengeSection: some View {
-        VStack(spacing: 16) {
-            // Header
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "trophy.fill")
-                        .font(.title2)
-                        .foregroundColor(.yellow)
-                    
-                    Text("Ready for Your Next Challenge?")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                    
-                    Spacer()
-                }
-                
-                Text("You've proven you can stick to a plan and see results. Build on your momentum with a new 2-week goal!")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.leading)
-            }
-            
-            // Action Button
-            Button(action: {
-                viewModel.startGoalInput()
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Create New Challenge")
-                        .fontWeight(.semibold)
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.green)
-                .cornerRadius(12)
-            }
-            
-            // Next Challenge Suggestions Preview
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Suggested next challenges:")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                
-                let suggestions = viewModel.getNextChallengeSuggestions()
-                ForEach(suggestions.prefix(3), id: \.self) { suggestion in
-                    HStack {
-                        Image(systemName: "arrow.right.circle")
-                            .foregroundColor(.blue)
-                            .font(.caption)
-                        Text(suggestion)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.green.opacity(0.05), Color.blue.opacity(0.05)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.green.opacity(0.2), lineWidth: 1)
-        )
     }
     
     // MARK: - Summary Stats Card
@@ -307,15 +219,6 @@ struct PlanHistoryView: View {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
             
-            Divider()
-            
-            Button(role: .destructive, action: {
-                // Future: Clear all history with confirmation
-            }) {
-                Label("Clear History", systemImage: "trash")
-            }
-            .disabled(true) // Future feature
-            
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.title3)
@@ -329,13 +232,21 @@ struct PlanHistoryView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             // Empty State
-            PlanHistoryView(viewModel: WorkoutPlanViewModel())
+            PlanHistoryView(viewModel: emptyStateViewModel())
                 .previewDisplayName("Empty State")
             
             // With Challenges
             PlanHistoryView(viewModel: previewViewModelWithChallenges())
                 .previewDisplayName("With Challenges")
         }
+    }
+    
+    static func emptyStateViewModel() -> WorkoutPlanViewModel {
+        let viewModel = WorkoutPlanViewModel()
+        // Force empty state by clearing any loaded challenges
+        viewModel.completedChallenges = []
+        viewModel.isLoadingHistory = false
+        return viewModel
     }
     
     static func previewViewModelWithChallenges() -> WorkoutPlanViewModel {
@@ -347,7 +258,6 @@ struct PlanHistoryView_Previews: PreviewProvider {
         return viewModel
     }
 }
-
 // MARK: - Helper Extensions
 
 extension DateFormatter {
