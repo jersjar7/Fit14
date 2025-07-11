@@ -5,7 +5,7 @@
 //  Created by Jerson on 6/30/25.
 //  Enhanced with 2-week completion and next challenge features
 //  Updated with challenge history integration
-//  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing, bottom popup
+//  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing, bottom popup, inline see more
 //
 
 import SwiftUI
@@ -15,6 +15,7 @@ struct PlanListView: View {
     @State private var showingNextChallengeSheet = false
     @State private var showingCompletionCelebration = false
     @State private var hasArchivedCurrentPlan = false // Track if we've archived this completion
+    @State private var showingFullDescription = false
     
     var body: some View {
         NavigationView {
@@ -75,6 +76,9 @@ struct PlanListView: View {
                 .sheet(isPresented: $showingNextChallengeSheet) {
                     NextChallengeSheet()
                         .environmentObject(viewModel)
+                }
+                .sheet(isPresented: $showingFullDescription) {
+                    FullDescriptionSheet(description: workoutPlan.displayDescription)
                 }
                 .alert("Error", isPresented: $viewModel.showError) {
                     Button("OK") {
@@ -163,7 +167,7 @@ struct PlanListView: View {
     }
     
     // MARK: - Progress Header Section
-    
+
     private func progressHeaderSection(for workoutPlan: WorkoutPlan) -> some View {
         VStack(spacing: 12) {
             HStack {
@@ -236,18 +240,31 @@ struct PlanListView: View {
                 }
             }
             
-            // User Goals
+            // User Goals with inline "see more"
             if !workoutPlan.userGoals.isEmpty {
-                HStack {
+                HStack(alignment: .top) {
                     Image(systemName: "target")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text(workoutPlan.displayDescription)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(3)
+                    // Smart truncation with inline "see more"
+                    if workoutPlan.displayDescription.count > 120 {
+                        // Long description - truncate and add inline "see more"
+                        Text(truncatedDescriptionWithSeeMore(workoutPlan.displayDescription))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .onTapGesture {
+                                showingFullDescription = true
+                            }
+                    } else {
+                        // Short description - show normally
+                        Text(workoutPlan.displayDescription)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(3)
+                    }
                     
                     Spacer()
                 }
@@ -258,6 +275,80 @@ struct PlanListView: View {
         .background(Color(.systemGray6))
         .cornerRadius(12)
         .accessibilityElement(children: .combine)
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func truncatedDescriptionWithSeeMore(_ text: String) -> AttributedString {
+        let maxLength = 120 // Adjust based on desired truncation
+        
+        if text.count <= maxLength {
+            return AttributedString(text)
+        }
+        
+        // Find a good place to truncate (preferably at a word boundary)
+        let truncatedText = String(text.prefix(maxLength))
+        let lastSpaceIndex = truncatedText.lastIndex(of: " ") ?? truncatedText.endIndex
+        let finalText = String(truncatedText[..<lastSpaceIndex])
+        
+        // Create attributed string with colored "see more >"
+        var attributedString = AttributedString(finalText + "... ")
+        
+        var seeMore = AttributedString("see more >")
+        seeMore.foregroundColor = .blue
+        seeMore.font = .caption
+        
+        attributedString.append(seeMore)
+        
+        return attributedString
+    }
+    
+    // MARK: - Full Description Sheet
+
+    struct FullDescriptionSheet: View {
+        let description: String
+        @Environment(\.dismiss) private var dismiss
+        
+        var body: some View {
+            NavigationView {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "target")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                            
+                            Text("Your Challenge Goal")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            Spacer()
+                        }
+                        
+                        Text(description)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                            .lineSpacing(2)
+                        
+                        Spacer()
+                    }
+                    .padding(24)
+                }
+                .navigationTitle("Challenge Description")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
+                        .fontWeight(.medium)
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
     }
     
     // MARK: - Days List Section

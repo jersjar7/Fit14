@@ -179,7 +179,7 @@ struct SampleData {
         
         return WorkoutPlan(
                 userGoals: "Build strength and endurance with bodyweight exercises",
-                summary: "Progressive bodyweight training program focused on building functional strength and cardiovascular endurance",  // ADDED: AI-style summary
+                summary: "Progressive bodyweight training program focused on building functional strength and cardiovascular endurance for a male user who has an intermeditate fitness level. This plan will help to reach their goals as long as it is followed with discipline.",  // ADDED: AI-style summary
                 days: days,
                 status: .active
             )    }()
