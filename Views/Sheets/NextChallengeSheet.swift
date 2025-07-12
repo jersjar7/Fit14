@@ -5,12 +5,15 @@
 //  Created by Jerson on 7/12/25.
 //  Extracted from PlanListView for better code organization
 //  UPDATED: Added contextual completion messaging based on user's challenge history
+//  UPDATED: Replaced achievement section with badge system integration
 
 import SwiftUI
 
 struct NextChallengeSheet: View {
     @EnvironmentObject var viewModel: WorkoutPlanViewModel
+    @StateObject private var badgeService = BadgeService.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var showBadgeCollection = false
     
     var body: some View {
         NavigationView {
@@ -32,40 +35,8 @@ struct NextChallengeSheet: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
                     
-                    // View Achievement Section
-                    VStack(spacing: 12) {
-                        HStack {
-                            Image(systemName: "trophy.fill")
-                                .foregroundColor(.orange)
-                            Text("Your Achievement")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            Spacer()
-                        }
-                        
-                        Button(action: {
-                            dismiss()
-                            // Switch to history tab to view achievement
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
-                            }
-                        }) {
-                            HStack {
-//                                Image(systemName: "trophy.circle.fill")
-                                Text("View Your Completed Challenge")
-                            }
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.orange)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(12)
+                    // Badge Achievement Section - UPDATED to replace View Achievement Section
+                    badgeAchievementSection
                     
                     // Next Challenge Suggestions
                     VStack(alignment: .leading, spacing: 16) {
@@ -132,7 +103,49 @@ struct NextChallengeSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showBadgeCollection) {
+            BadgeCollectionView()
+                .environmentObject(viewModel)
+        }
+        .onAppear {
+            // Check for newly earned badges when sheet appears
+            badgeService.checkForNewBadges(completionCount: viewModel.completedChallenges.count)
+        }
     }
+    
+    // MARK: - Badge Achievement Section
+    
+    private var badgeAchievementSection: some View {
+        VStack(spacing: 16) {
+            // Check if any badges were just earned
+            if !badgeService.lastEarnedBadges.isEmpty {
+                // Show the most recent badge earned
+                if let latestBadge = badgeService.lastEarnedBadges.last {
+                    EarnedBadgeView(
+                        badge: latestBadge,
+                        completionCount: viewModel.completedChallenges.count,
+                        onTap: {
+                            showBadgeCollection = true
+                        }
+                    )
+                }
+            } else {
+                // No new badges earned, show general collection view
+                let nextBadge = Badge.nextToUnlock(completionCount: viewModel.completedChallenges.count)
+                
+                NoBadgeEarnedView(
+                    completionCount: viewModel.completedChallenges.count,
+                    nextBadge: nextBadge,
+                    onTap: {
+                        showBadgeCollection = true
+                    }
+                )
+            }
+            
+
+        }
+    }
+
 }
 
 // MARK: - Preview
@@ -155,6 +168,27 @@ struct NextChallengeSheet: View {
         CompletedChallenge.samplePerfectChallenge,
         CompletedChallenge.sampleCompletedChallenge
     ]
+    
+    return NextChallengeSheet()
+        .environmentObject(viewModel)
+}
+
+#Preview("Next Challenge Sheet - Badge Earned") {
+    let viewModel = WorkoutPlanViewModel()
+    viewModel.currentPlan = SampleData.sampleCompletedWorkoutPlan
+    
+    // Simulate exactly 3 challenges to trigger "Habit Former" badge
+    viewModel.completedChallenges = Array(repeating: CompletedChallenge.sampleCompletedChallenge, count: 3)
+    
+    return NextChallengeSheet()
+        .environmentObject(viewModel)
+}
+
+#Preview("Next Challenge Sheet - No Badges Yet") {
+    let viewModel = WorkoutPlanViewModel()
+    viewModel.currentPlan = SampleData.sampleCompletedWorkoutPlan
+    // Empty challenges array for no badges scenario
+    viewModel.completedChallenges = []
     
     return NextChallengeSheet()
         .environmentObject(viewModel)

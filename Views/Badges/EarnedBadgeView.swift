@@ -192,7 +192,7 @@ struct NoBadgeEarnedView: View {
         VStack(spacing: 16) {
             // Header
             HStack {
-                Image(systemName: "target")
+                Image(systemName: "trophy")
                     .foregroundColor(.blue)
                 Text("Your Collection")
                     .font(.headline)
