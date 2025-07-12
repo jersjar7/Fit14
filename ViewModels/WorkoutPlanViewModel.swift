@@ -875,6 +875,27 @@ class WorkoutPlanViewModel: ObservableObject {
         """
     }
     
+    // MARK: - Sheets Helpers
+    
+      /// Get contextual completion message based on user's challenge history
+      var contextualCompletionMessage: String {
+          let completionCount = completedChallenges.count
+
+          switch completionCount {
+          case 1:
+              return "🎉 Congratulations on completing your first 2-week challenge!\n\n You've just proven to yourself that you can commit to and achieve your fitness goals. This is just the beginning of your journey!"
+          case 2:
+              return "🔥 Amazing! You've completed your second challenge!\n\n You're building real momentum now. Consistency is the key to lasting results, and you're proving you have what it takes."
+          case 3:
+              return "💪 Incredible! Three challenges completed!\n\n You're developing serious fitness habits. Each challenge builds on the last - you're becoming unstoppable!"
+          case 4...5:
+              return "🏆 Outstanding! You've completed \(completionCount) challenges!\n\n You're officially a fitness champion. Your dedication is inspiring - keep this incredible streak going!"
+          default: // 6+
+              return "🌟 WOW! \(completionCount) challenges completed!\n\n You're a true fitness warrior! Your consistency and dedication are exceptional. You've built habits that will last a lifetime!"
+          }
+      }
+    
+    
     // MARK: - Error Handling
     
     func showErrorMessage(_ message: String) {

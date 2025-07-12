@@ -146,7 +146,7 @@ struct SampleData {
         
         return WorkoutPlan(
                 userGoals: "I want to lose 5 pounds in 2 weeks. I'm 28, female, 140 lbs, 5'4\", and can work out 30-45 minutes daily except Sunday.",
-                summary: "Balanced cardio and strength plan to support healthy weight loss",  // ADDED: AI-style summary
+                summary: "Balanced cardio and strength plan to support healthy weight loss for a male user who has an intermeditate fitness level. This plan will help to reach their goals as long as it is followed with discipline.",  // ADDED: AI-style summary
                 days: days,
                 status: .suggested
             )

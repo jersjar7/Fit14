@@ -187,6 +187,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
     let id: UUID // ✅ Fixed: Changed from `let id = UUID()` to persistent UUID
     let dayNumber: Int
     let date: Date
+    let focus: String?  // NEW: AI-provided focus description (e.g., "Upper body strength")
     let totalExercises: Int
     let completedExercises: Int
     let exerciseCompletionRecord: [ExerciseCompletionRecord]
@@ -222,6 +223,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
         self.id = UUID() // ✅ Create UUID once during initialization
         self.dayNumber = day.dayNumber
         self.date = day.date
+        self.focus = day.focus  // NEW: Include focus from Day model
         self.totalExercises = day.exercises.count
         self.completedExercises = day.exercises.filter { $0.isCompleted }.count
         self.exerciseCompletionRecord = day.exercises.map { exercise in
@@ -233,6 +235,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
     init(
         dayNumber: Int,
         date: Date,
+        focus: String? = nil,  // NEW: Add focus parameter with default nil
         totalExercises: Int,
         completedExercises: Int,
         exerciseCompletionRecord: [ExerciseCompletionRecord]
@@ -240,6 +243,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
         self.id = UUID() // ✅ Generate new UUID for backward compatibility
         self.dayNumber = dayNumber
         self.date = date
+        self.focus = focus  // NEW: Include focus
         self.totalExercises = totalExercises
         self.completedExercises = completedExercises
         self.exerciseCompletionRecord = exerciseCompletionRecord
@@ -250,6 +254,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
         id: UUID,
         dayNumber: Int,
         date: Date,
+        focus: String? = nil,  // NEW: Add focus parameter with default nil
         totalExercises: Int,
         completedExercises: Int,
         exerciseCompletionRecord: [ExerciseCompletionRecord]
@@ -257,6 +262,7 @@ struct DayCompletionRecord: Identifiable, Codable, Equatable {
         self.id = id
         self.dayNumber = dayNumber
         self.date = date
+        self.focus = focus  // NEW: Include focus
         self.totalExercises = totalExercises
         self.completedExercises = completedExercises
         self.exerciseCompletionRecord = exerciseCompletionRecord
@@ -328,6 +334,14 @@ extension CompletedChallenge {
         let startDate = Calendar.current.date(byAdding: .day, value: -16, to: Date()) ?? Date()
         let completionDate = Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date()
         
+        // Sample focus descriptions for realistic data
+        let focusDescriptions = [
+            "Upper body strength", "Lower body power", "Cardio conditioning", "Full body workout",
+            "Core strengthening", "Strength building", "Active recovery", "Upper body endurance",
+            "Lower body stability", "High intensity training", "Dynamic movement", "Advanced strength",
+            "Cardio & balance", "Complete conditioning"
+        ]
+        
         // Create sample daily records
         var dailyRecords: [DayCompletionRecord] = []
         for i in 1...14 {
@@ -341,6 +355,7 @@ extension CompletedChallenge {
             let record = DayCompletionRecord(
                 dayNumber: i,
                 date: dayDate,
+                focus: focusDescriptions[(i - 1) % focusDescriptions.count],  // NEW: Include focus
                 totalExercises: 3,
                 completedExercises: exerciseRecords.filter { $0.isCompleted }.count,
                 exerciseCompletionRecord: exerciseRecords
@@ -378,6 +393,7 @@ extension CompletedChallenge {
             let record = DayCompletionRecord(
                 dayNumber: i,
                 date: dayDate,
+                focus: i <= 7 ? "Morning cardio routine" : "Cardio endurance building",  // NEW: Include focus
                 totalExercises: 2,
                 completedExercises: 2,
                 exerciseCompletionRecord: exerciseRecords

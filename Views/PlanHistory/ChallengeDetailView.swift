@@ -372,9 +372,10 @@ struct ChallengeDetailView: View {
                                day.isPartialDay ? .orange : .gray)
                 .font(.title3)
             
-            // Exercise summary
+            // Focus and exercise summary - UPDATED SECTION
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(day.completedExercises)/\(day.totalExercises) exercises completed")
+                // Show focus instead of exercise count
+                Text(day.focus ?? "Workout")
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
@@ -392,7 +393,7 @@ struct ChallengeDetailView: View {
             Text("\(Int(day.completionPercentage))%")
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(day.isCompleted ? .green : .secondary)
+                .foregroundColor(day.isCompleted ? .green : day.isPartialDay ? .orange : .gray)
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
@@ -539,6 +540,14 @@ struct DayDetailSheet: View {
                         Text("Day \(day.dayNumber)")
                             .font(.title)
                             .fontWeight(.bold)
+                        
+                        // Show focus in day detail sheet as well
+                        if let focus = day.focus {
+                            Text(focus)
+                                .font(.title3)
+                                .fontWeight(.medium)
+                                .foregroundColor(.blue)
+                        }
                         
                         Text(DateFormatter().apply {
                             $0.dateStyle = .full

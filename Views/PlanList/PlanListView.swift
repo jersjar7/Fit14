@@ -7,6 +7,7 @@
 //  Updated with challenge history integration
 //  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing, bottom popup, inline see more
 //  UPDATED: Added missed days banner integration
+//  UPDATED: Replaced manual "see more" logic with ExpandableText component
 //
 
 import SwiftUI
@@ -17,7 +18,6 @@ struct PlanListView: View {
     @State private var showingNextChallengeSheet = false
     @State private var showingCompletionCelebration = false
     @State private var hasArchivedCurrentPlan = false // Track if we've archived this completion
-    @State private var showingFullDescription = false
     @State private var showingStartFreshAlert = false
     
     var body: some View {
@@ -79,9 +79,6 @@ struct PlanListView: View {
                 .sheet(isPresented: $showingNextChallengeSheet) {
                     NextChallengeSheet()
                         .environmentObject(viewModel)
-                }
-                .sheet(isPresented: $showingFullDescription) {
-                    FullDescriptionSheet(description: workoutPlan.displayDescription)
                 }
                 .alert("Error", isPresented: $viewModel.showError) {
                     Button("OK") {
@@ -279,31 +276,15 @@ struct PlanListView: View {
                 }
             }
             
-            // User Goals with inline "see more"
+            // User Goals with ExpandableText - UPDATED SECTION
             if !workoutPlan.userGoals.isEmpty {
                 HStack(alignment: .top) {
                     Image(systemName: "target")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    // Smart truncation with inline "see more"
-                    if workoutPlan.displayDescription.count > 120 {
-                        // Long description - truncate and add inline "see more"
-                        Text(truncatedDescriptionWithSeeMore(workoutPlan.displayDescription))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.leading)
-                            .onTapGesture {
-                                showingFullDescription = true
-                            }
-                    } else {
-                        // Short description - show normally
-                        Text(workoutPlan.displayDescription)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(3)
-                    }
+                    // UPDATED: Use ExpandableText component instead of manual logic
+                    ExpandableText.challengeDescription(workoutPlan.displayDescription)
                     
                     Spacer()
                 }
@@ -314,80 +295,6 @@ struct PlanListView: View {
         .background(Color(.systemGray6))
         .cornerRadius(12)
         .accessibilityElement(children: .combine)
-    }
-    
-    // MARK: - Helper Functions
-    
-    private func truncatedDescriptionWithSeeMore(_ text: String) -> AttributedString {
-        let maxLength = 120 // Adjust based on desired truncation
-        
-        if text.count <= maxLength {
-            return AttributedString(text)
-        }
-        
-        // Find a good place to truncate (preferably at a word boundary)
-        let truncatedText = String(text.prefix(maxLength))
-        let lastSpaceIndex = truncatedText.lastIndex(of: " ") ?? truncatedText.endIndex
-        let finalText = String(truncatedText[..<lastSpaceIndex])
-        
-        // Create attributed string with colored "see more >"
-        var attributedString = AttributedString(finalText + "... ")
-        
-        var seeMore = AttributedString("see more >")
-        seeMore.foregroundColor = .blue
-        seeMore.font = .caption
-        
-        attributedString.append(seeMore)
-        
-        return attributedString
-    }
-    
-    // MARK: - Full Description Sheet
-
-    struct FullDescriptionSheet: View {
-        let description: String
-        @Environment(\.dismiss) private var dismiss
-        
-        var body: some View {
-            NavigationView {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "target")
-                                .font(.title2)
-                                .foregroundColor(.blue)
-                            
-                            Text("Your Challenge Goal")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            
-                            Spacer()
-                        }
-                        
-                        Text(description)
-                            .font(.body)
-                            .foregroundColor(.primary)
-                            .multilineTextAlignment(.leading)
-                            .lineSpacing(2)
-                        
-                        Spacer()
-                    }
-                    .padding(24)
-                }
-                .navigationTitle("Challenge Description")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            dismiss()
-                        }
-                        .fontWeight(.medium)
-                    }
-                }
-            }
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-        }
     }
     
     // MARK: - Days List Section (UPDATED with Missed Days Banner)
@@ -576,134 +483,6 @@ struct PlanListView: View {
     }
 }
 
-// MARK: - Next Challenge Sheet
-
-struct NextChallengeSheet: View {
-    @EnvironmentObject var viewModel: WorkoutPlanViewModel
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Completion Message
-                    VStack(spacing: 16) {
-                        Text(viewModel.planCompletionMessage ?? AIPrompts.getTwoWeekCompletionMessage())
-                            .font(.body)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.primary)
-                        
-                        Image(systemName: "trophy.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.yellow)
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                    
-                    // View Achievement Section
-                    VStack(spacing: 12) {
-                        HStack {
-                            Image(systemName: "trophy.fill")
-                                .foregroundColor(.orange)
-                            Text("Your Achievement")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            Spacer()
-                        }
-                        
-                        Button(action: {
-                            dismiss()
-                            // Switch to history tab to view achievement
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                NotificationCenter.default.post(name: .switchToHistoryTab, object: nil)
-                            }
-                        }) {
-                            HStack {
-                                Image(systemName: "trophy.circle.fill")
-                                Text("View Your Completed Challenge")
-                            }
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.orange)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                    }
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(12)
-                    
-                    // Next Challenge Suggestions
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Your Next Challenge Options:")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                        
-                        let suggestions = viewModel.getNextChallengeSuggestions()
-                        ForEach(suggestions, id: \.self) { suggestion in
-                            HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "target")
-                                    .foregroundColor(.blue)
-                                    .font(.title3)
-                                
-                                Text(suggestion)
-                                    .font(.subheadline)
-                                    .multilineTextAlignment(.leading)
-                                
-                                Spacer()
-                            }
-                            .padding()
-                            .background(Color(.systemBackground))
-                            .cornerRadius(8)
-                        }
-                    }
-                    
-                    // CTA Button
-                    Button(action: {
-                        dismiss()
-                        // Note: UI will handle archiving before this is called
-                        viewModel.startNewChallenge()
-                    }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text("Create My Next Challenge")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
-                    
-                    // Later option
-                    Button("I'll decide later") {
-                        dismiss()
-                    }
-                    .foregroundColor(.secondary)
-                    
-                    Spacer(minLength: 20)
-                }
-                .padding(24)
-            }
-            .navigationTitle("Next Challenge")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-    }
-}
-
 #Preview("Active Plan") {
     let viewModel = WorkoutPlanViewModel()
     viewModel.currentPlan = SampleData.sampleActiveWorkoutPlan
@@ -725,14 +504,6 @@ struct NextChallengeSheet: View {
     // No current plan
     
     return PlanListView()
-        .environmentObject(viewModel)
-}
-
-#Preview("Next Challenge Sheet") {
-    let viewModel = WorkoutPlanViewModel()
-    viewModel.currentPlan = SampleData.sampleCompletedWorkoutPlan
-    
-    return NextChallengeSheet()
         .environmentObject(viewModel)
 }
 
