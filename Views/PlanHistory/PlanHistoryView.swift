@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PlanHistoryView: View {
     @ObservedObject var viewModel: WorkoutPlanViewModel
+    @State private var showBadgeCollection = false  // ← Add this line
     
     var body: some View {
         NavigationView {
@@ -25,12 +26,37 @@ struct PlanHistoryView: View {
                     challengeGalleryView
                 }
             }
-            .navigationTitle("Challenge History")
+            .navigationTitle("Plan History")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    historyStatsButton
+                    Menu {  // ← Replace historyStatsButton with Menu
+                        Button(action: {
+                            showBadgeCollection = true
+                        }) {
+                            Label("View Badge Collection", systemImage: "rosette")
+                        }
+                        // Could add more options here later like:
+                        // - Export History
+                        // - Share Achievements
+                        // - Statistics
+
+                        // Keep your existing stats functionality
+                        Button(action: {
+                            // Add your existing historyStatsButton action here
+                            // (whatever the historyStatsButton currently does)
+                        }) {
+                            Label("View Statistics", systemImage: "chart.bar")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .accessibilityLabel("More options")
+                    }
                 }
+            }
+            .sheet(isPresented: $showBadgeCollection) {  // ← Add this sheet
+                BadgeCollectionView()
+                    .environmentObject(viewModel)
             }
             .refreshable {
                 viewModel.loadChallengeHistory()

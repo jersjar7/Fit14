@@ -65,9 +65,11 @@ struct NextChallengeSheet: View {
                     
                     // CTA Button
                     Button(action: {
+                        // Dismiss sheet first, then start new challenge after a brief delay
                         dismiss()
-                        // Note: UI will handle archiving before this is called
-                        viewModel.startNewChallenge()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            viewModel.startNewChallenge()
+                        }
                     }) {
                         HStack {
                             Image(systemName: "plus.circle.fill")
@@ -162,11 +164,11 @@ struct NextChallengeSheet: View {
 #Preview("Next Challenge Sheet - Multiple Completions") {
     let viewModel = WorkoutPlanViewModel()
     viewModel.currentPlan = SampleData.sampleCompletedWorkoutPlan
-    // Simulate multiple completed challenges for testing different messages
+    // Simulate multiple FULLY completed challenges for testing different messages
     viewModel.completedChallenges = [
-        CompletedChallenge.sampleCompletedChallenge,
-        CompletedChallenge.samplePerfectChallenge,
-        CompletedChallenge.sampleCompletedChallenge
+        CompletedChallenge.samplePerfectChallenge, // This one is already perfect
+        CompletedChallenge.samplePerfectChallenge, // Use perfect challenge
+        CompletedChallenge.samplePerfectChallenge  // All 100% completed
     ]
     
     return NextChallengeSheet()
@@ -177,8 +179,19 @@ struct NextChallengeSheet: View {
     let viewModel = WorkoutPlanViewModel()
     viewModel.currentPlan = SampleData.sampleCompletedWorkoutPlan
     
-    // Simulate exactly 3 challenges to trigger "Habit Former" badge
-    viewModel.completedChallenges = Array(repeating: CompletedChallenge.sampleCompletedChallenge, count: 3)
+    // Simulate exactly 3 PERFECT challenges to trigger "Habit Former" badge
+    viewModel.completedChallenges = Array(repeating: CompletedChallenge.samplePerfectChallenge, count: 3)
+    
+    return NextChallengeSheet()
+        .environmentObject(viewModel)
+}
+
+#Preview("Next Challenge Sheet - Many Perfect Challenges") {
+    let viewModel = WorkoutPlanViewModel()
+    viewModel.currentPlan = SampleData.sampleCompletedWorkoutPlan
+    
+    // Simulate 6 perfect challenges for champion-level messaging
+    viewModel.completedChallenges = Array(repeating: CompletedChallenge.samplePerfectChallenge, count: 6)
     
     return NextChallengeSheet()
         .environmentObject(viewModel)

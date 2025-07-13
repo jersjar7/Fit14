@@ -5,6 +5,7 @@
 //  Created by Jerson on 7/8/25.
 //  UPDATED: Removed auto-switching, improved "New" badge logic for user-controlled flow
 //  UPDATED: Added navigation support for Challenge History buttons
+//  UPDATED: Improved badge logic with view-based tracking and "+" icon for completion
 //
 
 import SwiftUI
@@ -103,9 +104,9 @@ struct MainTabView: View {
         
         let progress = viewModel.progressInfo
         
-        // Show badge if challenge is completed
+        // Show "+" badge if challenge is completed (suggests adding new challenge)
         if viewModel.shouldShowCompletionPrompt {
-            return "!"
+            return "+"
         }
         
         // Show progress for active challenges
@@ -118,14 +119,8 @@ struct MainTabView: View {
     }
     
     private var historyBadge: String? {
-        // Show "New" badge if there are recently completed challenges (within last 3 days)
-        let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
-        
-        let newlyCompletedChallenges = viewModel.completedChallenges.filter { challenge in
-            challenge.completionDate >= threeDaysAgo
-        }
-        
-        return newlyCompletedChallenges.isEmpty ? nil : "New"
+        // Show "New" badge only for challenges that haven't been viewed
+        return viewModel.hasUnviewedChallenges ? "New" : nil
     }
     
     // MARK: - Tab Bar Appearance

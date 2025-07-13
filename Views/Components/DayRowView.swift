@@ -150,16 +150,18 @@ struct DayRowView: View {
         guard day.dayNumber == 1 && !isToday && !isPastDay else { return false }
         
         let calendar = Calendar.current
-        let today = Date()
-        let daysUntilStart = calendar.dateComponents([.day], from: today, to: day.date).day ?? 0
+        let today = calendar.startOfDay(for: Date())  // ← Fix: Use startOfDay
+        let targetDay = calendar.startOfDay(for: day.date)  // ← Fix: Use startOfDay
+        let daysUntilStart = calendar.dateComponents([.day], from: today, to: targetDay).day ?? 0
         return daysUntilStart <= 3
     }
     
     /// Text for the start soon indicator
     private var startSoonText: String {
         let calendar = Calendar.current
-        let today = Date()
-        let daysUntilStart = calendar.dateComponents([.day], from: today, to: day.date).day ?? 0
+        let today = calendar.startOfDay(for: Date())  // ← Fix: Use startOfDay
+        let targetDay = calendar.startOfDay(for: day.date)  // ← Fix: Use startOfDay
+        let daysUntilStart = calendar.dateComponents([.day], from: today, to: targetDay).day ?? 0
         
         switch daysUntilStart {
         case 1:
@@ -171,8 +173,7 @@ struct DayRowView: View {
         default:
             return "STARTS"
         }
-    }
-}
+    }}
 
 #Preview("Day Row States") {
     VStack(spacing: 12) {

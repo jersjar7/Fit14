@@ -235,6 +235,33 @@ class LocalStorageService: ObservableObject {
         }
     }
     
+    /// Mark a specific challenge as viewed by the user
+    func markChallengeAsViewed(_ challengeId: UUID) throws {
+        return try archivingQueue.sync {
+            do {
+                var challenges = loadCompletedChallenges()
+                
+                guard let index = challenges.firstIndex(where: { $0.id == challengeId }) else {
+                    print("⚠️ Challenge to mark as viewed not found: \(challengeId)")
+                    throw StorageError.challengeNotFound
+                }
+                
+                // Update the viewed status
+                challenges[index].markAsViewed()
+                
+                // Save updated challenges array
+                let encoded = try JSONEncoder().encode(challenges)
+                userDefaults.set(encoded, forKey: completedChallengesKey)
+                
+                print("👁️ Marked challenge as viewed: \(challenges[index].challengeTitle)")
+                
+            } catch {
+                print("❌ Failed to mark challenge as viewed: \(error)")
+                throw error
+            }
+        }
+    }
+    
     /// Check if a challenge already exists (for pre-archiving verification)
     func challengeExists(_ challengeId: UUID) -> Bool {
         let challenges = loadCompletedChallenges()

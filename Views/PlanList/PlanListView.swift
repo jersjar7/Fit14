@@ -8,6 +8,7 @@
 //  UPDATED: Cleaned up completion flow - single trigger, user-controlled timing, bottom popup, inline see more
 //  UPDATED: Added missed days banner integration
 //  UPDATED: Replaced manual "see more" logic with ExpandableText component
+//  UPDATED: Added pulsing animation to three-dot menu for completed challenges
 //
 
 import SwiftUI
@@ -19,6 +20,7 @@ struct PlanListView: View {
     @State private var showingCompletionCelebration = false
     @State private var hasArchivedCurrentPlan = false // Track if we've archived this completion
     @State private var showingStartFreshAlert = false
+    @State private var isPulsing = false // For three-dot menu animation
     
     var body: some View {
         NavigationView {
@@ -36,10 +38,17 @@ struct PlanListView: View {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
                             if workoutPlan.isCompleted {
+                                // Special styling for "Start New Challenge"
                                 Button(action: {
                                     showingNextChallengeSheet = true
                                 }) {
-                                    Label("Start New Challenge", systemImage: "plus.circle")
+                                    HStack {
+                                        Image(systemName: "plus.circle.fill")
+                                            .foregroundColor(.orange)
+                                        Text("Start New Challenge")
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.orange)
+                                    }
                                 }
                                 
                                 Button(action: {
@@ -50,17 +59,6 @@ struct PlanListView: View {
                                 }
                                 
                                 Divider()
-                            }
-                            
-                            Button(action: {
-                                showingStartFreshAlert = true
-                            }) {
-                                Label("Start Fresh", systemImage: "arrow.uturn.left")
-                            }
-                            .accessibilityLabel("Start fresh - create a new workout plan")
-                            
-                            if workoutPlan.completedDays > 0 {
-                                Divider()
                                 
                                 Button(action: {
                                     // Future feature: Export progress
@@ -69,10 +67,35 @@ struct PlanListView: View {
                                 }
                                 .disabled(true)
                                 .accessibilityLabel("Export progress - coming soon")
+                                
+                            } else {
+                                // For active (non-completed) plans
+                                Button(action: {
+                                    showingStartFreshAlert = true
+                                }) {
+                                    Label("Start Fresh", systemImage: "arrow.uturn.left")
+                                }
+                                .accessibilityLabel("Start fresh - create a new workout plan")
+                                
+                                if workoutPlan.completedDays > 0 {
+                                    Divider()
+                                    
+                                    Button(action: {
+                                        // Future feature: Export progress
+                                    }) {
+                                        Label("Export Progress", systemImage: "square.and.arrow.up")
+                                    }
+                                    .disabled(true)
+                                    .accessibilityLabel("Export progress - coming soon")
+                                }
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
                                 .accessibilityLabel("More options")
+                                .scaleEffect(workoutPlan.isCompleted && isPulsing ? 1.1 : 1.0)
+                                .opacity(workoutPlan.isCompleted && isPulsing ? 0.8 : 1.0)
+                                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isPulsing)
+                                .foregroundColor(workoutPlan.isCompleted ? .orange : .primary)
                         }
                     }
                 }
@@ -99,6 +122,8 @@ struct PlanListView: View {
                     // Handle 100% completion celebration
                     if isCompleted && !hasArchivedCurrentPlan {
                         handlePlanCompletion()
+                        // Start pulsing animation when plan completes
+                        startPulsingAnimation()
                     }
                 }
                 .overlay(alignment: .bottom) {
@@ -112,6 +137,11 @@ struct PlanListView: View {
                 .onAppear {
                     // Check if plan should be auto-archived when view appears
                     viewModel.checkForFinishedPlan()
+                    
+                    // Start pulsing if plan is already completed
+                    if workoutPlan.isCompleted {
+                        startPulsingAnimation()
+                    }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                     // Check when app comes back to foreground (in case midnight passed while app was closed)
@@ -127,6 +157,24 @@ struct PlanListView: View {
             } else {
                 // No active plan found - show empty state
                 emptyStateSection
+            }
+        }
+    }
+    
+    // MARK: - Animation Helper
+    
+    private func startPulsingAnimation() {
+        // Start pulsing animation with a small delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                isPulsing = true
+            }
+        }
+        
+        // Stop pulsing after 10 seconds to avoid being annoying
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.5) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isPulsing = false
             }
         }
     }
@@ -188,6 +236,19 @@ struct PlanListView: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.secondary)
                 }
+            }
+            
+            // Subtle hint about the pulsing menu
+            HStack {
+                Image(systemName: "ellipsis.circle")
+                    .foregroundColor(.orange)
+                    .font(.caption)
+                
+                Text("Tap the menu above to start your next challenge!")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
             }
         }
         .padding(16)

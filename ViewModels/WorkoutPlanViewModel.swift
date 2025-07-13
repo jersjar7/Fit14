@@ -59,6 +59,26 @@ class WorkoutPlanViewModel: ObservableObject {
         }
     }
     
+    /// Mark a challenge as viewed by the user
+    func markChallengeAsViewed(_ challengeId: UUID) {
+        Task { @MainActor in
+            do {
+                // Update in storage
+                try storageService.markChallengeAsViewed(challengeId)
+                
+                // Update in memory
+                if let index = completedChallenges.firstIndex(where: { $0.id == challengeId }) {
+                    completedChallenges[index].markAsViewed()
+                    print("👁️ Challenge marked as viewed: \(completedChallenges[index].challengeTitle)")
+                }
+                
+            } catch {
+                print("❌ Failed to mark challenge as viewed: \(error)")
+                // Don't show error to user for this operation
+            }
+        }
+    }
+    
     /// Archive the current completed plan as a challenge (PURE DATA OPERATION)
     func archiveCompletedPlan() {
         guard let plan = currentPlan, plan.isCompleted else {
@@ -181,6 +201,16 @@ class WorkoutPlanViewModel: ObservableObject {
     var recentChallenges: [CompletedChallenge] {
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
         return completedChallenges.filter { $0.completionDate >= thirtyDaysAgo }
+    }
+    
+    /// Get unviewed completed challenges for badge logic
+    var unviewedChallenges: [CompletedChallenge] {
+        return completedChallenges.filter { !$0.hasBeenViewed }
+    }
+    
+    /// Check if there are any unviewed completed challenges
+    var hasUnviewedChallenges: Bool {
+        return !unviewedChallenges.isEmpty
     }
     
     /// Check if current plan should show completion prompt. Handles both completion and finish scenarios
@@ -841,12 +871,14 @@ class WorkoutPlanViewModel: ObservableObject {
         - Is Generating: \(isGenerating)
         - Goal Input Active: \(isGoalInputActive)
         - Completed Challenges: \(completedChallenges.count)
+        - Unviewed Challenges: \(unviewedChallenges.count)
         
         Challenge History:
         - Total Challenges: \(historyStats.totalChallenges)
         - Average Success Rate: \(String(format: "%.1f", historyStats.averageSuccessRate))%
         - Total Days Completed: \(historyStats.totalDaysCompleted)
         - Has Recent Challenges: \(recentChallenges.count)
+        - Has Unviewed Challenges: \(hasUnviewedChallenges)
         
         Current Plan Progress:
         - Day Progress: \(String(format: "%.1f", detailedProgress.dayProgress))%

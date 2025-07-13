@@ -59,6 +59,10 @@ struct ChallengeDetailView: View {
         } message: {
             Text("This will permanently delete this challenge from your history. This action cannot be undone.")
         }
+        .onAppear {
+            // Mark this challenge as viewed when the detail view appears
+            viewModel.markChallengeAsViewed(challenge.id)
+        }
     }
     
     // MARK: - Header Section
