@@ -26,7 +26,8 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     let id = UUID()
     let userGoals: String
     let createdDate: Date
-    let summary: String?  // NEW: AI-generated summary from response
+    let planTitle: String?   // NEW: AI-generated 7-9 word plan title
+    let summary: String?     // AI-generated summary from response
     var status: PlanStatus
     var days: [Day]
     
@@ -84,7 +85,7 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     /// Progress as a decimal (0.0 to 1.0) for use with ProgressView
     var progressDecimal: Double {
         return progressPercentage / 100.0
-    }    
+    }
     
     // MARK: - Plan Status Properties
     
@@ -118,26 +119,38 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
     
     // MARK: - Initialization
     
-    init(userGoals: String, summary: String? = nil, days: [Day] = [], status: PlanStatus = .suggested) {
-            self.userGoals = userGoals
-            self.summary = summary  // NEW: Store AI summary
-            self.createdDate = Date()
-            self.days = days
-            self.status = status
-        }
+    init(userGoals: String, planTitle: String? = nil, summary: String? = nil, days: [Day] = [], status: PlanStatus = .suggested) {
+        self.userGoals = userGoals
+        self.planTitle = planTitle  // NEW: Store AI-generated plan title
+        self.summary = summary      // Store AI summary
+        self.createdDate = Date()
+        self.days = days
+        self.status = status
+    }
     
-    // MARK: - Display Properties (NEW)
+    // MARK: - Display Properties
         
-        /// Get the best available description for display (summary preferred, userGoals as fallback)
-        var displayDescription: String {
-            return summary ?? userGoals
-        }
-        
-        /// Get a shorter version for compact displays
-        var compactDescription: String {
-            let description = displayDescription
-            return description.count > 100 ? String(description.prefix(97)) + "..." : description
-        }
+    /// Get the best available title for display (planTitle preferred, summary as fallback)
+    var displayTitle: String {
+        return planTitle ?? summary ?? userGoals
+    }
+    
+    /// Get the best available description for display (summary preferred, userGoals as fallback)
+    var displayDescription: String {
+        return summary ?? userGoals
+    }
+    
+    /// Get a shorter version for compact displays
+    var compactDescription: String {
+        let description = displayDescription
+        return description.count > 100 ? String(description.prefix(97)) + "..." : description
+    }
+    
+    /// Get a compact title for UI elements where space is limited
+    var compactTitle: String {
+        let title = displayTitle
+        return title.count > 50 ? String(title.prefix(47)) + "..." : title
+    }
     
     // MARK: - Plan Modification Methods
     
@@ -242,6 +255,8 @@ struct WorkoutPlan: Identifiable, Codable, Equatable {
         return lhs.id == rhs.id &&
                lhs.userGoals == rhs.userGoals &&
                lhs.createdDate == rhs.createdDate &&
+               lhs.planTitle == rhs.planTitle &&
+               lhs.summary == rhs.summary &&
                lhs.status == rhs.status &&
                lhs.days == rhs.days
     }

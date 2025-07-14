@@ -13,7 +13,8 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
     
     // MARK: - Basic Challenge Info
     let originalPlanId: UUID           // Reference to original plan
-    let challengeTitle: String         // AI-generated summary from original plan
+    let planTitle: String              // AI-generated 7-9 word plan title
+    let challengeTitle: String         // AI-generated summary from original plan (kept for compatibility)
     let userGoals: String             // Original goals that created this challenge
     
     // MARK: - Date Tracking
@@ -111,6 +112,9 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
     init(from workoutPlan: WorkoutPlan, completionDate: Date = Date()) {
         self.id = UUID()
         self.originalPlanId = workoutPlan.id
+        
+        // Use planTitle if available, otherwise fall back to summary or user goals
+        self.planTitle = workoutPlan.planTitle ?? workoutPlan.summary ?? workoutPlan.userGoals
         self.challengeTitle = workoutPlan.summary ?? workoutPlan.userGoals
         self.userGoals = workoutPlan.userGoals
         self.startDate = workoutPlan.createdDate
@@ -133,6 +137,37 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
     // MARK: - Manual initializer for testing/previews
     init(
         originalPlanId: UUID,
+        planTitle: String,
+        challengeTitle: String? = nil,
+        userGoals: String,
+        startDate: Date,
+        completionDate: Date = Date(),
+        hasBeenViewed: Bool = false,
+        totalDays: Int,
+        completedDays: Int,
+        totalExercises: Int,
+        completedExercises: Int,
+        dailyCompletionRecord: [DayCompletionRecord]
+    ) {
+        self.id = UUID()
+        self.originalPlanId = originalPlanId
+        self.planTitle = planTitle
+        self.challengeTitle = challengeTitle ?? planTitle // Use planTitle as fallback
+        self.userGoals = userGoals
+        self.startDate = startDate
+        self.completionDate = completionDate
+        self.createdDate = Date()
+        self.hasBeenViewed = hasBeenViewed
+        self.totalDays = totalDays
+        self.completedDays = completedDays
+        self.totalExercises = totalExercises
+        self.completedExercises = completedExercises
+        self.dailyCompletionRecord = dailyCompletionRecord
+    }
+    
+    // MARK: - Legacy initializer for backward compatibility
+    init(
+        originalPlanId: UUID,
         challengeTitle: String,
         userGoals: String,
         startDate: Date,
@@ -146,6 +181,7 @@ struct CompletedChallenge: Identifiable, Codable, Equatable {
     ) {
         self.id = UUID()
         self.originalPlanId = originalPlanId
+        self.planTitle = challengeTitle // Use challengeTitle as planTitle for legacy data
         self.challengeTitle = challengeTitle
         self.userGoals = userGoals
         self.startDate = startDate
@@ -314,6 +350,7 @@ extension CompletedChallenge {
         
         return CompletedChallenge(
             originalPlanId: UUID(),
+            planTitle: "Home Bodyweight Strength Building Challenge", // Updated to use realistic planTitle
             challengeTitle: "14-Day Home Strength Builder",
             userGoals: "Build muscle strength with progressive bodyweight exercises at home",
             startDate: startDate,
@@ -353,6 +390,7 @@ extension CompletedChallenge {
         
         return CompletedChallenge(
             originalPlanId: UUID(),
+            planTitle: "Morning Cardio Habit Building Challenge", // Updated to use realistic planTitle
             challengeTitle: "14-Day Morning Cardio Challenge",
             userGoals: "Establish a consistent morning cardio routine",
             startDate: startDate,

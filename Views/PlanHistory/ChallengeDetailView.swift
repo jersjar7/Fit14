@@ -41,8 +41,6 @@ struct ChallengeDetailView: View {
             .padding(.horizontal)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(challenge.challengeTitle)
-        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 moreOptionsMenu
@@ -68,9 +66,21 @@ struct ChallengeDetailView: View {
     // MARK: - Header Section
     
     private var headerSection: some View {
-        VStack(spacing: 16) {
-            // Completion Badge
-            completionBadge
+        VStack(spacing: 24) {
+            // Plan Title - NEW: Moved from navigation title
+            VStack(spacing: 8) {
+                Text(challenge.planTitle)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.primary)
+                    .lineLimit(3)
+                
+                Divider()
+                
+                // Completion Badge
+                completionBadge
+            }
             
             // Date Range and Duration
             VStack(spacing: 4) {
@@ -108,19 +118,19 @@ struct ChallengeDetailView: View {
     }
     
     private var completionBadge: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             ZStack {
                 Circle()
                     .fill(challenge.isFullyCompleted ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
-                    .frame(width: 80, height: 80)
+                    .frame(width: 60, height: 60)
                 
                 Image(systemName: challenge.isFullyCompleted ? "trophy.fill" : "clock.badge.checkmark")
-                    .font(.system(size: 36))
+                    .font(.system(size: 28))
                     .foregroundColor(challenge.isFullyCompleted ? .green : .orange)
             }
             
             Text(challenge.isFullyCompleted ? "Challenge Completed!" : "Challenge Finished")
-                .font(.headline)
+                .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(challenge.isFullyCompleted ? .green : .orange)
         }
@@ -410,23 +420,6 @@ struct ChallengeDetailView: View {
     
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
-            if !viewModel.hasActivePlan {
-                Button(action: {
-                    startNewChallengeBasedOnThis()
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Start Similar Challenge")
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.orange)
-                    .cornerRadius(12)
-                }
-            }
-            
             Button(action: {
                 shareChallenge()
             }) {
@@ -493,18 +486,12 @@ struct ChallengeDetailView: View {
         return duration == 14 ? "Completed in 14 days" : "Completed in \(duration) days"
     }
     
-    private func startNewChallengeBasedOnThis() {
-        // Set up similar goals and start input
-        viewModel.userGoalData.updateFreeFormText("Create a similar challenge to my previous: \(challenge.challengeTitle)")
-        viewModel.startGoalInput()
-        dismiss()
-    }
-    
     private func shareChallenge() {
+        // UPDATED to use planTitle
         let shareText = """
         🏆 Completed my Fit14 Challenge!
         
-        Challenge: \(challenge.challengeTitle)
+        Challenge: \(challenge.planTitle)
         Days Completed: \(challenge.completedDays)/\(challenge.totalDays) (\(Int(challenge.successRate))%)
         Perfect Days: \(challenge.perfectDays)
         Longest Streak: \(challenge.longestStreak) days

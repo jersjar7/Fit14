@@ -44,8 +44,8 @@ struct ChallengeCard: View {
     
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Challenge Title
-            Text(challenge.challengeTitle)
+            // Challenge Plan Title - UPDATED
+            Text(challenge.planTitle)
                 .font(titleFont)
                 .fontWeight(.semibold)
                 .lineLimit(titleLineLimit)
@@ -439,7 +439,7 @@ extension ChallengeCard {
 
 extension ChallengeCard {
     private var accessibilityLabel: String {
-        var label = "Challenge: \(challenge.challengeTitle). "
+        var label = "Challenge: \(challenge.planTitle). "
         label += "Completed \(challenge.completedDays) out of \(challenge.totalDays) days. "
         label += "Success rate: \(Int(challenge.successRate)) percent. "
         
@@ -538,7 +538,7 @@ extension CompletedChallenge {
         
         return CompletedChallenge(
             originalPlanId: UUID(),
-            challengeTitle: "14-Day Getting Started Challenge",
+            planTitle: "Beginner Getting Started Fitness Challenge", // Updated to use planTitle
             userGoals: "Start building a fitness habit with basic exercises",
             startDate: startDate,
             completionDate: completionDate,
