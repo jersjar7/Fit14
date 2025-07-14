@@ -5,6 +5,7 @@
 //  Created by Jerson on 6/30/25.
 //  Updated for tab navigation integration
 //  UPDATED: Removed completion overlay - PlanListView now handles all completion UI
+//  ADDED: Onboarding flow preview for development
 //
 
 import SwiftUI
@@ -164,7 +165,7 @@ struct ErrorRecoveryView: View {
                     }
                     
                     Button("Contact Support") {
-                        if let url = URL(string: "mailto:support@fit14app.com?subject=App%20Error&body=Describe%20the%20issue%20you%20encountered") {
+                        if let url = URL(string: "mailto:support@fit14app.com?subject=App%20Error&body=Describe%20the%20issue%20you%encountered") {
                             UIApplication.shared.open(url)
                         }
                     }
@@ -177,6 +178,71 @@ struct ErrorRecoveryView: View {
             .navigationTitle("Current Challenge")
             .navigationBarTitleDisplayMode(.large)
         }
+    }
+}
+
+// MARK: - Onboarding Preview Component
+
+struct OnboardingFlowPreview: View {
+    @State private var showSplash = true
+    @State private var showOnboarding = false
+    @State private var isOnboardingComplete = false
+    @State private var canRestart = false
+    
+    var body: some View {
+        ZStack {
+            if showSplash {
+                SplashScreen {
+                    showSplash = false
+                    showOnboarding = true
+                }
+            } else if showOnboarding {
+                OnboardingCoordinator(isOnboardingComplete: $isOnboardingComplete)
+                    .onChange(of: isOnboardingComplete) { _, completed in
+                        if completed {
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                showOnboarding = false
+                                canRestart = true
+                            }
+                        }
+                    }
+            } else {
+                // Completion screen with restart option
+                VStack(spacing: 24) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.green)
+                    
+                    VStack(spacing: 12) {
+                        Text("Onboarding Complete!")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        
+                        Text("You would now see the main Fit14 app")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Button("Restart Onboarding Flow") {
+                        restartFlow()
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                .padding()
+            }
+        }
+        .animation(.easeInOut(duration: 0.5), value: showSplash)
+        .animation(.easeInOut(duration: 0.5), value: showOnboarding)
+    }
+    
+    private func restartFlow() {
+        isOnboardingComplete = false
+        canRestart = false
+        showSplash = true
+        showOnboarding = false
     }
 }
 
@@ -212,4 +278,84 @@ struct ErrorRecoveryView: View {
         action: { print("Retry tapped") }
     )
     .environmentObject(WorkoutPlanViewModel())
+}
+
+// 🎯 NEW: Complete Onboarding Flow Preview
+#Preview("🚀 Full Onboarding Flow") {
+    OnboardingFlowPreview()
+}
+
+// 🎯 NEW: Individual Onboarding Components
+#Preview("💫 Splash Screen Only") {
+    SplashScreen {
+        print("Splash completed")
+    }
+}
+
+#Preview("📝 Onboarding Pages Only") {
+    OnboardingCoordinator(isOnboardingComplete: .constant(false))
+}
+
+#Preview("🎉 Welcome Page") {
+    WelcomeOnboardingPage()
+        .floatingNavigation(
+            currentPage: 0,
+            totalPages: 6,
+            onNext: { print("Next tapped") },
+            onSkip: { print("Skip tapped") }
+        )
+}
+
+#Preview("⚙️ How It Works Page") {
+    HowItWorksOnboardingPage()
+        .floatingNavigation(
+            currentPage: 1,
+            totalPages: 6,
+            onNext: { print("Next tapped") },
+            onBack: { print("Back tapped") },
+            onSkip: { print("Skip tapped") }
+        )
+}
+
+#Preview("🎯 Goal Flexibility Page") {
+    GoalFlexibilityOnboardingPage()
+        .floatingNavigation(
+            currentPage: 2,
+            totalPages: 6,
+            onNext: { print("Next tapped") },
+            onBack: { print("Back tapped") },
+            onSkip: { print("Skip tapped") }
+        )
+}
+
+#Preview("🧠 Personalization Page") {
+    PersonalizationOnboardingPage()
+        .floatingNavigation(
+            currentPage: 3,
+            totalPages: 6,
+            onNext: { print("Next tapped") },
+            onBack: { print("Back tapped") },
+            onSkip: { print("Skip tapped") }
+        )
+}
+
+#Preview("📊 Progress Page") {
+    ProgressOnboardingPage()
+        .floatingNavigation(
+            currentPage: 4,
+            totalPages: 6,
+            onNext: { print("Next tapped") },
+            onBack: { print("Back tapped") },
+            onSkip: { print("Skip tapped") }
+        )
+}
+
+#Preview("🔔 Permissions Page") {
+    PermissionsOnboardingPage()
+        .floatingNavigation(
+            currentPage: 5,
+            totalPages: 6,
+            onNext: { print("Get Started tapped") },
+            onBack: { print("Back tapped") }
+        )
 }
