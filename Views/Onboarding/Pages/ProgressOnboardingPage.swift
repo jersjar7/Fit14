@@ -15,11 +15,12 @@ struct ProgressOnboardingPage: View {
     private let maxDays = 14
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
             Spacer()
+                .frame(minHeight: 50)
             
             // Header
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 Text("Track Your Journey")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
@@ -28,11 +29,13 @@ struct ProgressOnboardingPage: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal)
+            .padding(.vertical)
             
             // 14-day timeline visualization
-            VStack(spacing: 24) {
+            VStack(spacing: 8) {
                 // Progress header
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -98,7 +101,7 @@ struct ProgressOnboardingPage: View {
                     )
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 30)
             
             Spacer()
             
@@ -112,6 +115,7 @@ struct ProgressOnboardingPage: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding()
             .background(
@@ -124,7 +128,9 @@ struct ProgressOnboardingPage: View {
             .cornerRadius(12)
             .padding(.horizontal)
             
+            // Bottom spacer to ensure floating buttons don't cover content
             Spacer()
+                .frame(minHeight: 120)
         }
         .onAppear {
             startProgressAnimation()

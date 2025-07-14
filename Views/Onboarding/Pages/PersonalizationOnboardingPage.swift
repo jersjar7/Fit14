@@ -44,8 +44,9 @@ struct PersonalizationOnboardingPage: View {
     ]
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
             Spacer()
+                .frame(minHeight: 50)
             
             // Header
             VStack(spacing: 16) {
@@ -57,6 +58,7 @@ struct PersonalizationOnboardingPage: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal)
             
@@ -117,7 +119,7 @@ struct PersonalizationOnboardingPage: View {
             }
             .padding(.horizontal)
             
-            Spacer()
+//            Spacer()
             
             // Key message
             VStack(spacing: 16) {
@@ -133,6 +135,7 @@ struct PersonalizationOnboardingPage: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding()
             .background(Color(.systemBackground))
@@ -140,7 +143,9 @@ struct PersonalizationOnboardingPage: View {
             .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
             .padding(.horizontal)
             
+            // Bottom spacer to ensure floating buttons don't cover content
             Spacer()
+                .frame(minHeight: 120)
         }
         .onAppear {
             startAnimations()

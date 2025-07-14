@@ -2,6 +2,7 @@
 //  GoalFlexibilityOnboardingPage.swift
 //  Fit14
 //
+//  Created by Jerson on 7/13/25.
 //  Goal flexibility and examples demonstration page
 //
 
@@ -44,7 +45,7 @@ struct GoalFlexibilityOnboardingPage: View {
     
     var body: some View {
         VStack(spacing: 32) {
-//            Spacer()
+            Spacer()
             
             // Header
             VStack(spacing: 16) {
@@ -56,11 +57,12 @@ struct GoalFlexibilityOnboardingPage: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal)
             
             // Interactive goal demo
-            VStack(spacing: 24) {
+            VStack(spacing: 20) {
                 // Mock goal input interface
                 VStack(alignment: .leading, spacing: 12) {
                     Text("What's your fitness goal?")
@@ -116,21 +118,20 @@ struct GoalFlexibilityOnboardingPage: View {
                 .cornerRadius(16)
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
-                // Goal category selector
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+                // Goal category selector - centered
+                HStack {
+                    Spacer()
+                    HStack(spacing: 20) {
                         ForEach(Array(sampleGoals.enumerated()), id: \.offset) { index, goal in
                             goalCategoryButton(goal: goal, index: index)
                         }
                     }
-                    .padding(.horizontal)
+                    Spacer()
                 }
             }
             .padding(.horizontal)
             
-            Spacer()
-            
-            // Key message
+            // Key message - closer spacing
             VStack(spacing: 12) {
                 HStack {
                     Image(systemName: "brain.head.profile")
@@ -138,6 +139,7 @@ struct GoalFlexibilityOnboardingPage: View {
                     Text("AI analyzes your goal and creates a custom plan")
                         .font(.subheadline)
                         .fontWeight(.medium)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 
                 HStack {
@@ -146,6 +148,7 @@ struct GoalFlexibilityOnboardingPage: View {
                     Text("Adapts to your fitness level, time, and equipment")
                         .font(.subheadline)
                         .fontWeight(.medium)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding()
@@ -153,7 +156,9 @@ struct GoalFlexibilityOnboardingPage: View {
             .cornerRadius(12)
             .padding(.horizontal)
             
+            // Bottom spacer to ensure floating buttons don't cover content
             Spacer()
+                .frame(minHeight: 120) // Ensures space for floating buttons on all screen sizes
         }
         .onAppear {
             startGoalAnimation()

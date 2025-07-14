@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 7/13/25.
 //  Welcome and value proposition onboarding page
+//
 
 import SwiftUI
 
@@ -67,32 +68,38 @@ struct WelcomeOnboardingPage: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                    .padding(.horizontal, 24)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
-            // Key benefits
-            VStack(spacing: 20) {
-                benefitRow(
-                    icon: "sparkles",
-                    title: "AI-Powered Personalization",
-                    description: "Every plan is uniquely yours"
-                )
-                
-                benefitRow(
-                    icon: "clock.badge.checkmark",
-                    title: "Just 14 Days",
-                    description: "Perfect time to build lasting habits"
-                )
-                
-                benefitRow(
-                    icon: "target",
-                    title: "Any Fitness Goal",
-                    description: "From PRs to first pull-ups"
-                )
+            HStack(alignment: .center){
+                Spacer()
+                // Key benefits
+                VStack(spacing: 20) {
+                    benefitRow(
+                        icon: "sparkles",
+                        title: "AI-Powered Personalization",
+                        description: "Every plan is uniquely yours"
+                    )
+                    
+                    benefitRow(
+                        icon: "clock.badge.checkmark",
+                        title: "Just 14 Days",
+                        description: "Perfect time to build lasting habits"
+                    )
+                    
+                    benefitRow(
+                        icon: "target",
+                        title: "Any Fitness Goal",
+                        description: "From PRs to first pull-ups"
+                    )
+                }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
             
+            // Bottom spacer to ensure floating buttons don't cover content
             Spacer()
+                .frame(minHeight: 120)
         }
         .onAppear {
             isAnimating = true

@@ -98,7 +98,7 @@ struct FloatingNavigationButtons: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.bottom, 40)
+            .padding(.bottom, 20)
         }
     }
 }

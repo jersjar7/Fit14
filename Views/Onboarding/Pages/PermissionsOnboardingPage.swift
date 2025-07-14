@@ -14,8 +14,9 @@ struct PermissionsOnboardingPage: View {
     @State private var isRequestingPermissions = false
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
             Spacer()
+                .frame(minHeight: 50)
             
             // Header
             VStack(spacing: 16) {
@@ -86,7 +87,9 @@ struct PermissionsOnboardingPage: View {
             .cornerRadius(16)
             .padding(.horizontal)
             
+            // Bottom spacer to ensure floating buttons don't cover content
             Spacer()
+                .frame(minHeight: 120)
         }
         .onAppear {
             checkNotificationPermissionStatus()
