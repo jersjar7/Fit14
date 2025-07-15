@@ -2,6 +2,7 @@
 //  HowItWorksOnboardingPage.swift
 //  Fit14
 //
+//  Created by Jerson on 7/13/25.
 //  Enhanced with better animations and visual flow
 //
 
@@ -33,12 +34,12 @@ struct HowItWorksOnboardingPage: View {
                     .animation(Animation.easeInOut(duration: 0.8).delay(0.2), value: currentStep)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 25)
             .padding(.bottom, 20)
             
-            // Enhanced steps with better visual flow
+            // Compact steps with coordinated timing
             VStack(spacing: 0) {
-                // Step 1
+                // Step 1 - Activates immediately
                 enhancedStepView(
                     number: 1,
                     icon: "message.badge.filled.fill",
@@ -46,16 +47,16 @@ struct HowItWorksOnboardingPage: View {
                     description: "\"Beat my 5K PR of 25 minutes\"\n\"Do my first pull-up\"",
                     isActive: currentStep >= 0,
                     color: .blue,
-                    delay: 0.0
+                    delay: 0.0  // Step 1 starts immediately
                 )
                 
-                // Animated connection flow 1
-                animatedConnectionFlow(
+                // Flow 1 - Starts after Step 1 is established
+                compactConnectionFlow(
                     isActive: currentStep >= 1,
-                    delay: 0.8
+                    delay: 0.6  // Flow starts after step 1 is established
                 )
                 
-                // Step 2
+                // Step 2 - Activates when flow 1 reaches it
                 enhancedStepView(
                     number: 2,
                     icon: "brain.head.profile",
@@ -63,16 +64,16 @@ struct HowItWorksOnboardingPage: View {
                     description: "Our AI considers your fitness level, time, location, and equipment",
                     isActive: currentStep >= 1,
                     color: .purple,
-                    delay: 0.8
+                    delay: 1.2  // Activates when flow 1 reaches it
                 )
                 
-                // Animated connection flow 2
-                animatedConnectionFlow(
+                // Flow 2 - Starts after Step 2 is established
+                compactConnectionFlow(
                     isActive: currentStep >= 2,
-                    delay: 1.6
+                    delay: 1.8  // Flow starts after step 2 is established
                 )
                 
-                // Step 3
+                // Step 3 - Activates when flow 2 reaches it
                 enhancedStepView(
                     number: 3,
                     icon: "calendar.badge.checkmark",
@@ -80,7 +81,7 @@ struct HowItWorksOnboardingPage: View {
                     description: "Follow your personalized plan and track your progress daily",
                     isActive: currentStep >= 2,
                     color: .green,
-                    delay: 1.6
+                    delay: 2.4  // Activates when flow 2 reaches it
                 )
             }
             .padding(.horizontal, 20)
@@ -110,14 +111,16 @@ struct HowItWorksOnboardingPage: View {
                     .fill(Color(.systemBackground))
                     .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
             )
-            .padding(.horizontal)
+            .padding(.horizontal,30)
             .scaleEffect(currentStep >= 2 ? 1.0 : 0.95)
             .opacity(currentStep >= 2 ? 1.0 : 0.0)
-            .animation(Animation.spring(response: 0.6, dampingFraction: 0.8).delay(2.0), value: currentStep)
+            .animation(Animation.spring(response: 0.6, dampingFraction: 0.8).delay(3.8), value: currentStep)
             
-            // Bottom spacer
-            Spacer()
-                .frame(minHeight: 120)
+            // Option B: Content-aware spacing
+            Spacer().frame(minHeight: 110)
+        }
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 20)
         }
         .onAppear {
             startEnhancedAnimation()
@@ -187,7 +190,7 @@ struct HowItWorksOnboardingPage: View {
             }
             
             // Enhanced content with staggered animation
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) { // Reduced spacing from 12 to 8
                 Text(title)
                     .font(.title3)
                     .fontWeight(.bold)
@@ -207,49 +210,44 @@ struct HowItWorksOnboardingPage: View {
             
             Spacer()
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 6) // Reduced from 8
         .opacity(isActive ? 1.0 : 0.4)
         .animation(Animation.easeInOut(duration: 0.6).delay(delay), value: isActive)
     }
     
-    private func animatedConnectionFlow(isActive: Bool, delay: Double) -> some View {
-        VStack(spacing: 4) {
-            // Animated flowing line
+    // UPDATED: Much more compact connection flow
+    private func compactConnectionFlow(isActive: Bool, delay: Double) -> some View {
+        VStack(spacing: 2) { // Reduced spacing
+            // Shorter connecting line
             Rectangle()
                 .fill(
                     LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: isActive ? Color.blue : Color.gray.opacity(0.3), location: 0.0),
-                            .init(color: isActive ? Color.purple : Color.gray.opacity(0.2), location: 0.5),
-                            .init(color: isActive ? Color.blue : Color.gray.opacity(0.3), location: 1.0)
+                        gradient: Gradient(colors: [
+                            isActive ? Color.blue : Color.gray.opacity(0.3),
+                            isActive ? Color.purple : Color.gray.opacity(0.2)
                         ]),
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .frame(width: 3, height: 20)
+                .frame(width: 3, height: 12) // Reduced from 20 to 12
                 .offset(x: -15) // Align with step circles
                 .scaleEffect(x: 1.0, y: isActive ? 1.0 : 0.0, anchor: UnitPoint.top)
                 .animation(Animation.easeInOut(duration: 0.6).delay(delay), value: isActive)
             
-            // Flowing dots with staggered animation
-            VStack(spacing: 8) {
-                ForEach(0..<3, id: \.self) { index in
-                    Circle()
-                        .fill(isActive ? Color.blue.opacity(0.8) : Color.gray.opacity(0.3))
-                        .frame(width: 6, height: 6)
-                        .offset(x: -15) // Align with step circles
-                        .scaleEffect(isActive ? 1.0 : 0.3)
-                        .opacity(isActive ? 1.0 : 0.3)
-                        .animation(
-                            Animation.easeInOut(duration: 0.4)
-                            .delay(delay + 0.3 + Double(index) * 0.1),
-                            value: isActive
-                        )
-                }
-            }
+            // Single flowing dot instead of 3
+            Circle()
+                .fill(isActive ? Color.blue.opacity(0.8) : Color.gray.opacity(0.3))
+                .frame(width: 6, height: 6)
+                .offset(x: -15) // Align with step circles
+                .scaleEffect(isActive ? 1.0 : 0.3)
+                .opacity(isActive ? 1.0 : 0.3)
+                .animation(
+                    Animation.easeInOut(duration: 0.4).delay(delay + 0.3),
+                    value: isActive
+                )
             
-            // Bottom connecting line
+            // Shorter bottom connecting line
             Rectangle()
                 .fill(
                     LinearGradient(
@@ -261,12 +259,12 @@ struct HowItWorksOnboardingPage: View {
                         endPoint: .bottom
                     )
                 )
-                .frame(width: 3, height: 20)
+                .frame(width: 3, height: 12) // Reduced from 20 to 12
                 .offset(x: -15) // Align with step circles
                 .scaleEffect(x: 1.0, y: isActive ? 1.0 : 0.0, anchor: UnitPoint.bottom)
                 .animation(Animation.easeInOut(duration: 0.6).delay(delay + 0.6), value: isActive)
         }
-        .frame(height: 60)
+        .frame(height: 30) // Much reduced from 60
     }
     
     private func featureRow(icon: String, title: String, color: Color, isVisible: Bool) -> some View {
@@ -290,43 +288,21 @@ struct HowItWorksOnboardingPage: View {
         }
         .opacity(isVisible ? 1.0 : 0.0)
         .offset(y: isVisible ? 0 : 10)
-        .animation(Animation.spring(response: 0.6, dampingFraction: 0.8), value: isVisible)
+        .animation(Animation.spring(response: 0.5, dampingFraction: 0.8), value: isVisible)
     }
     
     private func startEnhancedAnimation() {
-        currentStep = 0
-        
-        // Step 1 appears immediately
-        withAnimation(Animation.spring(response: 0.6, dampingFraction: 0.8)) {
-            currentStep = 0
+        // Coordinated sequence animation for better flow
+        DispatchQueue.main.async {
+            currentStep = 0  // Step 1 activates immediately
         }
         
-        // Step 2 appears after delay
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
-            withAnimation(Animation.spring(response: 0.6, dampingFraction: 0.8)) {
-                currentStep = 1
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            currentStep = 1  // Triggers flow 1 (delay 0.6) and step 2 (delay 1.2)
         }
         
-        // Step 3 appears after longer delay
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
-            withAnimation(Animation.spring(response: 0.6, dampingFraction: 0.8)) {
-                currentStep = 2
-            }
-        }
-        
-        // Start continuous flow animation
-        Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-            startContinuousFlowAnimation()
-        }
-    }
-    
-    private func startContinuousFlowAnimation() {
-        withAnimation(
-            Animation.linear(duration: 3.0)
-                .repeatForever(autoreverses: false)
-        ) {
-            flowAnimation = 1.0
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            currentStep = 2  // Triggers flow 2 (delay 1.8) and step 3 (delay 2.4)
         }
     }
 }

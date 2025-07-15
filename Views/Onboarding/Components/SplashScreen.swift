@@ -47,48 +47,35 @@ struct SplashScreen: View {
                             .stroke(Color.white.opacity(0.3), lineWidth: 2)
                             .frame(width: 160, height: 160)
                             .scaleEffect(isAnimating ? 1.2 : 1.0)
-                            .opacity(isAnimating ? 0.0 : 0.3)
+                            .opacity(isAnimating ? 0.4 : 0.8)
                             .animation(
-                                Animation.easeOut(duration: 2.0).repeatForever(autoreverses: false),
+                                Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true),
                                 value: isAnimating
                             )
                         
-                        // Main logo circle
+                        // Inner logo circle
                         Circle()
-                            .fill(Color.white.opacity(0.2))
-                            .frame(width: 140, height: 140)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 3)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.white, Color.white.opacity(0.9)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
+                            .frame(width: 120, height: 120)
                             .scaleEffect(scale)
-                            .animation(.easeInOut(duration: 1.5), value: scale)
-                        
-                        // Logo content
-                        VStack(spacing: 8) {
-                            Image(systemName: "brain.head.profile")
-                                .font(.system(size: 40, weight: .light))
-                                .foregroundColor(.white)
-                            
-                            Text("14")
-                                .font(.system(size: 32, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                        }
-                        .opacity(opacity)
-                        .animation(.easeInOut(duration: 1.0), value: opacity)
+                            .overlay(
+                                Text("14")
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .foregroundColor(.blue)
+                                    .opacity(opacity)
+                            )
                     }
                     
-                    // App name and tagline
-                    VStack(spacing: 12) {
+                    VStack(spacing: 8) {
                         Text("Fit14")
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
-                            .opacity(opacity)
-                        
-                        Text("Transform in 14 Days")
-                            .font(.title2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white.opacity(0.9))
                             .opacity(opacity)
                         
                         Text("AI-Powered Personal Training")
@@ -103,7 +90,7 @@ struct SplashScreen: View {
                 
                 // Loading section
                 VStack(spacing: 16) {
-                    // Progress bar
+                    // Progress indicator
                     VStack(spacing: 8) {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -161,11 +148,13 @@ struct SplashScreen: View {
             scale = 1.0
         }
         
-        // Simulate loading progress
+        // FIXED: Simulate loading progress with perfect 100% completion
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            loadingProgress += 0.03
+            loadingProgress += 0.025  // Changed from 0.03 to 0.025 (40 iterations = exactly 100%)
             
+            // IMPROVED: Clamp to exactly 1.0 to prevent overshoot
             if loadingProgress >= 1.0 {
+                loadingProgress = 1.0  // Ensure it never exceeds 100%
                 timer.invalidate()
                 
                 // Complete splash screen after a brief moment

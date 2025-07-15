@@ -119,34 +119,12 @@ struct PersonalizationOnboardingPage: View {
             }
             .padding(.horizontal)
             
-//            Spacer()
-            
-            // Key message
-            VStack(spacing: 16) {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("No cookie-cutter plans")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                }
-                
-                Text("Every workout is uniquely crafted for your specific situation and goals")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-            .padding(.horizontal)
-            
-            // Bottom spacer to ensure floating buttons don't cover content
             Spacer()
-                .frame(minHeight: 120)
+            
+            // FIXED: Proper bottom spacing for floating buttons
+            Spacer().frame(minHeight: 100)
         }
+        .padding(.bottom, 30)
         .onAppear {
             startAnimations()
         }

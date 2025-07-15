@@ -32,7 +32,7 @@ struct ProgressOnboardingPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal)
-            .padding(.vertical)
+            .padding(.vertical, 30)
             
             // 14-day timeline visualization
             VStack(spacing: 8) {
@@ -55,83 +55,58 @@ struct ProgressOnboardingPage: View {
                         Text("\(Int((Double(progressDay) / Double(maxDays)) * 100))%")
                             .font(.title)
                             .fontWeight(.bold)
-                            .foregroundColor(.green)
+                            .foregroundColor(.blue)
                         
                         Text("Complete")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(16)
+                .padding(.horizontal, 30)
                 
-                // Calendar grid
+                // 14-day grid
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
                     ForEach(1...maxDays, id: \.self) { day in
                         dayCell(day: day)
                     }
                 }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                .padding(.horizontal, 30)
+            }
+            .padding(.vertical)
+            
+            Spacer()
+            
+            // Progress insights
+            VStack(spacing: 20) {
+                progressBenefit(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "Real Progress",
+                    description: "See measurable improvements in strength and endurance",
+                    color: .blue
+                )
                 
-                // Progress benefits
-                VStack(spacing: 16) {
-                    progressBenefit(
-                        icon: "brain.head.profile",
-                        title: "Habit Formation",
-                        description: "14 days is scientifically proven to start building lasting habits",
-                        color: .purple
-                    )
-                    
-                    progressBenefit(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: "Visible Progress",
-                        description: "See real improvements without overwhelming commitment",
-                        color: .green
-                    )
-                    
-                    progressBenefit(
-                        icon: "trophy.fill",
-                        title: "Achievement Focus",
-                        description: "Celebrate completion and check your history",
-                        color: .orange
-                    )
-                }
+                progressBenefit(
+                    icon: "calendar.badge.checkmark",
+                    title: "Habit Formation",
+                    description: "Build sustainable fitness habits that last beyond 14 days",
+                    color: .green
+                )
+                
+                progressBenefit(
+                    icon: "trophy.fill",
+                    title: "Achievement Focus",
+                    description: "Celebrate completion and check your history",
+                    color: .orange
+                )
             }
             .padding(.horizontal, 30)
             
             Spacer()
             
-            // Key message
-            VStack(spacing: 12) {
-                Text("Perfect Timeframe")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                
-                Text("Not too short to see results, not too long to feel overwhelming")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding()
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(12)
-            .padding(.horizontal)
-            
-            // Bottom spacer to ensure floating buttons don't cover content
-            Spacer()
-                .frame(minHeight: 120)
+            // FIXED: Proper bottom spacing for floating buttons
+            Spacer().frame(minHeight: 100)
         }
+        .padding(.bottom, 30)
         .onAppear {
             startProgressAnimation()
         }
@@ -155,34 +130,38 @@ struct ProgressOnboardingPage: View {
             }
         }
         .scaleEffect(day == progressDay && isAnimating ? 1.1 : 1.0)
-        .animation(.easeInOut(duration: 0.3), value: progressDay)
-        .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isAnimating)
+        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: progressDay)
     }
     
     private func cellColor(for day: Int) -> Color {
         if day < progressDay {
-            return .green
+            return Color.green
         } else if day == progressDay {
-            return .blue
+            return Color.blue
         } else {
-            return Color(.systemGray5)
+            return Color.gray.opacity(0.2)
         }
     }
     
     private func progressBenefit(icon: String, title: String, description: String, color: Color) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundColor(color)
-                .frame(width: 24)
+        HStack(alignment: .top, spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(color)
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.subheadline)
+                    .font(.headline)
                     .fontWeight(.semibold)
                 
                 Text(description)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -192,16 +171,18 @@ struct ProgressOnboardingPage: View {
     }
     
     private func startProgressAnimation() {
-        progressDay = 0
         isAnimating = true
         
+        // Animate progress day by day
         Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { timer in
-            if progressDay < 8 {
+            if progressDay < maxDays {
                 progressDay += 1
             } else {
                 timer.invalidate()
-                // Reset and restart after a pause
+                
+                // Reset after a pause
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    progressDay = 0
                     startProgressAnimation()
                 }
             }

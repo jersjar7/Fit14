@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3EA315622E1ABD000044FB89 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 3EA315612E1ABD000044FB89 /* .gitignore */; };
 		3EA315682E1AC9A90044FB89 /* APIKeys.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */; };
+		3ECC07F72E25937D0098F861 /* Fit14AppIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ECC07F62E25937D0098F861 /* Fit14AppIcon.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +36,7 @@
 		3EA3155A2E1A25770044FB89 /* APIKeys.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.xcconfig; sourceTree = "<group>"; };
 		3EA315612E1ABD000044FB89 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		3EA315672E1AC9A90044FB89 /* APIKeys.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = APIKeys.xcconfig; sourceTree = "<group>"; };
+		3ECC07F62E25937D0098F861 /* Fit14AppIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fit14AppIcon.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -126,6 +128,7 @@
 		3EA314C82E13322C0044FB89 = {
 			isa = PBXGroup;
 			children = (
+				3ECC07F62E25937D0098F861 /* Fit14AppIcon.swift */,
 				3EA315442E1A01E90044FB89 /* Config */,
 				3EA315842E1ADCC20044FB89 /* Utilities */,
 				3EA315882E1ADCC90044FB89 /* Services */,
@@ -312,6 +315,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3ECC07F72E25937D0098F861 /* Fit14AppIcon.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

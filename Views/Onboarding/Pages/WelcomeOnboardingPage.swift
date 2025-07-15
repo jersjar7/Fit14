@@ -12,50 +12,32 @@ struct WelcomeOnboardingPage: View {
     @State private var isAnimating = false
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
             Spacer()
+                .frame(minHeight: 50)
             
-            // Hero Section
+            // Hero section
             VStack(spacing: 24) {
-                // Animated logo/icon
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.blue, Color.purple]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                // App icon placeholder
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .frame(width: 120, height: 120)
-                        .scaleEffect(isAnimating ? 1.1 : 1.0)
-                        .animation(
-                            Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true),
-                            value: isAnimating
-                        )
-                    
-                    VStack {
-                        Image(systemName: "brain.head.profile")
-                            .font(.system(size: 40, weight: .light))
-                            .foregroundColor(.white)
-                        
-                        Text("14")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                }
+                    )
+                    .frame(width: 120, height: 120)
+                    .scaleEffect(isAnimating ? 1.0 : 0.8)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isAnimating)
                 
-                // Main headline
+                // Main title with gradient
                 VStack(spacing: 12) {
-                    Text("Your Personal AI")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .multilineTextAlignment(.center)
-                    
-                    Text("Fitness Trainer")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                    Text("Welcome to Fit14")
+                        .font(.system(size: 40, weight: .bold, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
-                                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                colors: [Color.blue, Color.purple],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -69,6 +51,7 @@ struct WelcomeOnboardingPage: View {
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
                     .fixedSize(horizontal: false, vertical: true)
             }
             
@@ -97,10 +80,10 @@ struct WelcomeOnboardingPage: View {
                 .padding(.horizontal)
             }
             
-            // Bottom spacer to ensure floating buttons don't cover content
-            Spacer()
-                .frame(minHeight: 120)
+            // FIXED: Proper bottom spacing for floating buttons
+            Spacer().frame(minHeight: 100)
         }
+        .padding(.bottom, 30) // Safety padding for different screen sizes
         .onAppear {
             isAnimating = true
         }

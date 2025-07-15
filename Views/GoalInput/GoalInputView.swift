@@ -114,16 +114,6 @@ struct GoalInputView: View {
     
     private var headerSection: some View {
         VStack(spacing: 16) {
-            // App Title
-            HStack {
-                Text("Fit14")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color.primary)
-                    
-                Spacer()
-            }
-            
             // Main Question
             VStack(spacing: 12) {
                 HStack {

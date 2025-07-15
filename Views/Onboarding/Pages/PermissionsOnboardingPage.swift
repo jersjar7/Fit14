@@ -9,9 +9,16 @@
 import SwiftUI
 import UserNotifications
 
+enum NotificationPermissionStatus {
+    case notRequested
+    case granted
+    case denied
+    case optional
+}
+
 struct PermissionsOnboardingPage: View {
-    @State private var notificationPermissionStatus: PermissionStatus = .notRequested
-    @State private var isRequestingPermissions = false
+    @State private var notificationPermissionStatus: NotificationPermissionStatus = .notRequested
+    @State private var isRequestingPermission = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -20,45 +27,88 @@ struct PermissionsOnboardingPage: View {
             
             // Header
             VStack(spacing: 16) {
-                Text("You're Almost Ready!")
+                // Permission icon
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.1)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 100, height: 100)
+                    
+                    Image(systemName: "bell.badge")
+                        .font(.system(size: 40, weight: .light))
+                        .foregroundColor(.blue)
+                }
+                
+                Text("Stay on Track")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
                 
-                Text("Let's set up a few things to enhance your Fit14 experience")
+                Text("Optional reminders to help you complete your 14-day journey")
                     .font(.title3)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal)
-            
-            // Permissions list
-            VStack(spacing: 20) {
-                permissionCard(
-                    icon: "bell.badge",
-                    title: "Workout Reminders",
-                    description: "Get gentle reminders to stay on track with your 14-day plan",
-                    status: notificationPermissionStatus,
-                    buttonText: notificationButtonText,
-                    action: requestNotificationPermission
-                )
-                
-                // Optional: Health app integration
-                permissionCard(
-                    icon: "heart.text.square",
-                    title: "Health App Integration",
-                    description: "Sync your workouts with Apple Health (optional)",
-                    status: .optional,
-                    buttonText: "Set Up Later",
-                    action: { /* Handle health permission */ }
-                )
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal)
             
             Spacer()
             
-            // Benefits section
+            // Permission request button
             VStack(spacing: 16) {
-                Text("Why These Permissions Help")
+                Button(action: handleNotificationPermission) {
+                    HStack(spacing: 12) {
+                        if isRequestingPermission {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .foregroundColor(.white)
+                        } else {
+                            Image(systemName: notificationPermissionStatus == .granted ? "checkmark" : "bell")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        
+                        Text(notificationButtonText)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(
+                        notificationPermissionStatus == .granted ?
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.green, Color.blue]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ) :
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(25)
+                    .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .disabled(isRequestingPermission || notificationPermissionStatus == .granted)
+                
+                if notificationPermissionStatus == .denied {
+                    Text("You can enable notifications later in Settings")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            // Benefits of notifications
+            VStack(spacing: 16) {
+                Text("Why Enable Reminders?")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
@@ -87,9 +137,14 @@ struct PermissionsOnboardingPage: View {
             .cornerRadius(16)
             .padding(.horizontal)
             
-            // Bottom spacer to ensure floating buttons don't cover content
+            // Option B: Content-aware spacing that works with floating buttons
+            // This ensures buttons never overlap content on any screen size
             Spacer()
-                .frame(minHeight: 120)
+                .frame(minHeight: 110) // Slightly more generous spacing
+        }
+        .safeAreaInset(edge: .bottom) {
+            // Option B: Use safeAreaInset for more precise control
+            Color.clear.frame(height: 20)
         }
         .onAppear {
             checkNotificationPermissionStatus()
@@ -109,107 +164,52 @@ struct PermissionsOnboardingPage: View {
         }
     }
     
-    private func permissionCard(
-        icon: String,
-        title: String,
-        description: String,
-        status: PermissionStatus,
-        buttonText: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        VStack(spacing: 16) {
-            HStack(alignment: .top, spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(permissionColor(for: status).opacity(0.2))
-                        .frame(width: 50, height: 50)
-                    
-                    Image(systemName: icon)
-                        .font(.title3)
-                        .foregroundColor(permissionColor(for: status))
-                }
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Text(description)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                
-                Spacer()
-            }
-            
-            if status != .granted {
-                Button(action: action) {
-                    Text(buttonText)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            status == .optional ? Color(.systemGray4) : permissionColor(for: status).opacity(0.2)
-                        )
-                        .foregroundColor(
-                            status == .optional ? .secondary : permissionColor(for: status)
-                        )
-                        .cornerRadius(10)
-                }
-            } else {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("All set!")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.green)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color.green.opacity(0.1))
-                .cornerRadius(10)
-            }
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-    }
-    
     private func benefitRow(icon: String, title: String, description: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 16) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundColor(.blue)
                 .frame(width: 24)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
                 
                 Text(description)
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
         }
     }
     
-    private func permissionColor(for status: PermissionStatus) -> Color {
-        switch status {
+    private func handleNotificationPermission() {
+        switch notificationPermissionStatus {
         case .notRequested:
-            return .blue
-        case .granted:
-            return .green
+            requestNotificationPermission()
         case .denied:
-            return .orange
-        case .optional:
-            return .gray
+            openAppSettings()
+        case .granted, .optional:
+            break
+        }
+    }
+    
+    private func requestNotificationPermission() {
+        isRequestingPermission = true
+        
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async {
+                isRequestingPermission = false
+                
+                if granted {
+                    notificationPermissionStatus = .granted
+                } else {
+                    notificationPermissionStatus = .denied
+                }
+            }
         }
     }
     
@@ -217,44 +217,24 @@ struct PermissionsOnboardingPage: View {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
                 switch settings.authorizationStatus {
-                case .authorized:
+                case .authorized, .provisional:
                     notificationPermissionStatus = .granted
                 case .denied:
                     notificationPermissionStatus = .denied
                 case .notDetermined:
                     notificationPermissionStatus = .notRequested
-                default:
+                case .ephemeral:
+                    notificationPermissionStatus = .optional
+                @unknown default:
                     notificationPermissionStatus = .notRequested
                 }
             }
         }
     }
     
-    private func requestNotificationPermission() {
-        guard notificationPermissionStatus == .notRequested else {
-            if notificationPermissionStatus == .denied {
-                // Open settings
-                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(settingsUrl)
-                }
-            }
-            return
-        }
-        
-        isRequestingPermissions = true
-        
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            DispatchQueue.main.async {
-                isRequestingPermissions = false
-                notificationPermissionStatus = granted ? .granted : .denied
-            }
+    private func openAppSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
         }
     }
-}
-
-enum PermissionStatus {
-    case notRequested
-    case granted
-    case denied
-    case optional
 }

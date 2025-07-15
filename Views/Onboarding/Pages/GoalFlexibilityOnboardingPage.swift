@@ -14,129 +14,107 @@ struct GoalFlexibilityOnboardingPage: View {
     
     private let sampleGoals = [
         OnboardingGoalExample(
-            category: "Weight Loss",
-            goal: "Lose 15 pounds for my wedding",
-            chips: ["Beginner", "Home", "Cardio Focus", "5x/week"],
-            icon: "figure.walk",
-            color: Color.pink
-        ),
-        OnboardingGoalExample(
             category: "Strength",
-            goal: "Do my first pull-up",
-            chips: ["Beginner", "Home", "No Equipment", "3x/week"],
+            goal: "I want to do my first unassisted pull-up within 14 days",
             icon: "figure.strengthtraining.traditional",
-            color: Color.red
+            color: .red
         ),
         OnboardingGoalExample(
             category: "Cardio",
-            goal: "Beat my 5K PR of 25 minutes",
-            chips: ["Intermediate", "Outdoor", "Running", "4x/week"],
+            goal: "Beat my 5K personal record of 25:30 and get under 25 minutes",
             icon: "figure.run",
-            color: Color.green
+            color: .blue
         ),
         OnboardingGoalExample(
-            category: "Skill",
-            goal: "Learn to do a handstand",
-            chips: ["Beginner", "Home", "Bodyweight", "Daily"],
-            icon: "figure.gymnastics",
-            color: Color.purple
+            category: "Flexibility",
+            goal: "Improve my hip mobility and touch my toes comfortably",
+            icon: "figure.yoga",
+            color: .green
+        ),
+        OnboardingGoalExample(
+            category: "Weight Loss",
+            goal: "Lose 5 pounds through consistent daily movement",
+            icon: "figure.walk",
+            color: .orange
         )
     ]
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
             Spacer()
+                .frame(minHeight: 50)
             
             // Header
             VStack(spacing: 16) {
-                Text("Any Fitness Goal")
+                Text("Any Goal Works")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
                 
-                Text("Our AI understands and adapts to all types of fitness goals")
+                Text("Our AI adapts to create the perfect plan for your specific goal")
                     .font(.title3)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal)
+            .padding(.bottom, 25)
             
-            // Interactive goal demo
+            // Goal selection interface
             VStack(spacing: 20) {
-                // Mock goal input interface
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("What's your fitness goal?")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    // Animated typing goal
+                // Goal categories
+                HStack(spacing: 16) {
+                    ForEach(Array(sampleGoals.enumerated()), id: \.offset) { index, goal in
+                        goalCategoryButton(goal: goal, index: index)
+                    }
+                }
+                .padding(.horizontal)
+                
+                // Typewriter goal display
+                VStack(spacing: 16) {
                     HStack {
-                        Text(currentGoalText)
-                            .font(.title3)
-                            .foregroundColor(.primary)
-                            .animation(.none, value: currentGoalText)
-                        
-                        if isTyping {
-                            Rectangle()
-                                .fill(Color.blue)
-                                .frame(width: 2, height: 20)
-                                .opacity(0.8)
-                                .animation(
-                                    Animation.easeInOut(duration: 0.5).repeatForever(autoreverses: true),
-                                    value: isTyping
-                                )
-                        }
+                        Image(systemName: "quote.opening")
+                            .foregroundColor(.secondary)
+                            .font(.title2)
                         
                         Spacer()
                     }
-                    .frame(height: 40)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
                     
-                    // Essential info chips
-                    Text("Essential Information")
-                        .font(.subheadline)
+                    Text(currentGoalText)
+                        .font(.title2)
                         .fontWeight(.medium)
-                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .animation(.none, value: currentGoalText) // Disable animation for typewriter effect
                     
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 8) {
-                        ForEach(currentGoal.chips, id: \.self) { chip in
-                            Text(chip)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(currentGoal.color.opacity(0.2))
-                                .foregroundColor(currentGoal.color)
-                                .cornerRadius(16)
-                        }
+                    HStack {
+                        Spacer()
+                        
+                        Image(systemName: "quote.closing")
+                            .foregroundColor(.secondary)
+                            .font(.title2)
                     }
                 }
                 .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                
-                // Goal category selector - centered
-                HStack {
-                    Spacer()
-                    HStack(spacing: 20) {
-                        ForEach(Array(sampleGoals.enumerated()), id: \.offset) { index, goal in
-                            goalCategoryButton(goal: goal, index: index)
-                        }
-                    }
-                    Spacer()
-                }
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal)
+                .frame(minHeight: 200)
             }
-            .padding(.horizontal)
             
-            // Key message - closer spacing
-            VStack(spacing: 12) {
+            Spacer()
+            
+            // Key benefits callout
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Flexible & Adaptive")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                
                 HStack {
-                    Image(systemName: "brain.head.profile")
+                    Image(systemName: "target")
                         .foregroundColor(.blue)
-                    Text("AI analyzes your goal and creates a custom plan")
+                    Text("Works for any fitness goal, from beginners to athletes")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .fixedSize(horizontal: false, vertical: true)
@@ -144,7 +122,7 @@ struct GoalFlexibilityOnboardingPage: View {
                 
                 HStack {
                     Image(systemName: "slider.horizontal.3")
-                        .foregroundColor(.purple)
+                        .foregroundColor(.blue)
                     Text("Adapts to your fitness level, time, and equipment")
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -156,10 +134,10 @@ struct GoalFlexibilityOnboardingPage: View {
             .cornerRadius(12)
             .padding(.horizontal)
             
-            // Bottom spacer to ensure floating buttons don't cover content
-            Spacer()
-                .frame(minHeight: 120) // Ensures space for floating buttons on all screen sizes
+            // FIXED: Proper bottom spacing for floating buttons
+            Spacer().frame(minHeight: 100)
         }
+        .padding(.bottom, 30)
         .onAppear {
             startGoalAnimation()
         }
@@ -200,29 +178,36 @@ struct GoalFlexibilityOnboardingPage: View {
                     .foregroundColor(selectedGoalIndex == index ? goal.color : .secondary)
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(selectedGoalIndex == index ? 1.1 : 1.0)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: selectedGoalIndex)
     }
     
     private func startGoalAnimation() {
-        startTypingAnimation()
-        
-        // Auto-cycle through goals
+        // Auto-cycle through goals every 4 seconds
         Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { _ in
             selectedGoalIndex = (selectedGoalIndex + 1) % sampleGoals.count
             startTypingAnimation()
         }
+        
+        // Start with initial typing animation
+        startTypingAnimation()
     }
     
     private func startTypingAnimation() {
         isTyping = true
         typewriterProgress = 0
         
-        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
-            if typewriterProgress < currentGoal.goal.count {
+        let goal = currentGoal.goal
+        let typingSpeed = 0.05 // seconds per character
+        
+        Timer.scheduledTimer(withTimeInterval: typingSpeed, repeats: true) { timer in
+            if typewriterProgress < goal.count {
                 typewriterProgress += 1
             } else {
                 timer.invalidate()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                
+                // Hold complete text for a moment, then stop typing state
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     isTyping = false
                 }
             }
@@ -233,7 +218,6 @@ struct GoalFlexibilityOnboardingPage: View {
 struct OnboardingGoalExample {
     let category: String
     let goal: String
-    let chips: [String]
     let icon: String
     let color: Color
 }
