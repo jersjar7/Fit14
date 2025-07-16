@@ -179,6 +179,72 @@ struct GoalInputView: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isInFocusMode)
     }
     
+    // MARK: - Enhanced Hint Text
+        
+        var enhancedHintText: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "lightbulb.fill")
+                        .foregroundColor(.yellow)
+                        .font(.caption)
+                    
+                    Text("Tips for better results")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                }
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        
+                        Text("Describe your current fitness level and experience")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                        
+                        Spacer()
+                    }
+                    
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        
+                        Text("Mention any equipment you have access to")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                        
+                        Spacer()
+                    }
+                    
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        
+                        Text("Include specific goals like weight loss, strength, or muscle gain")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                        
+                        Spacer()
+                    }
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(.systemGray6).opacity(0.5))
+                    .stroke(Color(.systemGray5), lineWidth: 0.5)
+            )
+        }
+    
     // MARK: - Focus Mode Actions
     
     func enterFocusMode() {

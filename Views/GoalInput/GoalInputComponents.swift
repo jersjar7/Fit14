@@ -62,6 +62,19 @@ extension GoalInputView {
         }
     }
     
+    // MARK: - Analysis Status View
+        
+        var analysisStatusView: some View {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.caption)
+                Text("Ready")
+                    .font(.caption)
+                    .foregroundColor(.green)
+            }
+        }
+    
     // MARK: - Focused Text Editor Section
     
     var focusedTextEditorSection: some View {
