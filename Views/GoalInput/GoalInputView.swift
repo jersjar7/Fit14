@@ -4,6 +4,7 @@
 //
 //  Created by Jerson on 6/30/25.
 //  Enhanced with essential information chip system and start date support
+//  UPDATED: Added animated focus mode with progressive disclosure
 //
 
 import SwiftUI
@@ -20,6 +21,14 @@ struct GoalInputView: View {
     @State private var showingStartDateHelp = false
     @State private var showingDatePicker = false
     
+    // MARK: - Focus Mode State
+    @State private var isInFocusMode = false
+    @FocusState private var isTextFieldFocused: Bool
+    
+    // MARK: - Chip Selection State
+    @State private var selectedChipForOptions: EssentialChip?
+    @State private var showingChipOptions = false
+    
     // MARK: - Computed Properties
     
     private var canGeneratePlan: Bool {
@@ -30,34 +39,23 @@ struct GoalInputView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 10) {
-                    // Header Section
-                    headerSection
-                    
-                    // Start Date Section
-                    startDateSection
-                    
-                    // Text Editor Section
-                    textEditorSection
-                    
-                    // Essential Information Section
-                    essentialInformationSection
-                    
-                    // Hint Text Section
-                    hintTextSection
-                    
-                    // Generation Button
-                    generateButtonSection
-                        .padding(.top, 10)
-                    
-                    Spacer(minLength: 30)
+            ZStack {
+                // Background
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
+                
+                // Main Content
+                if isInFocusMode {
+                    focusModeView
+                } else {
+                    cleanInitialView
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
+                
+                // Chip Options Overlay
+                if showingChipOptions, let chip = selectedChipForOptions {
+                    chipOptionsOverlay(for: chip)
+                }
             }
-            .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -110,183 +108,734 @@ struct GoalInputView: View {
         }
     }
     
-    // MARK: - Header Section
+    // MARK: - Clean Initial View
     
-    private var headerSection: some View {
-        VStack(spacing: 16) {
-            // Main Question
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .foregroundColor(Color.blue)
-                        .font(.title2)
-                    Text("What do you want to achieve in 2 weeks?")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .multilineTextAlignment(.leading)
-                    Spacer()
+    private var cleanInitialView: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // App Name Header
+                appNameHeader
+                
+                // Main Question Section
+                mainQuestionSection
+                
+                // Completed Chips Summary (when there are completed chips)
+                if chipAssistant.completedCount > 0 {
+                    completedChipsSummary
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 
-                HStack {
-                    Text("Our AI will create a personalized 14-day workout plan just for you")
-                        .font(.subheadline)
-                        .foregroundColor(Color.secondary)
-                        .multilineTextAlignment(.leading)
-                    Spacer()
-                }
+                // Simple Text Field
+                simpleTextFieldSection
+                
+                // Hint Text
+                enhancedHintText
+                
+                // Generate Button
+                generateButtonSection
+                    .padding(.top, 20)
+                
+                Spacer(minLength: 50)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
         }
-        .padding(.horizontal, 4)
     }
     
-    // MARK: - Essential Information Section
+    // MARK: - Focus Mode View
     
-    private var essentialInformationSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "star.fill")
-                    .foregroundColor(.orange)
-                    .font(.caption)
-                Text("Essential Information")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
+    private var focusModeView: some View {
+        ZStack {
+            // Dark overlay
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.3), value: isInFocusMode)
             
-            // Interactive Essential Chips
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(chipAssistant.sortedChips, id: \.id) { chip in
-                    interactiveChipRow(for: chip)
+            // Centered Modal
+            VStack {
+                Spacer()
+                
+                // Focused Modal Container
+                VStack(spacing: 24) {
+                    // Header in focus mode
+                    focusModeHeader
+                    
+                    // Text Editor Section
+                    focusedTextEditorSection
+                    
+                    // Start Date Section
+                    enhancedStartDateSection
+                    
+                    // Essential Information Section
+                    enhancedEssentialInformationSection
                 }
-            }
-            
-            // Completion Progress
-            HStack {
-                Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.2), radius: 30, x: 0, y: 20)
+                )
+                .padding(.horizontal, 20)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.85).combined(with: .opacity),
+                    removal: .scale(scale: 0.9).combined(with: .opacity)
+                ))
                 
                 Spacer()
-                
-                // Progress bar
-                ProgressView(value: chipAssistant.completionPercentage)
-                    .frame(width: 60)
-                    .tint(.blue)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 5)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isInFocusMode)
     }
     
-    // MARK: - Start Date Section
+    // MARK: - App Name Header
     
-    private var startDateSection: some View {
-        HStack(spacing: 8) {
-            
+    private var appNameHeader: some View {
+        HStack {
+            Text("Fit14")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.blue, .purple],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
             Spacer()
-            // All elements grouped together on the right
-            HStack(spacing: 8) {
-                // Information icon with help action
-                Button(action: {
-                    showingStartDateHelp = true
-                }) {
-                    Image(systemName: "info.circle")
-                        .foregroundColor(.blue)
-                        .font(.caption)
-                }
-                .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // MARK: - Main Question Section
+    
+    private var mainQuestionSection: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.orange, .pink],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .font(.title)
                 
-                // "Your plan starts" text
-                Text("Your plan will start")
-                    .font(.caption)
+                Text("What do you want to achieve in 2 weeks?")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.leading)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            HStack {
+                Text("Our AI will create a personalized 14-day workout plan just for you")
+                    .font(.body)
                     .foregroundColor(.secondary)
-                
-                // Date display with edit action
-                Button(action: {
-                    showingDatePicker = true
-                }) {
-                    HStack(spacing: 6) {
-                        Text(viewModel.startDateDisplayText)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(viewModel.hasExplicitStartDate ? .blue : .primary)
-                        
+                    .multilineTextAlignment(.leading)
+                Spacer()
+            }
+        }
+    }
+    
+    // MARK: - Simple Text Field Section
+    
+    private var simpleTextFieldSection: some View {
+        VStack(spacing: 8) {
+            // This is now a button that triggers focus mode
+            Button(action: {
+                enterFocusMode()
+            }) {
+                HStack {
+                    Text(chipAssistant.goalText.isEmpty ? "Tap to describe your fitness goals..." : chipAssistant.goalText)
+                        .font(.body)
+                        .foregroundColor(chipAssistant.goalText.isEmpty ? .secondary : .primary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(3)
+                    
+                    Spacer()
+                    
+                    if !chipAssistant.goalText.isEmpty {
                         Image(systemName: "pencil")
                             .foregroundColor(.blue)
-                            .font(.caption2)
+                            .font(.caption)
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(6)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemBackground))
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
             }
-            
-        }
-        .padding(.horizontal, 8)
-//        .padding(.vertical, 0)
-    }
-    
-    // MARK: - Text Editor Section (NEW - Extracted from smartGoalInputSection)
-
-    private var textEditorSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SmartGoalTextEditor(
-                chipAssistant: chipAssistant,
-                placeholder: "e.g., Lose 5 pounds starting next Monday, build strength at home with bodyweight exercises...",
-                minHeight: 120
-            )
+            .buttonStyle(PlainButtonStyle())
             .disabled(viewModel.isGenerating)
             
-            // Character count and analysis status (only show when there's text)
+            // Character count (only when there's text)
             if !chipAssistant.goalText.isEmpty {
                 HStack {
                     Text("\(chipAssistant.goalText.count) characters")
-                        .padding(.leading, 7.0)
-                        .font(.caption2)
-                        .foregroundColor(Color.secondary)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     
                     Spacer()
                     
-                    // Real-time analysis indicator
-                    if analysisService.isAnalyzing {
-                        HStack(spacing: 4) {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                            Text("Analyzing...")
-                                .padding(.trailing, 2.0)
-                                .font(.caption2)
-                                .foregroundColor(Color.secondary)
-                        }
-                    } else {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(Color.green)
-                                .font(.caption)
-                            Text("Ready")
-                                .padding(.trailing, 2.0)
-                                .font(.caption2)
-                                .foregroundColor(Color.green)
-                        }
-                    }
+                    // Analysis status
+                    analysisStatusView
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
     
-    // MARK: - Hint Text Section (NEW - Extracted and separated)
-
-    private var hintTextSection: some View {
+    // MARK: - Chip Options Overlay
+    
+    private func chipOptionsOverlay(for chip: EssentialChip) -> some View {
+        ZStack {
+            // Background overlay
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismissChipOptions()
+                }
+            
+            // Options container
+            VStack(spacing: 0) {
+                Spacer()
+                
+                VStack(spacing: 20) {
+                    // Header
+                    VStack(spacing: 8) {
+                        HStack {
+                            Image(systemName: chip.icon)
+                                .foregroundColor(.blue)
+                                .font(.title2)
+                            
+                            Text(chip.title)
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                            
+                            Spacer()
+                            
+                            Button("✕") {
+                                dismissChipOptions()
+                            }
+                            .foregroundColor(.secondary)
+                            .font(.title3)
+                        }
+                        
+                        Text("Choose your \(chip.title.lowercased())")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Options grid
+                    let chipData = ChipConfiguration.createChipData(for: chip.type)
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
+                        ForEach(chipData.options.prefix(6), id: \.id) { option in
+                            chipOptionButton(option: option, chip: chip)
+                        }
+                    }
+                    
+                    // Show more options if there are many
+                    if chipData.options.count > 6 {
+                        Button("See all \(chipData.options.count) options") {
+                            // You can implement a full sheet here if needed
+                            dismissChipOptions()
+                            chipAssistant.insertPromptForChip(type: chip.type)
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                        .padding(.top, 8)
+                    }
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.2), radius: 25, x: 0, y: 15)
+                )
+                .padding(.horizontal, 20)
+                
+                Spacer()
+            }
+        }
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 0.95).combined(with: .opacity)
+        ))
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showingChipOptions)
+        .zIndex(10)
+    }
+    
+    private func chipOptionButton(option: ChipOption, chip: EssentialChip) -> some View {
+        Button(action: {
+            selectChipOption(option: option, for: chip)
+        }) {
+            VStack(spacing: 8) {
+                Text(option.displayText)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                
+                if let description = option.description {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 70)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Completed Chips Summary
+    
+    private var completedChipsSummary: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.caption)
+                
+                Text("Added Information")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text("\(chipAssistant.completedCount) of \(chipAssistant.totalCount)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+            // Completed chips in a horizontal scroll
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(chipAssistant.sortedChips.filter { $0.isCompleted }, id: \.id) { chip in
+                        completedChipPill(for: chip)
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.green.opacity(0.05))
+                .stroke(Color.green.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func completedChipPill(for chip: EssentialChip) -> some View {
+        Button(action: {
+            showChipOptions(for: chip)
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: chip.icon)
+                    .foregroundColor(.green)
+                    .font(.caption2)
+                
+                Text(chip.title)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                if let selectedOption = chip.selectedOption,
+                   !selectedOption.displayText.isEmpty {
+                    Text("•")
+                        .foregroundColor(.secondary)
+                        .font(.caption2)
+                    
+                    Text(selectedOption.displayText)
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                        .fontWeight(.medium)
+                }
+                
+                Image(systemName: "pencil")
+                    .foregroundColor(.blue)
+                    .font(.caption2)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color(.systemBackground))
+                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Enhanced Hint Text
+    
+    private var enhancedHintText: some View {
+        Text("💡 Feel free to mention any injuries, equipment preferences, or schedule constraints")
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.leading)
+            .padding(.horizontal, 8)
+    }
+    
+    // MARK: - Focus Mode Components
+    
+    private var focusModeHeader: some View {
         HStack {
-            Text("Feel free to mention any injuries, equipment preferences, or schedule constraints")
-                .font(.caption)
-                .foregroundColor(Color.secondary)
-                .padding(.leading, 7.0)
+            Text("Tell us about your goals")
+                .font(.title3)
+                .fontWeight(.semibold)
+            
             Spacer()
+            
+            Button("Done") {
+                exitFocusMode()
+            }
+            .font(.body)
+            .fontWeight(.medium)
+            .foregroundColor(.blue)
+        }
+    }
+    
+    private var focusedTextEditorSection: some View {
+        VStack(spacing: 12) {
+            TextField("Describe your fitness goals in detail...", text: $chipAssistant.goalText, axis: .vertical)
+                .focused($isTextFieldFocused)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                )
+                .font(.body)
+                .lineLimit(4...8)
+                .disabled(viewModel.isGenerating)
+            
+            // Analysis status in focus mode
+            if !chipAssistant.goalText.isEmpty {
+                HStack {
+                    Text("\(chipAssistant.goalText.count) characters")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    analysisStatusView
+                }
+            }
+        }
+    }
+    
+    private var enhancedStartDateSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "calendar")
+                    .foregroundColor(.blue)
+                    .font(.title3)
+                
+                Text("Plan's Start Date")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                Button(action: {
+                    showingStartDateHelp = true
+                }) {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            Button(action: {
+                showingDatePicker = true
+            }) {
+                HStack {
+                    Text(viewModel.startDateDisplayText)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(viewModel.hasExplicitStartDate ? .blue : .primary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "pencil")
+                        .foregroundColor(.blue)
+                        .font(.caption)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.blue.opacity(0.1))
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    private var enhancedEssentialInformationSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "star.fill")
+                    .foregroundColor(.orange)
+                    .font(.title3)
+                
+                Text("Essential Information")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+            }
+            
+            // Enhanced chip grid
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                ForEach(chipAssistant.sortedChips, id: \.id) { chip in
+                    enhancedChipButton(for: chip)
+                }
+            }
+            
+            // Progress indicator
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                }
+                
+                ProgressView(value: chipAssistant.completionPercentage)
+                    .tint(.blue)
+                    .scaleEffect(y: 0.8)
+            }
+        }
+    }
+    
+    private var focusModeActions: some View {
+        HStack(spacing: 16) {
+            Button("Cancel") {
+                exitFocusMode()
+            }
+            .font(.body)
+            .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Button("Done") {
+                exitFocusMode()
+            }
+            .font(.body)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                LinearGradient(
+                    colors: [.blue, .purple],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(8)
+        }
+    }
+    
+    // MARK: - Enhanced Chip Button
+    
+    private func enhancedChipButton(for chip: EssentialChip) -> some View {
+        Button(action: {
+            if chip.isCompleted {
+                chipAssistant.resetChip(type: chip.type)
+            } else {
+                showChipOptions(for: chip)
+            }
+        }) {
+            VStack(spacing: 6) {
+                Image(systemName: chip.icon)
+                    .font(.title2)
+                    .foregroundColor(chip.isCompleted ? .white : .blue)
+                
+                Text(chip.title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(chip.isCompleted ? .white : .primary)
+                    .multilineTextAlignment(.center)
+                
+                // Completion status with subtle text
+                if chip.isCompleted {
+                    if let selectedOption = chip.selectedOption,
+                       !selectedOption.displayText.isEmpty {
+                        Text(selectedOption.displayText)
+                            .font(.caption2)
+                            .fontWeight(.regular)
+                            .foregroundColor(.white.opacity(0.85))
+                            .lineLimit(1)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.15))
+                            )
+                    } else {
+                        Text("✓ Added")
+                            .font(.caption2)
+                            .fontWeight(.regular)
+                            .foregroundColor(.white.opacity(0.85))
+                    }
+                } else {
+                    Text("Tap to select")
+                        .font(.caption2)
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 100)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        chip.isCompleted ?
+                        LinearGradient(
+                            colors: [.blue, .purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ) :
+                        LinearGradient(
+                            colors: [Color(.systemGray6), Color(.systemGray6)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .stroke(
+                        chip.isCompleted ? Color.clear : Color(.systemGray4),
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(chip.isCompleted ? 1.0 : 0.98)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: chip.isCompleted)
+    }
+    
+    // MARK: - Analysis Status View
+    
+    private var analysisStatusView: some View {
+        Group {
+            if analysisService.isAnalyzing {
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                    Text("Analyzing...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                    Text("Ready")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Generate Button Section
+    
+    private var generateButtonSection: some View {
+        VStack(spacing: 20) {
+            UltraInstinctButton.generatePlan(
+                action: {
+                    Task {
+                        await generatePlan()
+                    }
+                },
+                isGenerating: viewModel.isGenerating,
+                canGenerate: canGeneratePlan
+            )
+        }
+    }
+    
+    // MARK: - Chip Options Management
+    
+    private func showChipOptions(for chip: EssentialChip) {
+        selectedChipForOptions = chip
+        
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            showingChipOptions = true
+        }
+    }
+    
+    private func dismissChipOptions() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            showingChipOptions = false
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            selectedChipForOptions = nil
+        }
+    }
+    
+    private func selectChipOption(option: ChipOption, for chip: EssentialChip) {
+        // Insert the selected option text into the goal
+        let optionText = "\(chip.title): \(option.displayText)"
+        let currentText = chipAssistant.goalText
+        let newText = currentText.isEmpty ? optionText : "\(currentText), \(optionText)"
+        chipAssistant.updateGoalText(newText)
+        
+        // Mark this chip as completed by inserting its prompt
+        chipAssistant.insertPromptForChip(type: chip.type)
+        
+        // Provide haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        // Dismiss the overlay
+        dismissChipOptions()
+    }
+    
+    // MARK: - Focus Mode Actions
+    
+    private func enterFocusMode() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            isInFocusMode = true
+        }
+        
+        // Delay focus to allow animation to start
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isTextFieldFocused = true
+        }
+    }
+    
+    private func exitFocusMode() {
+        isTextFieldFocused = false
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isInFocusMode = false
         }
     }
     
@@ -295,7 +844,6 @@ struct GoalInputView: View {
     private var startDatePickerSheet: some View {
         NavigationView {
             VStack(spacing: 20) {
-                // Date Picker
                 DatePicker(
                     "",
                     selection: Binding(
@@ -310,7 +858,6 @@ struct GoalInputView: View {
                 .datePickerStyle(.graphical)
                 .padding(.horizontal, 60)
                 
-                // Reset to default option
                 if viewModel.hasExplicitStartDate {
                     Button(action: {
                         viewModel.clearStartDate()
@@ -347,95 +894,16 @@ struct GoalInputView: View {
         .presentationDetents([.height(400)])
     }
     
-    // MARK: - Interactive Chip Row Helper (Thread-Safe Fix)
-
-    private func interactiveChipRow(for chip: EssentialChip) -> some View {
-        Button(action: {
-            if chip.isCompleted {
-                // Reset the chip if already completed
-                chipAssistant.resetChip(type: chip.type)
-            } else {
-                // Insert prompt for this chip
-                chipAssistant.insertPromptForChip(type: chip.type)
-                
-                // Provide haptic feedback
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
-            }
-        }) {
-            HStack(spacing: 8) {
-                Image(systemName: chip.icon)
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                    .frame(width: 16)
-                
-                Text(chip.title)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                // Show + or checkmark based on completion
-                if chip.isCompleted {
-                    HStack(spacing: 4) {
-                        // ⚠️ FIX: Safely access selectedOption.displayText
-                        if let selectedOption = chip.selectedOption,
-                           !selectedOption.displayText.isEmpty {
-                            Text(selectedOption.displayText)
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                                .lineLimit(1)
-                        }
-                        
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    }
-                } else {
-                    Image(systemName: "plus.circle")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    // MARK: - Generate Button Section
-    
-    private var generateButtonSection: some View {
-        VStack(spacing: 20) {
-            UltraInstinctButton.generatePlan(
-                action: {
-                    Task {
-                        await generatePlan()
-                    }
-                },
-                isGenerating: viewModel.isGenerating,
-                canGenerate: canGeneratePlan
-            )
-        }
-    }
-    
     // MARK: - Event Handlers
     
     private func setupInitialState() {
-        // Initialize goal input process in ViewModel
         viewModel.startGoalInput()
-        
-        // Set up analysis service
         analysisService.analyzeText("", with: viewModel.userGoalData)
-        
-        // Initialize chip assistant with empty text
         chipAssistant.updateGoalText("")
     }
     
     private func handleTextChange(_ newText: String) {
-        // Update ViewModel's goal data
         viewModel.updateGoalText(newText)
-        
-        // Trigger real-time analysis
         analysisService.analyzeText(newText, with: viewModel.userGoalData)
     }
     
@@ -452,13 +920,9 @@ struct GoalInputView: View {
         print("✅ Essential chips completed: \(chipAssistant.completedCount)/\(chipAssistant.totalCount)")
         print("📅 Start date: \(viewModel.startDateDisplayText) (explicit: \(viewModel.hasExplicitStartDate))")
         
-        // Ensure the ViewModel has the latest goal text from chip assistant
         viewModel.updateGoalText(chipAssistant.goalText)
-        
-        // Use ViewModel's generation method
         await viewModel.generatePlanFromGoals()
         
-        // Clear the form after successful generation
         if viewModel.suggestedPlan != nil {
             resetForm()
         }
