@@ -2,113 +2,84 @@
 //  EssentialChipAssistant.swift
 //  Fit14
 //
-//  Created by Jerson on 7/7/25.
-//  Manages essential chip state and text generation for goal input assistance
+//  Created by Jerson on 7/6/25.
+//  Updated with enhanced chip system and completion tracking
 //
 
-import Foundation
 import SwiftUI
+import Combine
 
-// MARK: - Essential Chip Definition
+// MARK: - Essential Chip Model
 
-/// Represents an essential information chip with its prompt template and options
-struct EssentialChip: Identifiable, Equatable {
+struct EssentialChip: Identifiable {
     let id = UUID()
     let type: ChipType
     let title: String
     let icon: String
-    let promptTemplate: String  // e.g., "My fitness level is "
-    let options: [ChipSelectionOption]
-    var isCompleted: Bool = false
-    var selectedOption: ChipSelectionOption?
+    var isCompleted: Bool
+    var selectedOption: ChipOption?
     
-    /// The text that gets inserted when user taps the "+" button
-    var insertionText: String {
-        return promptTemplate
-    }
-    
-    /// The final completed text after user makes a selection
-    var completedText: String? {
-        guard let selectedOption = selectedOption else { return nil }
-        return selectedOption.displayText
-    }
-}
-
-// MARK: - Chip Selection Option
-
-/// Represents a selectable option for an essential chip
-struct ChipSelectionOption: Identifiable, Equatable {
-    let id = UUID()
-    let value: String           // Internal value
-    let displayText: String     // Text shown to user and inserted
-    let description: String?    // Optional tooltip/help text
-    
-    init(value: String, displayText: String, description: String? = nil) {
-        self.value = value
-        self.displayText = displayText
-        self.description = description
-    }
-    
-    /// Convenience initializer for simple options
-    init(_ displayText: String) {
-        self.value = displayText.lowercased()
-        self.displayText = displayText
-        self.description = nil
+    init(id: UUID = UUID(), type: ChipType, title: String, icon: String, isCompleted: Bool = false, selectedOption: ChipOption? = nil) {
+        self.type = type
+        self.title = title
+        self.icon = icon
+        self.isCompleted = isCompleted
+        self.selectedOption = selectedOption
     }
 }
 
 // MARK: - Essential Chip Assistant
 
-/// Manages the state and logic for the 6 essential information chips required for workout planning
 class EssentialChipAssistant: ObservableObject {
     
     // MARK: - Published Properties
     
-    @Published private(set) var chips: [EssentialChip] = []
-    @Published var goalText: String = "" {
-        didSet {
-            updateCompletionStates()
-        }
-    }
+    @Published var goalText: String = ""
+    @Published private var chips: [ChipType: EssentialChip] = [:]
     
     // MARK: - Computed Properties
     
-    /// Number of completed essential chips
-    var completedCount: Int {
-        chips.filter { $0.isCompleted }.count
+    var sortedChips: [EssentialChip] {
+        let allChips = Array(chips.values)
+        return allChips.sorted { first, second in
+            // Sort by importance first (critical chips first)
+            if first.type.importance.rawValue != second.type.importance.rawValue {
+                return first.type.importance.rawValue > second.type.importance.rawValue
+            }
+            
+            // Uncompleted chips before completed for better UX
+            if first.isCompleted != second.isCompleted {
+                return !first.isCompleted
+            }
+            
+            // Finally by display title for consistency
+            return first.title < second.title
+        }
     }
     
-    /// Total number of essential chips (always 6)
+    var completedCount: Int {
+        chips.values.filter { $0.isCompleted }.count
+    }
+    
     var totalCount: Int {
         chips.count
     }
     
-    /// Completion percentage (0.0 to 1.0)
     var completionPercentage: Double {
         guard totalCount > 0 else { return 0.0 }
         return Double(completedCount) / Double(totalCount)
     }
     
-    /// Whether all essential chips are completed
-    var allCompleted: Bool {
-        completedCount == totalCount
+    var allEssentialChips: [EssentialChip] {
+        Array(chips.values)
     }
     
-    /// Get chips sorted by importance and completion status
-    var sortedChips: [EssentialChip] {
-        chips.sorted { first, second in
-            // Incomplete chips go to top for better UX
-            if first.isCompleted != second.isCompleted {
-                return !first.isCompleted
-            }
-            // Sort by chip type importance (critical first)
-            return first.type.importance.rawValue > second.type.importance.rawValue
-        }
+    var uncompletedChips: [EssentialChip] {
+        chips.values.filter { !$0.isCompleted }
     }
     
-    /// Get only critical essential chips that need immediate attention
-    var criticalChips: [EssentialChip] {
-        chips.filter { $0.type.importance == .critical && !$0.isCompleted }
+    var completedChips: [EssentialChip] {
+        chips.values.filter { $0.isCompleted }
     }
     
     // MARK: - Initialization
@@ -117,371 +88,269 @@ class EssentialChipAssistant: ObservableObject {
         setupEssentialChips()
     }
     
-    // MARK: - Public Methods
+    // MARK: - Setup Methods
     
-    /// Get a specific chip by type
-    func getChip(for type: ChipType) -> EssentialChip? {
-        return chips.first { $0.type == type }
-    }
-    
-    /// Mark a chip as completed with the selected option
-    func completeChip(type: ChipType, selectedOption: ChipSelectionOption) {
-        guard let index = chips.firstIndex(where: { $0.type == type }) else { return }
-        
-        let chip = chips[index]
-        
-        // Set the selection
-        chips[index].selectedOption = selectedOption
-        
-        // Replace prompt with completed text
-        let completedText = chip.promptTemplate + selectedOption.displayText
-        goalText = goalText.replacingOccurrences(of: chip.promptTemplate, with: completedText)
-        
-        // Add period if needed
-        if !goalText.hasSuffix(".") && !goalText.hasSuffix("!") && !goalText.hasSuffix("?") {
-            goalText += "."
-        }
-        
-        // Clean up
-        goalText = goalText.replacingOccurrences(of: "  ", with: " ")
-        
-        print("✅ Completed: \(completedText)")
-    }
-    
-    /// Reset a chip to uncompleted state
-    func resetChip(type: ChipType) {
-        guard let index = chips.firstIndex(where: { $0.type == type }) else { return }
-        
-        // Remove the completed text from goal text if present
-        if let completedText = chips[index].completedText {
-            goalText = goalText.replacingOccurrences(of: completedText, with: "")
-                .replacingOccurrences(of: "  ", with: " ") // Clean up double spaces
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        
-        chips[index].selectedOption = nil
-        chips[index].isCompleted = false
-        
-        print("🔄 Reset essential chip: \(type.displayTitle)")
-    }
-    
-    /// Insert prompt text for a chip into the goal text
-    func insertPromptForChip(type: ChipType) {
-        guard let chip = getChip(for: type), !chip.isCompleted else {
-            print("❌ Cannot insert prompt for \(type.displayTitle): chip not found or already completed")
-            return
-        }
-        
-        // Add the prompt template to the goal text (this will trigger inline options in the UI)
-        let insertion = chip.promptTemplate
-        
-        // Smart insertion - add proper spacing and punctuation
-        if goalText.isEmpty {
-            goalText = insertion
-        } else {
-            // Ensure proper sentence structure
-            let trimmed = goalText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let needsPeriod = !trimmed.isEmpty && !trimmed.hasSuffix(".") && !trimmed.hasSuffix("!")
-            let separator = needsPeriod ? ". " : " "
-            goalText = trimmed + separator + insertion
-        }
-        
-        print("➕ Inserted prompt for essential chip: \(type.displayTitle)")
-        print("📝 Current goal text: '\(goalText)'")
-    }
-    
-    /// Get available options for inline selection
-    func getInlineOptions(for type: ChipType) -> [ChipSelectionOption] {
-        return getChip(for: type)?.options ?? []
-    }
-    
-    /// Update goal text externally (from text field changes)
-    func updateGoalText(_ newText: String) {
-        goalText = newText
-    }
-    
-    /// Reset all essential chips and clear goal text
-    func reset() {
-        for index in chips.indices {
-            chips[index].isCompleted = false
-            chips[index].selectedOption = nil
-        }
-        goalText = ""
-        print("🔄 Reset all essential chips")
-    }
-    
-    /// Check if minimum essential information is provided for AI generation
-    var hasMinimumInformation: Bool {
-        // At least one critical chip must be completed
-        let criticalCompleted = chips.filter { $0.type.importance == .critical && $0.isCompleted }.count
-        return criticalCompleted >= 1 && !goalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-    
-    /// Check if optimal information is provided for best AI results
-    var hasOptimalInformation: Bool {
-        let criticalCompleted = chips.filter { $0.type.importance == .critical && $0.isCompleted }.count
-        let highCompleted = chips.filter { $0.type.importance == .high && $0.isCompleted }.count
-        return criticalCompleted >= 2 && highCompleted >= 1
-    }
-    
-    // MARK: - Private Methods
-
-    /// Set up the 6 essential chips with their options
     private func setupEssentialChips() {
-        chips = [
-            // Fitness Level (Critical)
-            EssentialChip(
-                type: .fitnessLevel,
-                title: "Fitness Level",
-                icon: "figure.strengthtraining.traditional",
-                promptTemplate: "My fitness level is ", // FIXED: Was {{FITNESS_LEVEL_PLACEHOLDER}}
-                options: [
-                    ChipSelectionOption(value: "beginner", displayText: "beginner", description: "New to fitness or returning after a long break"),
-                    ChipSelectionOption(value: "intermediate", displayText: "intermediate", description: "Exercise regularly, comfortable with basic movements"),
-                    ChipSelectionOption(value: "advanced", displayText: "advanced", description: "Very experienced, ready for challenging workouts")
-                ]
-            ),
-            
-            // Sex (High Importance)
-            EssentialChip(
-                type: .sex,
-                title: "Sex",
-                icon: "person.2",
-                promptTemplate: "I am a ", // FIXED: Was {{SEX_PLACEHOLDER}}
-                options: [
-                    ChipSelectionOption(value: "male", displayText: "male"),
-                    ChipSelectionOption(value: "female", displayText: "female"),
-                    ChipSelectionOption(value: "prefer not to say", displayText: "person who prefers not to specify")
-                ]
-            ),
-            
-            // Physical Stats (Medium Importance)
-            EssentialChip(
-                type: .physicalStats,
-                title: "Height & Weight",
-                icon: "ruler.fill",
-                promptTemplate: "My height and weight are ", // FIXED: Was {{PHYSICAL_STATS_PLACEHOLDER}}
-                options: [
-                    ChipSelectionOption(value: "5'0\", 120 lbs", displayText: "5'0\", 120 lbs"),
-                    ChipSelectionOption(value: "5'3\", 130 lbs", displayText: "5'3\", 130 lbs"),
-                    ChipSelectionOption(value: "5'6\", 140 lbs", displayText: "5'6\", 140 lbs"),
-                    ChipSelectionOption(value: "5'9\", 160 lbs", displayText: "5'9\", 160 lbs"),
-                    ChipSelectionOption(value: "6'0\", 180 lbs", displayText: "6'0\", 180 lbs"),
-                    ChipSelectionOption(value: "custom", displayText: " ' \" and  lbs", description: "Tap to enter custom height and weight")
-                ]
-            ),
-            
-            // Time Available (Critical)
-            EssentialChip(
-                type: .timeAvailable,
-                title: "Time Per Workout",
-                icon: "clock",
-                promptTemplate: "I can work out for ", // FIXED: Was {{TIME_AVAILABLE_PLACEHOLDER}}
-                options: [
-                    ChipSelectionOption(value: "15-30 minutes", displayText: "15-30 minutes", description: "Quick, efficient workouts"),
-                    ChipSelectionOption(value: "30-45 minutes", displayText: "30-45 minutes", description: "Standard workout duration"),
-                    ChipSelectionOption(value: "45-60 minutes", displayText: "45-60 minutes", description: "Longer, comprehensive sessions"),
-                    ChipSelectionOption(value: "60+ minutes", displayText: "60+ minutes", description: "Extended training sessions")
-                ]
-            ),
-            
-            // Workout Location (High Importance)
-            EssentialChip(
-                type: .workoutLocation,
-                title: "Workout Location",
-                icon: "location",
-                promptTemplate: "I will be working out ", // FIXED: Was {{WORKOUT_LOCATION_PLACEHOLDER}}
-                options: [
-                    ChipSelectionOption(value: "at home", displayText: "at home", description: "Bodyweight and minimal equipment exercises"),
-                    ChipSelectionOption(value: "at the gym", displayText: "at the gym", description: "Full equipment access"),
-                    ChipSelectionOption(value: "outdoors", displayText: "outdoors", description: "Running, hiking, outdoor activities"),
-                    ChipSelectionOption(value: "at home and gym", displayText: "at home and the gym", description: "Flexible between locations")
-                ]
-            ),
-            
-            // Weekly Frequency (Medium Importance)
-            EssentialChip(
-                type: .weeklyFrequency,
-                title: "Days Per Week",
-                icon: "calendar",
-                promptTemplate: "I can exercise ", // FIXED: Was {{WEEKLY_FREQUENCY_PLACEHOLDER}}
-                options: [
-                    ChipSelectionOption(value: "3 days per week", displayText: "3 days per week", description: "Balanced approach with recovery time"),
-                    ChipSelectionOption(value: "4-5 days per week", displayText: "4-5 days per week", description: "Regular, consistent training"),
-                    ChipSelectionOption(value: "6+ days per week", displayText: "6+ days per week", description: "High-frequency training"),
-                    ChipSelectionOption(value: "daily except Sunday", displayText: "daily except Sunday", description: "6 days per week with Sunday rest")
-                ]
-            )
+        // Define the essential chips needed for workout plan generation
+        let essentialChipTypes: [ChipType] = [
+            .fitnessLevel,
+            .timeAvailable,
+            .workoutLocation,
+            .physicalStats,
+            .sex,
+            .weeklyFrequency
         ]
         
-        print("🎯 Initialized \(chips.count) essential information chips")
-    }
-    
-    /// Update the goal text with a completed chip phrase
-    private func updateGoalTextWithCompletion(for chip: EssentialChip) {
-        guard let completedText = chip.completedText else { return }
-        
-        // Replace the prompt template with the completed text
-        goalText = goalText.replacingOccurrences(of: chip.promptTemplate, with: completedText)
-        
-        // Clean up any formatting issues
-        goalText = goalText
-            .replacingOccurrences(of: "  ", with: " ") // Remove double spaces
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Ensure proper sentence ending
-        if !goalText.hasSuffix(".") && !goalText.hasSuffix("!") && !goalText.hasSuffix("?") {
-            goalText += "."
+        for chipType in essentialChipTypes {
+            let chipConfig = getChipConfiguration(for: chipType)
+            chips[chipType] = EssentialChip(
+                type: chipType,
+                title: chipConfig.title,
+                icon: chipConfig.icon,
+                isCompleted: false,
+                selectedOption: nil
+            )
         }
     }
     
-    /// Update completion states based on current goal text content
-    /// Preserves completed chips even when additional text is added
-    private func updateCompletionStates() {
+    private func getChipConfiguration(for type: ChipType) -> (title: String, icon: String) {
+        switch type {
+        case .fitnessLevel:
+            return ("Fitness Level", "figure.run")
+        case .timeAvailable:
+            return ("Time Available", "clock")
+        case .workoutLocation:
+            return ("Location", "location")
+        case .physicalStats:
+            return ("Height & Weight", "ruler.fill")
+        case .sex:
+            return ("Sex", "person.2")
+        case .weeklyFrequency:
+            return ("Days Per Week", "calendar")
+        }
+    }
+    
+    // MARK: - Text Management
+    
+    func updateGoalText(_ newText: String) {
+        goalText = newText
+        analyzeTextForChipCompletion(newText)
+    }
+    
+    private func analyzeTextForChipCompletion(_ text: String) {
+        let lowercaseText = text.lowercased()
+        
+        // Analyze text to auto-complete chips where possible
+        for (chipType, chip) in chips {
+            if !chip.isCompleted {
+                if let autoCompletedOption = getAutoCompletedOption(for: chipType, from: lowercaseText) {
+                    markChipAsCompleted(type: chipType, with: autoCompletedOption)
+                }
+            }
+        }
+    }
+    
+    private func getAutoCompletedOption(for chipType: ChipType, from text: String) -> ChipOption? {
+        // Auto-detection logic for different chip types
+        switch chipType {
+        case .fitnessLevel:
+            if text.contains("beginner") || text.contains("new to") || text.contains("just starting") {
+                return ChipOption(value: "beginner", displayText: "Beginner")
+            } else if text.contains("intermediate") || text.contains("some experience") {
+                return ChipOption(value: "intermediate", displayText: "Intermediate")
+            } else if text.contains("advanced") || text.contains("experienced") || text.contains("athlete") {
+                return ChipOption(value: "advanced", displayText: "Advanced")
+            }
+            
+        case .timeAvailable:
+            if text.contains("15 min") || text.contains("15 minutes") || text.contains("quarter hour") {
+                return ChipOption(value: "15-30 minutes", displayText: "15-30 minutes")
+            } else if text.contains("30 min") || text.contains("30 minutes") || text.contains("half hour") {
+                return ChipOption(value: "30-45 minutes", displayText: "30-45 minutes")
+            } else if text.contains("45 min") || text.contains("45 minutes") {
+                return ChipOption(value: "45-60 minutes", displayText: "45-60 minutes")
+            } else if text.contains("1 hour") || text.contains("60 min") || text.contains("60 minutes") {
+                return ChipOption(value: "60+ minutes", displayText: "60+ minutes")
+            }
+            
+        case .workoutLocation:
+            if text.contains("home") || text.contains("at home") || text.contains("my house") {
+                return ChipOption(value: "at home", displayText: "At Home")
+            } else if text.contains("gym") || text.contains("fitness center") || text.contains("health club") {
+                return ChipOption(value: "at the gym", displayText: "At the Gym")
+            } else if text.contains("outdoor") || text.contains("outside") || text.contains("park") {
+                return ChipOption(value: "outdoors", displayText: "Outdoors")
+            }
+            
+        case .sex:
+            if text.contains("male") && !text.contains("female") {
+                return ChipOption(value: "male", displayText: "Male")
+            } else if text.contains("female") {
+                return ChipOption(value: "female", displayText: "Female")
+            }
+            
+        case .weeklyFrequency:
+            if text.contains("3 days") || text.contains("three days") {
+                return ChipOption(value: "3 days", displayText: "3 days per week")
+            } else if text.contains("4") || text.contains("5") {
+                return ChipOption(value: "4-5 days", displayText: "4-5 days per week")
+            } else if text.contains("daily") || text.contains("every day") {
+                return ChipOption(value: "6+ days", displayText: "6+ days per week")
+            }
+            
+        default:
+            break
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Chip Management
+    
+    func markChipAsCompleted(type: ChipType, with option: ChipOption) {
+        chips[type]?.isCompleted = true
+        chips[type]?.selectedOption = option
+    }
+    
+    func resetChip(type: ChipType) {
+        chips[type]?.isCompleted = false
+        chips[type]?.selectedOption = nil
+        
+        // Remove chip-related text from goal text if needed
+        removeChipTextFromGoal(for: type)
+    }
+    
+    private func removeChipTextFromGoal(for chipType: ChipType) {
+        // Logic to remove chip-specific text from goal
+        // This is a simplified version - you might want more sophisticated text manipulation
+        guard let chip = chips[chipType],
+              let selectedOption = chip.selectedOption else { return }
+        
+        let chipText = "\(chip.title): \(selectedOption.displayText)"
+        goalText = goalText.replacingOccurrences(of: chipText, with: "")
+        goalText = goalText.replacingOccurrences(of: ", , ", with: ", ")
+        goalText = goalText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if goalText.hasPrefix(", ") {
+            goalText = String(goalText.dropFirst(2))
+        }
+        if goalText.hasSuffix(", ") {
+            goalText = String(goalText.dropLast(2))
+        }
+    }
+    
+    func insertPromptForChip(type: ChipType) {
+        guard let chip = chips[type] else { return }
+        
+        // Insert a prompt to encourage the user to specify this chip type
+        let prompt = getPromptText(for: type)
+        let currentText = goalText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if !currentText.isEmpty && !currentText.hasSuffix(".") && !currentText.hasSuffix("?") && !currentText.hasSuffix("!") {
+            goalText = currentText + ". " + prompt
+        } else if currentText.isEmpty {
+            goalText = prompt
+        } else {
+            goalText = currentText + " " + prompt
+        }
+    }
+    
+    private func getPromptText(for chipType: ChipType) -> String {
+        switch chipType {
+        case .fitnessLevel:
+            return "Please specify your current fitness level (beginner, intermediate, or advanced)."
+        case .timeAvailable:
+            return "How much time can you dedicate to each workout?"
+        case .workoutLocation:
+            return "Where will you be working out (home, gym, outdoor)?"
+        case .physicalStats:
+            return "What are your height and weight?"
+        case .sex:
+            return "Please specify your sex for exercise planning."
+        case .weeklyFrequency:
+            return "How many days per week can you work out?"
+        }
+    }
+    
+    // MARK: - Chip Queries
+    
+    func getChip(for type: ChipType) -> EssentialChip? {
+        return chips[type]
+    }
+    
+    func isChipCompleted(_ type: ChipType) -> Bool {
+        return chips[type]?.isCompleted ?? false
+    }
+    
+    func getSelectedOption(for type: ChipType) -> ChipOption? {
+        return chips[type]?.selectedOption
+    }
+    
+    // MARK: - Reset and Validation
+    
+    func reset() {
+        goalText = ""
+        for chipType in chips.keys {
+            chips[chipType]?.isCompleted = false
+            chips[chipType]?.selectedOption = nil
+        }
+    }
+    
+    func validateCompleteness() -> (isComplete: Bool, missingChips: [EssentialChip]) {
+        let uncompletedCriticalChips = chips.values.filter {
+            !$0.isCompleted && $0.type.importance == .critical
+        }
+        
+        return (
+            isComplete: uncompletedCriticalChips.isEmpty,
+            missingChips: uncompletedCriticalChips
+        )
+    }
+    
+    // MARK: - Text Analysis Support
+    
+    func getGoalAnalysisInfo(hasExplicitStartDate: Bool = false) -> [String] {
+        var info: [String] = []
+        
+        // Add completion status
+        if completedCount > 0 {
+            info.append("\(completedCount) of \(totalCount) essential details provided")
+        }
+        
+        // Add specific completed items
+        for chip in completedChips {
+            if let option = chip.selectedOption {
+                info.append("\(chip.title): \(option.displayText)")
+            }
+        }
+        
+        // Add text analysis
         let lowercaseText = goalText.lowercased()
         
-        for index in chips.indices {
-            let chip = chips[index]
-            
-            // Check for trigger phrases
-            var isCompleted = false
-            
-            switch chip.type {
-            case .fitnessLevel:
-                isCompleted = lowercaseText.contains("fitness level")
-                
-            case .timeAvailable:
-                isCompleted = lowercaseText.contains("can work out ")
-                
-            case .sex:
-                isCompleted = lowercaseText.contains("i am a")
-                
-            case .workoutLocation:
-                isCompleted = lowercaseText.contains("will be working out")
-                
-            case .physicalStats:
-                isCompleted = lowercaseText.contains("height and weight")
-                
-            case .weeklyFrequency:
-                isCompleted = lowercaseText.contains("i can exercise")
-            }
-            
-            chips[index].isCompleted = isCompleted
-            
-            if isCompleted && chips[index].selectedOption == nil {
-                // Set a default option if completed but no selection made
-                chips[index].selectedOption = chip.options.first
-            }
-        }
-    }
-    
-    // MARK: - Debug Helpers
-    
-    /// Get debug information about current state
-    func getDebugInfo() -> String {
-        return """
-        Essential Chip Assistant Debug:
-        - Total essential chips: \(totalCount)
-        - Completed: \(completedCount)
-        - Completion: \(Int(completionPercentage * 100))%
-        - Has minimum info: \(hasMinimumInformation)
-        - Has optimal info: \(hasOptimalInformation)
-        - Goal text length: \(goalText.count)
-        
-        Essential Chip States:
-        \(chips.map { "- \($0.title) (\($0.type.importance.displayName)): \($0.isCompleted ? "✅" : "❌") \($0.selectedOption?.displayText ?? "none")" }.joined(separator: "\n"))
-        """
-    }
-    
-    // MARK: - Detection Helper Methods
-
-    private func findMatchingFitnessLevelOption() -> ChipSelectionOption? {
-        let text = goalText.lowercased()
-        let chip = chips.first { $0.type == .fitnessLevel }
-        
-        if text.contains("beginner") || text.contains("new to") {
-            return chip?.options.first { $0.value == "beginner" }
-        } else if text.contains("intermediate") {
-            return chip?.options.first { $0.value == "intermediate" }
-        } else if text.contains("advanced") || text.contains("experienced") {
-            return chip?.options.first { $0.value == "advanced" }
+        if lowercaseText.contains("injury") || lowercaseText.contains("pain") || lowercaseText.contains("hurt") {
+            info.append("Physical limitations mentioned")
         }
         
-        // Default to first option if pattern is detected but specific level isn't clear
-        return chip?.options.first
-    }
-
-    private func findMatchingSexOption() -> ChipSelectionOption? {
-        let text = goalText.lowercased()
-        let chip = chips.first { $0.type == .sex }
-        
-        if text.contains("male") && !text.contains("female") {
-            return chip?.options.first { $0.value == "male" }
-        } else if text.contains("female") {
-            return chip?.options.first { $0.value == "female" }
+        if lowercaseText.contains("equipment") || lowercaseText.contains("weights") || lowercaseText.contains("bands") {
+            info.append("Equipment preferences specified")
         }
         
-        return chip?.options.first
-    }
-
-    private func findMatchingPhysicalStatsOption() -> ChipSelectionOption? {
-        let chip = chips.first { $0.type == .physicalStats }
-        // Since this is usually custom input, return the custom option
-        return chip?.options.first { $0.value == "custom" }
-    }
-
-    private func findMatchingTimeOption() -> ChipSelectionOption? {
-        let text = goalText.lowercased()
-        let chip = chips.first { $0.type == .timeAvailable }
-        
-        if text.contains("15") || text.contains("30") {
-            if text.contains("30") && (text.contains("45") || text.contains("40")) {
-                return chip?.options.first { $0.value == "30-45 minutes" }
-            } else {
-                return chip?.options.first { $0.value == "15-30 minutes" }
-            }
-        } else if text.contains("45") || text.contains("60") {
-            if text.contains("45") && text.contains("60") {
-                return chip?.options.first { $0.value == "45-60 minutes" }
-            } else {
-                return chip?.options.first { $0.value == "30-45 minutes" }
-            }
-        } else if text.contains("hour") || text.contains("60+") {
-            return chip?.options.first { $0.value == "60+ minutes" }
+        if lowercaseText.contains("schedule") || lowercaseText.contains("busy") || lowercaseText.contains("time") {
+            info.append("Schedule constraints noted")
         }
         
-        return chip?.options.first
-    }
-
-    private func findMatchingLocationOption() -> ChipSelectionOption? {
-        let text = goalText.lowercased()
-        let chip = chips.first { $0.type == .workoutLocation }
-        
-        if text.contains("home") {
-            return chip?.options.first { $0.value == "at home" }
-        } else if text.contains("gym") {
-            return chip?.options.first { $0.value == "at the gym" }
-        } else if text.contains("outdoor") || text.contains("outside") {
-            return chip?.options.first { $0.value == "outdoors" }
+        if lowercaseText.contains("experience") || lowercaseText.contains("beginner") || lowercaseText.contains("athlete") {
+            info.append("Experience level indicated")
         }
         
-        return chip?.options.first
-    }
-
-    private func findMatchingFrequencyOption() -> ChipSelectionOption? {
-        let text = goalText.lowercased()
-        let chip = chips.first { $0.type == .weeklyFrequency }
-        
-        if text.contains("3 days") || text.contains("three days") {
-            return chip?.options.first { $0.value == "3 days per week" }
-        } else if text.contains("4") || text.contains("5") || text.contains("four") || text.contains("five") {
-            return chip?.options.first { $0.value == "4-5 days per week" }
-        } else if text.contains("6") || text.contains("daily except sunday") || text.contains("six") {
-            return chip?.options.first { $0.value == "daily except Sunday" }
-        } else if text.contains("daily") || text.contains("every day") {
-            return chip?.options.first { $0.value == "6+ days per week" }
+        if lowercaseText.contains("week") || lowercaseText.contains("month") || lowercaseText.contains("day") {
+            info.append("Timeline specified")
         }
         
-        return chip?.options.first
+        if hasExplicitStartDate {
+            info.append("Start date explicitly selected")
+        }
+        
+        return info
     }
 }

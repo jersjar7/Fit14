@@ -2,58 +2,162 @@
 //  ChipSelectorView.swift
 //  Fit14
 //
-//  Created for GoalInputView Enhancement
-//  Container for essential information chips with layout and animation logic
+//  Created by Jerson on 7/6/25.
+//  Updated with enhanced essential information section and new grid layout
 //
 
 import SwiftUI
 
-// MARK: - Layout Configuration
+// MARK: - Enhanced Chip Selector View
 
-enum ChipLayout {
-    case adaptive       // Grid that adapts to screen size
-    case flowing        // Tags-style flowing layout
-    case stacked        // Vertical stack
-    case compact        // Minimal space usage
+struct EnhancedChipSelectorView: View {
     
-    var spacing: CGFloat {
-        switch self {
-        case .adaptive: return 12
-        case .flowing: return 8
-        case .stacked: return 8
-        case .compact: return 6
+    // MARK: - Bindings
+    
+    @ObservedObject var chipAssistant: EssentialChipAssistant
+    
+    // MARK: - Configuration
+    
+    let onChipTap: (EssentialChip) -> Void
+    let onChipReset: (ChipType) -> Void
+    let showProgressIndicator: Bool
+    let layout: ChipGridLayout
+    
+    // MARK: - State
+    
+    @State private var hasAppeared = false
+    
+    // MARK: - Initialization
+    
+    init(
+        chipAssistant: EssentialChipAssistant,
+        onChipTap: @escaping (EssentialChip) -> Void,
+        onChipReset: @escaping (ChipType) -> Void = { _ in },
+        showProgressIndicator: Bool = true,
+        layout: ChipGridLayout = .adaptive
+    ) {
+        self.chipAssistant = chipAssistant
+        self.onChipTap = onChipTap
+        self.onChipReset = onChipReset
+        self.showProgressIndicator = showProgressIndicator
+        self.layout = layout
+    }
+    
+    // MARK: - Body
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Section header
+            sectionHeader
+            
+            // Enhanced chip grid
+            chipGrid
+            
+            // Progress indicator
+            if showProgressIndicator {
+                progressSection
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.5).delay(0.2)) {
+                hasAppeared = true
+            }
         }
     }
     
-    var sectionSpacing: CGFloat {
-        switch self {
-        case .adaptive: return 20
-        case .flowing: return 16
-        case .stacked: return 16
-        case .compact: return 12
+    // MARK: - Section Header
+    
+    private var sectionHeader: some View {
+        HStack {
+            Image(systemName: "star.fill")
+                .foregroundColor(.orange)
+                .font(.title3)
+            
+            Text("Essential Information")
+                .font(.headline)
+                .fontWeight(.medium)
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Chip Grid
+    
+    private var chipGrid: some View {
+        LazyVGrid(columns: gridColumns, spacing: 12) {
+            ForEach(chipAssistant.sortedChips, id: \.id) { chip in
+                EnhancedGoalChipView(
+                    chip: chip,
+                    onTap: {
+                        onChipTap(chip)
+                    },
+                    onReset: {
+                        onChipReset(chip.type)
+                    }
+                )
+                .opacity(hasAppeared ? 1.0 : 0.0)
+                .scaleEffect(hasAppeared ? 1.0 : 0.8)
+                .animation(
+                    .spring(response: 0.5, dampingFraction: 0.8)
+                        .delay(Double(chipAssistant.sortedChips.firstIndex { $0.id == chip.id } ?? 0) * 0.1),
+                    value: hasAppeared
+                )
+            }
+        }
+    }
+    
+    // MARK: - Progress Section
+    
+    private var progressSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Progress: \(chipAssistant.completedCount) of \(chipAssistant.totalCount) completed")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                // Completion percentage
+                Text("\(Int(chipAssistant.completionPercentage * 100))%")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(chipAssistant.completionPercentage > 0.5 ? .green : .orange)
+            }
+            
+            ProgressView(value: chipAssistant.completionPercentage)
+                .tint(.blue)
+                .scaleEffect(y: 0.8)
+                .animation(.easeInOut(duration: 0.3), value: chipAssistant.completionPercentage)
+        }
+    }
+    
+    // MARK: - Grid Configuration
+    
+    private var gridColumns: [GridItem] {
+        switch layout {
+        case .adaptive:
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
+        case .fixed(let count):
+            return Array(repeating: GridItem(.flexible()), count: count)
+        case .single:
+            return [GridItem(.flexible())]
         }
     }
 }
 
-// MARK: - Animation Configuration
-
-struct ChipAnimationConfig {
-    let appearanceDuration: TimeInterval = 0.4
-    let disappearanceDuration: TimeInterval = 0.3
-    let staggerDelay: TimeInterval = 0.08
-    let springResponse: Double = 0.6
-    let springDamping: Double = 0.8
-    
-    static let `default` = ChipAnimationConfig()
-}
-
-// MARK: - Chip Selector View
+// MARK: - Legacy Chip Selector View (Backwards Compatibility)
 
 struct ChipSelectorView: View {
     
-    // MARK: - Properties
+    // MARK: - Bindings
     
     @Binding var userGoalData: UserGoalData
+    
+    // MARK: - Configuration
+    
     let layout: ChipLayout
     let style: ChipStyle
     let showSectionHeaders: Bool
@@ -132,307 +236,274 @@ struct ChipSelectorView: View {
     // MARK: - Essential Information Section
     
     private var essentialInformationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section Header
+        VStack(alignment: .leading, spacing: layout.itemSpacing) {
             if showSectionHeaders {
                 sectionHeader(
                     title: "Essential Information",
-                    subtitle: "Required for generating your workout plan",
+                    subtitle: "Help us create the perfect plan for you",
                     icon: "star.fill",
-                    color: Color.orange
+                    color: .orange
                 )
             }
             
-            // Chips Layout
-            chipLayout(for: essentialChips)
+            // Chip grid
+            LazyVGrid(columns: layout.gridColumns, spacing: layout.itemSpacing) {
+                ForEach(allVisibleChips, id: \.id) { chipData in
+                    chipView(for: chipData)
+                        .opacity(visibilityStates[chipData.type] ?? false ? 1.0 : 0.0)
+                        .scaleEffect(visibilityStates[chipData.type] ?? false ? 1.0 : 0.8)
+                        .onAppear {
+                            animateChipAppearance(for: chipData.type)
+                        }
+                }
+            }
+            
+            // Completion status
+            if allVisibleChips.contains(where: { $0.isSelected }) {
+                completionStatusView
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
     }
     
-    // MARK: - Layout Components
+    // MARK: - Supporting Views
     
-    private func sectionHeader(title: String, subtitle: String, icon: String, color: Color) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(color)
-                .frame(width: 16, height: 16)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color.primary)
+    private func sectionHeader(title: String, subtitle: String? = nil, icon: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .font(.title3)
+                    .fontWeight(.medium)
                 
+                Text(title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            if let subtitle = subtitle {
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundColor(Color.secondary)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 32)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+    
+    private func chipView(for chipData: ChipData) -> some View {
+        GoalChipView(
+            chipData: chipData,
+            style: style,
+            isSelected: chipData.isSelected,
+            onTap: {
+                handleChipTap(chipData)
+            }
+        )
+    }
+    
+    private var completionStatusView: some View {
+        let completedChips = allVisibleChips.filter { $0.isSelected }
+        let totalChips = allVisibleChips.count
+        let completionPercentage = Double(completedChips.count) / Double(totalChips)
+        
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.caption)
+                
+                Text("Information Added")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text("\(completedChips.count) of \(totalChips)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
             
-            Spacer()
-        }
-        .padding(.horizontal, 4)
-    }
-    
-    private func chipLayout(for chips: [ChipData]) -> some View {
-        Group {
-            switch layout {
-            case .adaptive:
-                adaptiveGridLayout(chips: chips)
-            case .flowing:
-                flowingLayout(chips: chips)
-            case .stacked:
-                stackedLayout(chips: chips)
-            case .compact:
-                compactLayout(chips: chips)
+            ProgressView(value: completionPercentage)
+                .tint(.green)
+                .scaleEffect(y: 0.8)
+                .animation(.easeInOut(duration: 0.3), value: completionPercentage)
+            
+            // Completed chips summary
+            if !completedChips.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(completedChips, id: \.id) { chip in
+                            completedChipPill(for: chip)
+                        }
+                    }
+                    .padding(.horizontal, 2)
+                }
             }
         }
-    }
-    
-    private func adaptiveGridLayout(chips: [ChipData]) -> some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.adaptive(minimum: 140), spacing: layout.spacing)
-            ],
-            spacing: layout.spacing
-        ) {
-            ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index)
-            }
-        }
-    }
-    
-    private func flowingLayout(chips: [ChipData]) -> some View {
-        FlowLayout(spacing: layout.spacing) {
-            ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index)
-            }
-        }
-    }
-    
-    private func stackedLayout(chips: [ChipData]) -> some View {
-        VStack(spacing: layout.spacing) {
-            ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index)
-                    .frame(maxWidth: .infinity)
-            }
-        }
-    }
-    
-    private func compactLayout(chips: [ChipData]) -> some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.adaptive(minimum: 100), spacing: layout.spacing)
-            ],
-            spacing: layout.spacing
-        ) {
-            ForEach(Array(chips.enumerated()), id: \.element.id) { index, chip in
-                chipView(for: chip, index: index, useCompactStyle: true)
-            }
-        }
-    }
-    
-    private func chipView(for chip: ChipData, index: Int, useCompactStyle: Bool = false) -> some View {
-        let isVisible = visibilityStates[chip.type] ?? true
-        
-        return GoalChipView(
-            chipData: chip,
-            style: useCompactStyle ? .compact : style,
-            onTap: {
-                handleChipTap(chip)
-            }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.green.opacity(0.05))
+                .stroke(Color.green.opacity(0.2), lineWidth: 1)
         )
-        .scaleEffect(isVisible ? 1.0 : 0.9)
-        .opacity(isVisible ? 1.0 : 0.0)
-        .animation(
-            .spring(
-                response: animationConfig.springResponse,
-                dampingFraction: animationConfig.springDamping
-            )
-            .delay(Double(index) * animationConfig.staggerDelay),
-            value: isVisible
-        )
-        .onAppear {
-            // Animate essential chips in with a subtle stagger
-            withAnimation(
-                .spring(
-                    response: animationConfig.springResponse,
-                    dampingFraction: animationConfig.springDamping
-                )
-                .delay(Double(index) * animationConfig.staggerDelay)
-            ) {
-                visibilityStates[chip.type] = true
-            }
-        }
     }
     
-    // MARK: - Event Handlers
+    private func completedChipPill(for chipData: ChipData) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: chipData.icon)
+                .foregroundColor(.green)
+                .font(.caption2)
+            
+            Text(chipData.title)
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+            
+            if let selectedOption = chipData.selection?.selectedOption {
+                Text("•")
+                    .foregroundColor(.secondary)
+                    .font(.caption2)
+                
+                Text(selectedOption.displayText)
+                    .font(.caption2)
+                    .foregroundColor(.green)
+                    .fontWeight(.medium)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(Color(.systemBackground))
+                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    // MARK: - Helper Methods
     
     private func setupInitialState() {
-        // Initialize visibility states for essential chips
+        // Initialize visibility states
         for chip in allVisibleChips {
-            visibilityStates[chip.type] = false // Start hidden for animation
+            visibilityStates[chip.type] = false
         }
     }
     
-    private func handleChipTap(_ chip: ChipData) {
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+    private func animateChipAppearance(for chipType: ChipType) {
+        let delay = Double(allVisibleChips.firstIndex { $0.type == chipType } ?? 0) * animationConfig.staggerDelay
+        
+        withAnimation(animationConfig.animation.delay(delay)) {
+            visibilityStates[chipType] = true
+        }
+    }
+    
+    private func handleChipTap(_ chipData: ChipData) {
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.impactOccurred()
         
-        // Set selected chip and show sheet
-        selectedChip = chip
+        selectedChip = chipData
         showingOptionSheet = true
     }
     
     private func handleChipSelection(chip: ChipData, option: ChipOption, customValue: String?) {
-        // Create updated chip with selection
-        var updatedChip = chip
-        updatedChip.select(option: option, customValue: customValue)
+        // Update the chip data
+        userGoalData.chips[chip.type]?.select(option: option, customValue: customValue)
         
-        // Update user goal data
-        userGoalData.updateChip(updatedChip)
+        // Notify parent of selection change
+        if let updatedChip = userGoalData.chips[chip.type] {
+            onSelectionChanged(updatedChip)
+        }
         
-        // Notify parent
-        onSelectionChanged(updatedChip)
-        
-        // Clear selection
         selectedChip = nil
-        
-        // Success haptic feedback
-        let notificationFeedback = UINotificationFeedbackGenerator()
-        notificationFeedback.notificationOccurred(.success)
     }
 }
 
-// MARK: - Convenience Initializers
+// MARK: - Layout Configuration
 
-extension ChipSelectorView {
-    /// Create with default configuration
-    static func standard(
-        userGoalData: Binding<UserGoalData>,
-        onSelectionChanged: @escaping (ChipData) -> Void
-    ) -> ChipSelectorView {
-        return ChipSelectorView(
-            userGoalData: userGoalData,
-            layout: .adaptive,
-            style: .standard,
-            showSectionHeaders: true,
-            onSelectionChanged: onSelectionChanged
-        )
-    }
-    
-    /// Create compact version for small spaces
-    static func compact(
-        userGoalData: Binding<UserGoalData>,
-        onSelectionChanged: @escaping (ChipData) -> Void
-    ) -> ChipSelectorView {
-        return ChipSelectorView(
-            userGoalData: userGoalData,
-            layout: .compact,
-            style: .compact,
-            showSectionHeaders: false,
-            onSelectionChanged: onSelectionChanged
-        )
-    }
-    
-    /// Create flowing layout version
-    static func flowing(
-        userGoalData: Binding<UserGoalData>,
-        onSelectionChanged: @escaping (ChipData) -> Void
-    ) -> ChipSelectorView {
-        return ChipSelectorView(
-            userGoalData: userGoalData,
-            layout: .flowing,
-            style: .standard,
-            showSectionHeaders: true,
-            onSelectionChanged: onSelectionChanged
-        )
-    }
+enum ChipGridLayout {
+    case adaptive
+    case fixed(Int)
+    case single
 }
 
-// MARK: - Preview Provider
-
-#Preview("Standard Layout") {
-    struct PreviewWrapper: View {
-        @State private var userGoalData = UserGoalData()
-        
-        var body: some View {
-            ChipSelectorView.standard(
-                userGoalData: $userGoalData,
-                onSelectionChanged: { chip in
-                    print("Selected: \(chip.title)")
-                }
-            )
-            .onAppear {
-                setupSampleData()
-            }
-        }
-        
-        private func setupSampleData() {
-            // Add essential chips only
-            for chipType in ChipType.essentialTypes {
-                var chip = ChipConfiguration.createChipData(for: chipType)
-                chip.isVisible = true
-                userGoalData.updateChip(chip)
-            }
-        }
-    }
+struct ChipLayout {
+    let gridColumns: [GridItem]
+    let itemSpacing: CGFloat
+    let sectionSpacing: CGFloat
     
-    return PreviewWrapper()
+    static let adaptive = ChipLayout(
+        gridColumns: [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ],
+        itemSpacing: 12,
+        sectionSpacing: 24
+    )
+    
+    static let compact = ChipLayout(
+        gridColumns: [
+            GridItem(.flexible()),
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ],
+        itemSpacing: 8,
+        sectionSpacing: 16
+    )
+    
+    static let single = ChipLayout(
+        gridColumns: [GridItem(.flexible())],
+        itemSpacing: 8,
+        sectionSpacing: 16
+    )
 }
 
-#Preview("Compact Layout") {
-    struct PreviewWrapper: View {
-        @State private var userGoalData = UserGoalData()
-        
-        var body: some View {
-            ChipSelectorView.compact(
-                userGoalData: $userGoalData,
-                onSelectionChanged: { chip in
-                    print("Selected: \(chip.title)")
-                }
-            )
-            .onAppear {
-                setupSampleData()
-            }
-        }
-        
-        private func setupSampleData() {
-            for chipType in ChipType.essentialTypes.prefix(4) {
-                var chip = ChipConfiguration.createChipData(for: chipType)
-                chip.isVisible = true
-                userGoalData.updateChip(chip)
-            }
-        }
-    }
+struct ChipAnimationConfig {
+    let animation: Animation
+    let staggerDelay: TimeInterval
     
-    return PreviewWrapper()
+    static let `default` = ChipAnimationConfig(
+        animation: .spring(response: 0.5, dampingFraction: 0.8),
+        staggerDelay: 0.1
+    )
+    
+    static let fast = ChipAnimationConfig(
+        animation: .spring(response: 0.3, dampingFraction: 0.7),
+        staggerDelay: 0.05
+    )
+    
+    static let slow = ChipAnimationConfig(
+        animation: .spring(response: 0.8, dampingFraction: 0.9),
+        staggerDelay: 0.2
+    )
 }
 
-#Preview("Flowing Layout") {
-    struct PreviewWrapper: View {
-        @State private var userGoalData = UserGoalData()
-        
-        var body: some View {
-            ChipSelectorView.flowing(
-                userGoalData: $userGoalData,
-                onSelectionChanged: { chip in
-                    print("Selected: \(chip.title)")
-                }
-            )
-            .onAppear {
-                setupSampleData()
-            }
+// MARK: - Preview
+
+#Preview("Enhanced Chip Selector") {
+    EnhancedChipSelectorView(
+        chipAssistant: EssentialChipAssistant(),
+        onChipTap: { chip in
+            print("Chip tapped: \(chip.title)")
+        },
+        onChipReset: { chipType in
+            print("Chip reset: \(chipType)")
         }
-        
-        private func setupSampleData() {
-            for chipType in ChipType.essentialTypes {
-                var chip = ChipConfiguration.createChipData(for: chipType)
-                chip.isVisible = true
-                userGoalData.updateChip(chip)
-            }
+    )
+    .padding()
+}
+
+#Preview("Legacy Chip Selector") {
+    ChipSelectorView(
+        userGoalData: .constant(UserGoalData()),
+        layout: .adaptive,
+        style: .standard,
+        onSelectionChanged: { chipData in
+            print("Selection changed: \(chipData.type.displayTitle)")
         }
-    }
-    
-    return PreviewWrapper()
+    )
 }

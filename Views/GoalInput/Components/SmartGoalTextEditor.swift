@@ -2,167 +2,349 @@
 //  SmartGoalTextEditor.swift
 //  Fit14
 //
-//  Created by Jerson on 7/7/25.
-//  Advanced text editor with inline chip selection for goal input assistance
-//  FIXED: Removed token conversion that was interfering with chip completion
+//  Created by Jerson on 7/6/25.
+//  Updated with focus mode and enhanced text input functionality
 //
 
 import SwiftUI
 
 // MARK: - Smart Goal Text Editor
 
-/// An intelligent text editor that provides inline chip selection for essential information
 struct SmartGoalTextEditor: View {
     
-    // MARK: - Properties
+    // MARK: - Bindings
     
-    @ObservedObject var chipAssistant: EssentialChipAssistant
-    @State private var isEditing: Bool = false
-    @State private var currentPromptType: ChipType? = nil
-    @State private var showingInlineOptions: Bool = false
-    @FocusState private var isTextFieldFocused: Bool
+    @Binding var text: String
+    @Binding var isInFocusMode: Bool
     
-    // Text field configuration
+    // MARK: - State
+    
+    @FocusState var isTextFieldFocused: Bool
+    @State private var analysisService: GoalAnalysisService?
+    
+    // MARK: - Configuration
+    
     let placeholder: String
-    let minHeight: CGFloat
+    let analysisEnabled: Bool
+    let characterLimit: Int?
+    let onFocusModeToggle: () -> Void
+    let onTextChange: ((String) -> Void)?
     
     // MARK: - Computed Properties
     
-    /// Detect if the current text ends with a user-friendly prompt that needs completion
-    private var activePromptInfo: (type: ChipType, template: String)? {
-        let text = chipAssistant.goalText
-        
-        let prompts: [(String, ChipType)] = [
-            ("My height and weight are ", .physicalStats),
-            ("I will be working out ", .workoutLocation),
-            ("My fitness level is ", .fitnessLevel),
-            ("I can work out for ", .timeAvailable),
-            ("I can exercise ", .weeklyFrequency),
-            ("I am a ", .sex)
-        ]
-        
-        for (prompt, chipType) in prompts {
-            if text.hasSuffix(prompt) {
-                if let chip = chipAssistant.getChip(for: chipType) {
-                    return (chipType, chip.promptTemplate)
-                }
-            }
-        }
-        
-        return nil
+    private var isGenerating: Bool {
+        // This would typically come from a view model
+        false
     }
     
-    /// Get the inline options for the current active prompt
-    private var inlineOptions: [ChipSelectionOption] {
-        guard let promptInfo = activePromptInfo else { return [] }
-        return chipAssistant.getInlineOptions(for: promptInfo.type)
-    }
-    
-    /// Whether to show inline selection chips
-    private var shouldShowInlineSelection: Bool {
-        let hasActivePrompt = activePromptInfo != nil
-        let hasOptions = !inlineOptions.isEmpty
-        let result = isEditing && hasActivePrompt && hasOptions
-        
-        print("🔍 shouldShowInlineSelection check:")
-        print("   - isEditing: \(isEditing)")
-        print("   - hasActivePrompt: \(hasActivePrompt)")
-        print("   - hasOptions: \(hasOptions) (count: \(inlineOptions.count))")
-        print("   - result: \(result)")
-        
-        return result
+    private var showCharacterCount: Bool {
+        !text.isEmpty || characterLimit != nil
     }
     
     // MARK: - Initialization
     
     init(
-        chipAssistant: EssentialChipAssistant,
-        placeholder: String = "Describe your fitness goals...",
-        minHeight: CGFloat = 120
+        text: Binding<String>,
+        isInFocusMode: Binding<Bool> = .constant(false),
+        placeholder: String = "Tap to describe your fitness goals...",
+        analysisEnabled: Bool = true,
+        characterLimit: Int? = nil,
+        onFocusModeToggle: @escaping () -> Void = {},
+        onTextChange: ((String) -> Void)? = nil
     ) {
-        self.chipAssistant = chipAssistant
+        self._text = text
+        self._isInFocusMode = isInFocusMode
         self.placeholder = placeholder
-        self.minHeight = minHeight
+        self.analysisEnabled = analysisEnabled
+        self.characterLimit = characterLimit
+        self.onFocusModeToggle = onFocusModeToggle
+        self.onTextChange = onTextChange
     }
     
     // MARK: - Body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Main text editor
-            textEditorSection
+        VStack(spacing: 8) {
+            if isInFocusMode {
+                focusedTextEditorSection
+            } else {
+                simpleTextFieldSection
+            }
             
-            // Inline selection chips (appears below text field when needed)
-            if shouldShowInlineSelection {
-                inlineSelectionSection
-                    .padding(.top, 8)
+            // Character count and analysis status
+            if showCharacterCount {
+                textMetadataSection
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .onTapGesture {
-            // Dismiss keyboard when tapping outside the text area
-            if isTextFieldFocused {
-                isTextFieldFocused = false
-            }
+        .onAppear {
+            setupAnalysisService()
         }
-        .onChange(of: isTextFieldFocused) { _, focused in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isEditing = focused
-            }
+        .onChange(of: text) { _, newValue in
+            handleTextChange(newValue)
         }
     }
     
-    // MARK: - Text Editor Section
-        
-    private var textEditorSection: some View {
-        ZStack(alignment: .topLeading) {
-            // Background
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground)) // White background
-                .stroke(isTextFieldFocused ? Color.blue : Color(.systemGray4), lineWidth: isTextFieldFocused ? 2 : 1)
-                .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2) // More prominent shadow
-            
-            // Text editor - FIXED: Now works directly with chipAssistant.goalText
-            TextEditor(text: $chipAssistant.goalText)
-                .focused($isTextFieldFocused)
-                .font(.system(size: 15, weight: .regular, design: .rounded))
-                .padding(12)
-                .background(Color.clear)
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: minHeight)
-            
-            // Placeholder text
-            if chipAssistant.goalText.isEmpty && !isEditing {
-                Text(placeholder)
-                    .font(.system(size: 15, weight: .regular, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 20)
-                    .allowsHitTesting(false)
+    // MARK: - Simple Text Field Section
+    
+    private var simpleTextFieldSection: some View {
+        Button(action: {
+            onFocusModeToggle()
+        }) {
+            HStack {
+                Text(text.isEmpty ? placeholder : text)
+                    .font(.body)
+                    .foregroundColor(text.isEmpty ? .secondary : .primary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(3)
+                
+                Spacer()
+                
+                if !text.isEmpty {
+                    Image(systemName: "pencil")
+                        .foregroundColor(.blue)
+                        .font(.caption)
+                }
             }
-            
-            // Invisible overlay to handle taps on the text editor specifically
-            if !isTextFieldFocused {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture {
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(isGenerating)
+    }
+    
+    // MARK: - Focused Text Editor Section
+    
+    private var focusedTextEditorSection: some View {
+        VStack(spacing: 12) {
+            TextField("Describe your fitness goals in detail...", text: $text, axis: .vertical)
+                .focused($isTextFieldFocused)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                )
+                .font(.body)
+                .lineLimit(4...8)
+                .disabled(isGenerating)
+                .onAppear {
+                    // Auto-focus when entering focus mode
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         isTextFieldFocused = true
                     }
+                }
+        }
+    }
+    
+    // MARK: - Text Metadata Section
+    
+    private var textMetadataSection: some View {
+        HStack {
+            // Character count
+            if let limit = characterLimit {
+                Text("\(text.count)/\(limit) characters")
+                    .font(.caption)
+                    .foregroundColor(text.count > limit ? .red : .secondary)
+            } else {
+                Text("\(text.count) characters")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Analysis status
+            if analysisEnabled {
+                analysisStatusView
             }
         }
     }
     
-    // MARK: - Inline Selection Section
+    // MARK: - Analysis Status View
     
-    private var inlineSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Section header
+    private var analysisStatusView: some View {
+        Group {
+            if let service = analysisService, service.isAnalyzing {
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                    Text("Analyzing...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                    Text("Ready")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func setupAnalysisService() {
+        if analysisEnabled && analysisService == nil {
+            analysisService = GoalAnalysisService()
+        }
+    }
+    
+    private func handleTextChange(_ newValue: String) {
+        // Apply character limit if specified
+        if let limit = characterLimit, newValue.count > limit {
+            text = String(newValue.prefix(limit))
+            return
+        }
+        
+        // Trigger analysis if enabled
+        if analysisEnabled {
+            analysisService?.analyzeText(newValue, with: UserGoalData())
+        }
+        
+        // Call external change handler
+        onTextChange?(newValue)
+    }
+}
+
+// MARK: - Enhanced Text Editor with Suggestions
+
+struct EnhancedGoalTextEditor: View {
+    
+    // MARK: - Bindings
+    
+    @Binding var text: String
+    @Binding var isInFocusMode: Bool
+    
+    // MARK: - State
+    
+    @FocusState private var isTextFieldFocused: Bool
+    @State private var showingSuggestions = false
+    @State private var suggestions: [String] = []
+    @State private var analysisResults: GoalAnalysisResult?
+    
+    // MARK: - Configuration
+    
+    let chipAssistant: EssentialChipAssistant
+    let placeholder: String
+    let onFocusModeToggle: () -> Void
+    
+    // MARK: - Body
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Text input section
+            textInputSection
+            
+            // Suggestions section
+            if showingSuggestions && !suggestions.isEmpty {
+                suggestionsSection
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            
+            // Analysis insights
+            if let results = analysisResults, !results.insights.isEmpty {
+                analysisInsightsSection(results)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .onChange(of: text) { _, newValue in
+            updateSuggestions(for: newValue)
+        }
+        .onChange(of: isInFocusMode) { _, inFocus in
+            if inFocus {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isTextFieldFocused = true
+                }
+            }
+        }
+    }
+    
+    // MARK: - Text Input Section
+    
+    private var textInputSection: some View {
+        Group {
+            if isInFocusMode {
+                focusedEditor
+            } else {
+                compactField
+            }
+        }
+    }
+    
+    private var compactField: some View {
+        Button(action: onFocusModeToggle) {
             HStack {
-                Image(systemName: "hand.tap")
-                    .foregroundColor(.blue)
+                Text(text.isEmpty ? placeholder : text)
+                    .font(.body)
+                    .foregroundColor(text.isEmpty ? .secondary : .primary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(3)
+                
+                Spacer()
+                
+                if !text.isEmpty {
+                    Image(systemName: "pencil")
+                        .foregroundColor(.blue)
+                        .font(.caption)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var focusedEditor: some View {
+        VStack(spacing: 8) {
+            TextField("Describe your fitness goals in detail...", text: $text, axis: .vertical)
+                .focused($isTextFieldFocused)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                )
+                .font(.body)
+                .lineLimit(4...8)
+            
+            // Metadata
+            HStack {
+                Text("\(text.count) characters")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                if chipAssistant.completedCount > 0 {
+                    Text("\(chipAssistant.completedCount) details added")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Suggestions Section
+    
+    private var suggestionsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "lightbulb")
+                    .foregroundColor(.yellow)
                     .font(.caption)
                 
-                Text("Select an option:")
+                Text("Suggestions")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)
@@ -170,125 +352,174 @@ struct SmartGoalTextEditor: View {
                 Spacer()
             }
             
-            // Selection chips
-            LazyVGrid(columns: [
-                GridItem(.adaptive(minimum: 120), spacing: 8)
-            ], spacing: 8) {
-                ForEach(inlineOptions) { option in
-                    selectionChipView(for: option)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(suggestions.prefix(3), id: \.self) { suggestion in
+                        suggestionPill(suggestion)
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.yellow.opacity(0.05))
+                .stroke(Color.yellow.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func suggestionPill(_ suggestion: String) -> some View {
+        Button(action: {
+            addSuggestionToText(suggestion)
+        }) {
+            Text(suggestion)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(Color(.systemBackground))
+                        .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Analysis Insights Section
+    
+    private func analysisInsightsSection(_ results: GoalAnalysisResult) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "brain")
+                    .foregroundColor(.blue)
+                    .font(.caption)
+                
+                Text("AI Insights")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(results.insights.prefix(2), id: \.self) { insight in
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.blue)
+                            .font(.caption2)
+                            .padding(.top, 1)
+                        
+                        Text(insight)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                        
+                        Spacer()
+                    }
                 }
             }
         }
-        .padding(12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color.blue.opacity(0.05))
                 .stroke(Color.blue.opacity(0.2), lineWidth: 1)
         )
     }
     
-    // MARK: - Selection Chip View
+    // MARK: - Helper Methods
     
-    private func selectionChipView(for option: ChipSelectionOption) -> some View {
-        Button(action: {
-            selectOption(option)
-        }) {
-            HStack(spacing: 4) {
-                Text(option.displayText)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .multilineTextAlignment(.center)
-                
-                // Show info icon if there's a description
-                if option.description != nil {
-                    Image(systemName: "info.circle")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.white)
-                    .stroke(Color.blue, lineWidth: 1)
-            )
-        }
-        .buttonStyle(ScaleButtonStyle())
-        .help(option.description ?? "")
-    }
-    
-    // MARK: - Actions
-    
-    /// Handle selection of an inline option
-    private func selectOption(_ option: ChipSelectionOption) {
-        guard let promptInfo = activePromptInfo else { return }
+    private func updateSuggestions(for text: String) {
+        // Generate contextual suggestions based on current text
+        var newSuggestions: [String] = []
         
-        // Complete the chip in the assistant
-        chipAssistant.completeChip(type: promptInfo.type, selectedOption: option)
+        let lowercaseText = text.lowercased()
         
-        // Provide haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
-        
-        // Keep focus on text field for continued editing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            isTextFieldFocused = true
+        // Suggest missing essential information
+        if !lowercaseText.contains("beginner") && !lowercaseText.contains("intermediate") && !lowercaseText.contains("advanced") {
+            newSuggestions.append("fitness level")
         }
         
-        print("✅ Selected option: \(option.displayText) for \(promptInfo.type.displayTitle)")
-    }
-    
-    /// Insert a prompt template at the current cursor position
-    func insertPrompt(for chipType: ChipType) {
-        chipAssistant.insertPromptForChip(type: chipType)
-        
-        // Focus the text field after insertion
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            isTextFieldFocused = true
+        if !lowercaseText.contains("minutes") && !lowercaseText.contains("hour") {
+            newSuggestions.append("workout duration")
         }
+        
+        if !lowercaseText.contains("home") && !lowercaseText.contains("gym") {
+            newSuggestions.append("workout location")
+        }
+        
+        if !lowercaseText.contains("equipment") && !lowercaseText.contains("weights") && !lowercaseText.contains("bodyweight") {
+            newSuggestions.append("available equipment")
+        }
+        
+        suggestions = newSuggestions
+        showingSuggestions = !newSuggestions.isEmpty
     }
     
-    /// Clear all text and reset chips
-    func clearText() {
-        chipAssistant.reset()
-        isTextFieldFocused = false
-    }
-    
-    /// Get the current text content
-    func getText() -> String {
-        return chipAssistant.goalText
-    }
-    
-    /// Set text content programmatically
-    func setText(_ text: String) {
-        chipAssistant.updateGoalText(text)
+    private func addSuggestionToText(_ suggestion: String) {
+        let prompt = "Please specify your \(suggestion)."
+        let currentText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if currentText.isEmpty {
+            text = prompt
+        } else if !currentText.hasSuffix(".") && !currentText.hasSuffix("?") && !currentText.hasSuffix("!") {
+            text = currentText + ". " + prompt
+        } else {
+            text = currentText + " " + prompt
+        }
+        
+        // Update suggestions after adding text
+        updateSuggestions(for: text)
     }
 }
 
-// MARK: - Scale Button Style
+// MARK: - Supporting Types
 
-/// Custom button style that provides subtle scale animation
-private struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
+struct GoalAnalysisResult {
+    let insights: [String]
+    let completenessScore: Double
+    let suggestions: [String]
 }
 
 // MARK: - Preview
 
-#Preview {
-    VStack {
-        SmartGoalTextEditor(
-            chipAssistant: EssentialChipAssistant(),
-            placeholder: "Describe your fitness goals..."
-        )
-        .padding()
-        
-        Spacer()
-    }
-    .background(Color(.systemBackground))
+#Preview("Simple Text Editor") {
+    SmartGoalTextEditor(
+        text: .constant("I want to build muscle and improve my strength"),
+        isInFocusMode: .constant(false),
+        onFocusModeToggle: {
+            print("Focus mode toggled")
+        }
+    )
+    .padding()
+}
+
+#Preview("Focus Mode Editor") {
+    SmartGoalTextEditor(
+        text: .constant("I want to build muscle and improve my strength"),
+        isInFocusMode: .constant(true),
+        onFocusModeToggle: {
+            print("Focus mode toggled")
+        }
+    )
+    .padding()
+}
+
+#Preview("Enhanced Editor") {
+    EnhancedGoalTextEditor(
+        text: .constant("I want to lose weight"),
+        isInFocusMode: .constant(true),
+        chipAssistant: EssentialChipAssistant(),
+        placeholder: "Describe your fitness goals...",
+        onFocusModeToggle: {
+            print("Focus mode toggled")
+        }
+    )
+    .padding()
 }

@@ -3,11 +3,148 @@
 //  Fit14
 //
 //  Created by Jerson on 7/6/25.
+//  Updated with new overlay styling and interaction patterns
 //
 
 import SwiftUI
 
-// MARK: - Option Selection Sheet
+// MARK: - Chip Options Overlay (New Style)
+
+struct ChipOptionsOverlay: View {
+    let chip: EssentialChip
+    let onSelection: (ChipOption, EssentialChip) -> Void
+    let onDismiss: () -> Void
+    
+    @State private var showingChipOptions = false
+    
+    var body: some View {
+        ZStack {
+            // Background overlay
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onDismiss()
+                }
+            
+            // Options container
+            VStack(spacing: 0) {
+                Spacer()
+                
+                VStack(spacing: 20) {
+                    // Header
+                    VStack(spacing: 8) {
+                        HStack {
+                            Image(systemName: chip.icon)
+                                .foregroundColor(.blue)
+                                .font(.title2)
+                            
+                            Text(chip.title)
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                            
+                            Spacer()
+                            
+                            Button("✕") {
+                                onDismiss()
+                            }
+                            .foregroundColor(.secondary)
+                            .font(.title3)
+                        }
+                        
+                        Text("Choose your \(chip.title.lowercased())")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Options grid
+                    let chipData = ChipConfiguration.createChipData(for: chip.type)
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
+                        ForEach(chipData.options.prefix(6), id: \.id) { option in
+                            ChipOptionButton(
+                                option: option,
+                                chip: chip,
+                                onSelection: onSelection
+                            )
+                        }
+                    }
+                    
+                    // Show more options if there are many
+                    if chipData.options.count > 6 {
+                        Button("See all \(chipData.options.count) options") {
+                            // You can implement a full sheet here if needed
+                            onDismiss()
+                            // chipAssistant.insertPromptForChip(type: chip.type) // This would need to be handled by parent
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                        .padding(.top, 8)
+                    }
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.2), radius: 25, x: 0, y: 15)
+                )
+                .padding(.horizontal, 20)
+                
+                Spacer()
+            }
+        }
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 0.95).combined(with: .opacity)
+        ))
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showingChipOptions)
+        .zIndex(10)
+    }
+}
+
+// MARK: - Enhanced Chip Option Button
+
+struct ChipOptionButton: View {
+    let option: ChipOption
+    let chip: EssentialChip
+    let onSelection: (ChipOption, EssentialChip) -> Void
+    
+    var body: some View {
+        Button(action: {
+            onSelection(option, chip)
+        }) {
+            VStack(spacing: 8) {
+                Text(option.displayText)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                
+                if let description = option.description {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 70)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Legacy Option Selection Sheet (Backwards Compatibility)
 
 struct ChipOptionSheet: View {
     
@@ -28,10 +165,6 @@ struct ChipOptionSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     // MARK: - Computed Properties
-    
-    private var displayConfig: ChipDisplayConfig {
-        ChipConfiguration.getDisplayConfig(for: chipData.type)
-    }
     
     private var filteredOptions: [ChipOption] {
         if searchText.isEmpty {
@@ -67,18 +200,15 @@ struct ChipOptionSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header Section
-                headerSection
-                
-                // Search Bar (if needed)
+                // Search Section (if needed)
                 if hasSearchableOptions {
                     searchSection
                 }
                 
                 // Options List
-                optionsSection
+                optionsListSection
                 
-                // Custom Input Section
+                // Custom Input Section (if showing)
                 if showingCustomInput {
                     customInputSection
                 }
@@ -86,7 +216,8 @@ struct ChipOptionSheet: View {
                 // Action Buttons
                 actionButtonsSection
             }
-            .navigationTitle(chipData.title)
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle(chipData.type.displayTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -94,209 +225,127 @@ struct ChipOptionSheet: View {
                         handleCancel()
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        handleSave()
-                    }
-                    .disabled(!canSave)
-                    .fontWeight(.semibold)
-                }
             }
         }
         .onAppear {
-            setupInitialState()
+            selectedOption = chipData.selection?.selectedOption
+            if let selected = chipData.selection?.selectedOption, selected.isCustom {
+                customText = chipData.selection?.customValue ?? ""
+                showingCustomInput = true
+            }
         }
-        .alert("Invalid Input", isPresented: $showingValidationError) {
+        .alert("Validation Error", isPresented: $showingValidationError) {
             Button("OK") { }
         } message: {
             Text(validationMessage)
         }
     }
     
-    // MARK: - Header Section
-    
-    private var headerSection: some View {
-        VStack(spacing: 12) {
-            // Chip Type Icon and Title
-            HStack(spacing: 12) {
-                Image(systemName: chipData.icon)
-                    .font(.title2)
-                    .foregroundColor(chipIconColor)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        Circle()
-                            .fill(chipIconColor.opacity(0.1))
-                    )
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(chipData.title)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Text(chipData.type.promptContext)
-                        .font(.subheadline)
-                        .foregroundColor(Color.secondary)
-                }
-                
-                Spacer()
-                
-                // Importance Badge
-                importanceBadge
-            }
-            
-            // Instructions
-            if displayConfig.requiresAttention {
-                attentionBanner
-            } else {
-                instructionText
-            }
-        }
-        .padding()
-        .background(Color(.systemGroupedBackground))
-    }
-    
-    private var chipIconColor: Color {
-        switch chipData.type.importance {
-        case .critical:
-            return Color.orange
-        case .high:
-            return Color.orange.opacity(0.8)
-        case .medium:
-            return Color.orange.opacity(0.6)
-        case .low:
-            return Color.gray
-        }
-    }
-    
-    private var importanceBadge: some View {
-        Text(chipData.type.importance.displayName)
-            .font(.caption2)
-            .fontWeight(.medium)
-            .foregroundColor(Color.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule()
-                    .fill(importanceBadgeColor)
-            )
-    }
-    
-    private var importanceBadgeColor: Color {
-        switch chipData.type.importance {
-        case .critical:
-            return Color.orange
-        case .high:
-            return Color.orange.opacity(0.8)
-        case .medium:
-            return Color.blue
-        case .low:
-            return Color.gray
-        }
-    }
-    
-    private var attentionBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(Color.orange)
-            
-            Text("This information is important for creating a safe workout plan")
-                .font(.caption)
-                .foregroundColor(Color.primary)
-                .multilineTextAlignment(.leading)
-            
-            Spacer()
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.orange.opacity(0.1))
-        )
-    }
-    
-    private var instructionText: some View {
-        Text(displayConfig.allowMultipleSelection ?
-             "Select all that apply to your situation" :
-             "Choose the option that best describes you")
-            .font(.caption)
-            .foregroundColor(Color.secondary)
-            .multilineTextAlignment(.center)
-    }
-    
     // MARK: - Search Section
     
     private var searchSection: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
+        VStack {
+            HStack {
                 Image(systemName: "magnifyingglass")
-                    .foregroundColor(Color.secondary)
+                    .foregroundColor(.secondary)
                 
                 TextField("Search options...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
                 
                 if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(Color.secondary)
+                    Button("Clear") {
+                        searchText = ""
                     }
+                    .font(.caption)
+                    .foregroundColor(.blue)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
             .background(Color(.systemGray6))
+            .cornerRadius(8)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
             
             Divider()
+                .padding(.top, 8)
         }
     }
     
-    // MARK: - Options Section
+    // MARK: - Options List Section
     
-    private var optionsSection: some View {
+    private var optionsListSection: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
+            LazyVStack(spacing: 8) {
                 ForEach(filteredOptions, id: \.id) { option in
-                    OptionRowView(
-                        option: option,
-                        isSelected: currentSelection?.id == option.id,
-                        allowsMultipleSelection: displayConfig.allowMultipleSelection,
-                        onTap: {
-                            handleOptionTap(option)
-                        }
-                    )
-                    .padding(.horizontal, 16)
-                    
-                    if option.id != filteredOptions.last?.id {
-                        Divider()
-                            .padding(.leading, 16)
-                    }
+                    optionRow(for: option)
                 }
             }
+            .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        .background(Color(.systemBackground))
+    }
+    
+    private func optionRow(for option: ChipOption) -> some View {
+        Button(action: {
+            handleOptionSelection(option)
+        }) {
+            HStack(spacing: 12) {
+                // Selection indicator
+                Image(systemName: currentSelection?.id == option.id ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(currentSelection?.id == option.id ? .blue : .secondary)
+                    .font(.title3)
+                
+                // Option content
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(option.displayText)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.leading)
+                    
+                    if let description = option.description {
+                        Text(description)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                
+                Spacer()
+                
+                // Custom indicator
+                if option.isCustom {
+                    Image(systemName: "pencil")
+                        .foregroundColor(.blue)
+                        .font(.caption)
+                }
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(currentSelection?.id == option.id ? Color.blue.opacity(0.1) : Color(.systemBackground))
+                    .stroke(currentSelection?.id == option.id ? Color.blue : Color(.systemGray4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Custom Input Section
     
     private var customInputSection: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             Divider()
             
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
+                    Image(systemName: "pencil")
+                        .foregroundColor(.blue)
+                    
                     Text("Custom Input")
                         .font(.headline)
                         .fontWeight(.medium)
-                    
-                    Spacer()
-                    
-                    Button("Clear") {
-                        customText = ""
-                    }
-                    .font(.caption)
-                    .foregroundColor(Color.orange)
-                    .opacity(customText.isEmpty ? 0 : 1)
                 }
                 
                 // Custom input field with context-specific placeholder
@@ -344,79 +393,47 @@ struct ChipOptionSheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(canSave ? Color.orange : Color.gray)
-                .foregroundColor(Color.white)
+                .background(canSave ? Color.blue : Color(.systemGray4))
+                .foregroundColor(canSave ? Color.white : Color(.systemGray2))
                 .cornerRadius(12)
                 .disabled(!canSave)
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            .padding(.bottom, 16)
         }
         .background(Color(.systemBackground))
     }
     
     // MARK: - Helper Methods
     
-    private func setupInitialState() {
-        // Pre-select current option if any
-        selectedOption = chipData.selection?.selectedOption
-        
-        // Pre-fill custom text if any
-        if let customValue = chipData.selection?.customValue {
-            customText = customValue
-        }
-        
-        // Show custom input if custom option is selected
-        if selectedOption?.isCustom == true {
-            showingCustomInput = true
-            // Delay focus to allow sheet to settle
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isCustomInputFocused = true
-            }
-        }
-    }
-    
-    private func handleOptionTap(_ option: ChipOption) {
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
-        
+    private func handleOptionSelection(_ option: ChipOption) {
         selectedOption = option
         
-        // Handle custom input toggle
-        withAnimation(.easeInOut(duration: 0.3)) {
-            showingCustomInput = option.isCustom
-        }
-        
         if option.isCustom {
-            // Focus custom input after animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            showingCustomInput = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 isCustomInputFocused = true
             }
         } else {
-            // Clear custom text if non-custom option selected
+            showingCustomInput = false
             customText = ""
         }
     }
     
     private func handleSave() {
-        guard let option = selectedOption else { return }
+        guard let selected = selectedOption else { return }
         
-        // Validate input if needed
-        if let validationResult = validateInput(option: option) {
-            showingValidationError = true
-            validationMessage = validationResult
-            return
+        if selected.isCustom {
+            let trimmed = customText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                showValidationError("Please enter a custom value")
+                return
+            }
+            onSelection(selected, trimmed)
+        } else {
+            onSelection(selected, nil)
         }
         
-        // Prepare custom value
-        let customValue = option.isCustom ?
-            customText.trimmingCharacters(in: .whitespacesAndNewlines) : nil
-        
-        // Call completion handler
-        onSelection(option, customValue)
-        
-        // Dismiss sheet
         dismiss()
     }
     
@@ -425,24 +442,9 @@ struct ChipOptionSheet: View {
         dismiss()
     }
     
-    private func validateInput(option: ChipOption) -> String? {
-        if option.isCustom {
-            let trimmedText = customText.trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            if trimmedText.isEmpty {
-                return "Please enter a value or select a different option"
-            }
-            
-            // Use ChipConfiguration validation
-            let tempSelection = ChipSelection(chipType: chipData.type, selectedOption: option, customValue: trimmedText)
-            let validationResult = ChipConfiguration.validateSelection(tempSelection)
-            
-            if !validationResult.isValid {
-                return validationResult.errorMessage
-            }
-        }
-        
-        return nil
+    private func showValidationError(_ message: String) {
+        validationMessage = message
+        showingValidationError = true
     }
     
     private func getCustomInputPlaceholder() -> String {
@@ -482,73 +484,7 @@ struct ChipOptionSheet: View {
     }
 }
 
-// MARK: - Option Row View
-
-struct OptionRowView: View {
-    let option: ChipOption
-    let isSelected: Bool
-    let allowsMultipleSelection: Bool
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Selection Indicator
-                Group {
-                    if allowsMultipleSelection {
-                        Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                    } else {
-                        Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
-                    }
-                }
-                .font(.title3)
-                .foregroundColor(isSelected ? Color.orange : Color.gray)
-                .animation(.easeInOut(duration: 0.2), value: isSelected)
-                
-                // Option Content
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(option.displayText)
-                            .font(.body)
-                            .fontWeight(isSelected ? .medium : .regular)
-                            .foregroundColor(Color.primary)
-                        
-                        Spacer()
-                        
-                        // Custom input indicator
-                        if option.isCustom {
-                            Image(systemName: "pencil")
-                                .font(.caption)
-                                .foregroundColor(Color.secondary)
-                        }
-                    }
-                    
-                    // Option Description
-                    if let description = option.description {
-                        Text(description)
-                            .font(.caption)
-                            .foregroundColor(Color.secondary)
-                            .multilineTextAlignment(.leading)
-                    }
-                }
-                
-                Spacer(minLength: 0)
-            }
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PlainButtonStyle())
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.orange.opacity(0.05) : Color.clear)
-                .animation(.easeInOut(duration: 0.2), value: isSelected)
-        )
-        .accessibilityLabel("\(option.displayText)\(option.description != nil ? ", \(option.description!)" : "")")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
-// MARK: - Preview Provider
+// MARK: - Preview
 
 #Preview("Fitness Level Options") {
     ChipOptionSheet(
@@ -562,38 +498,22 @@ struct OptionRowView: View {
     )
 }
 
-#Preview("Time Available Options") {
-    ChipOptionSheet(
-        chipData: ChipConfiguration.createChipData(for: .timeAvailable),
-        onSelection: { option, customValue in
-            print("Selected: \(option.displayText), Custom: \(customValue ?? "none")")
+#Preview("Chip Options Overlay") {
+    ChipOptionsOverlay(
+        chip: EssentialChip(
+            id: UUID(),
+            type: .fitnessLevel,
+            title: "Fitness Level",
+            icon: "figure.run",
+            isCompleted: false,
+            selectedOption: nil
+        ),
+        onSelection: { option, chip in
+            print("Selected: \(option.displayText) for \(chip.title)")
         },
-        onCancel: {
-            print("Cancelled")
+        onDismiss: {
+            print("Dismissed")
         }
     )
-}
-
-#Preview("Physical Stats (Custom Input)") {
-    ChipOptionSheet(
-        chipData: ChipConfiguration.createChipData(for: .physicalStats),
-        onSelection: { option, customValue in
-            print("Selected: \(option.displayText), Custom: \(customValue ?? "none")")
-        },
-        onCancel: {
-            print("Cancelled")
-        }
-    )
-}
-
-#Preview("Workout Location Options") {
-    ChipOptionSheet(
-        chipData: ChipConfiguration.createChipData(for: .workoutLocation),
-        onSelection: { option, customValue in
-            print("Selected: \(option.displayText), Custom: \(customValue ?? "none")")
-        },
-        onCancel: {
-            print("Cancelled")
-        }
-    )
+    .background(Color(.systemGroupedBackground))
 }
