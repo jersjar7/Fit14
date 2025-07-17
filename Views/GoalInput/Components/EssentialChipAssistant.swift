@@ -151,55 +151,39 @@ class EssentialChipAssistant: ObservableObject {
     }
     
     private func getAutoCompletedOption(for chipType: ChipType, from text: String) -> ChipOption? {
-        // Auto-detection logic for different chip types
+        // Look for chip title patterns (just the title part before the colon)
+        // This allows for user modifications after the colon
+        
         switch chipType {
         case .fitnessLevel:
-            if text.contains("beginner") || text.contains("new to") || text.contains("just starting") {
-                return ChipOption(value: "beginner", displayText: "Beginner")
-            } else if text.contains("intermediate") || text.contains("some experience") {
-                return ChipOption(value: "intermediate", displayText: "Intermediate")
-            } else if text.contains("advanced") || text.contains("experienced") || text.contains("athlete") {
-                return ChipOption(value: "advanced", displayText: "Advanced")
+            if text.contains("Fitness Level:") {
+                return ChipConfiguration.fitnessLevelOptions.first
             }
             
         case .timeAvailable:
-            if text.contains("15 min") || text.contains("15 minutes") || text.contains("quarter hour") {
-                return ChipOption(value: "15-30 minutes", displayText: "15-30 minutes")
-            } else if text.contains("30 min") || text.contains("30 minutes") || text.contains("half hour") {
-                return ChipOption(value: "30-45 minutes", displayText: "30-45 minutes")
-            } else if text.contains("45 min") || text.contains("45 minutes") {
-                return ChipOption(value: "45-60 minutes", displayText: "45-60 minutes")
-            } else if text.contains("1 hour") || text.contains("60 min") || text.contains("60 minutes") {
-                return ChipOption(value: "60+ minutes", displayText: "60+ minutes")
+            if text.contains("Time Available:") {
+                return ChipConfiguration.timeAvailableOptions.first
             }
             
         case .workoutLocation:
-            if text.contains("home") || text.contains("at home") || text.contains("my house") {
-                return ChipOption(value: "at home", displayText: "At Home")
-            } else if text.contains("gym") || text.contains("fitness center") || text.contains("health club") {
-                return ChipOption(value: "at the gym", displayText: "At the Gym")
-            } else if text.contains("outdoor") || text.contains("outside") || text.contains("park") {
-                return ChipOption(value: "outdoors", displayText: "Outdoors")
+            if text.contains("Location:") {
+                return ChipConfiguration.workoutLocationOptions.first
+            }
+            
+        case .physicalStats:
+            if text.contains("Height & Weight:") {
+                return ChipConfiguration.physicalStatsOptions.first
             }
             
         case .sex:
-            if text.contains("male") && !text.contains("female") {
-                return ChipOption(value: "male", displayText: "Male")
-            } else if text.contains("female") {
-                return ChipOption(value: "female", displayText: "Female")
+            if text.contains("Sex:") {
+                return ChipConfiguration.sexOptions.first
             }
             
         case .weeklyFrequency:
-            if text.contains("3 days") || text.contains("three days") {
-                return ChipOption(value: "3 days", displayText: "3 days per week")
-            } else if text.contains("4") || text.contains("5") {
-                return ChipOption(value: "4-5 days", displayText: "4-5 days per week")
-            } else if text.contains("daily") || text.contains("every day") {
-                return ChipOption(value: "6+ days", displayText: "6+ days per week")
+            if text.contains("Days Per Week:") {
+                return ChipConfiguration.weeklyFrequencyOptions.first
             }
-            
-        default:
-            break
         }
         
         return nil

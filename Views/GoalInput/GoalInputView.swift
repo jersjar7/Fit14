@@ -295,8 +295,8 @@ struct GoalInputView: View {
         let newText = currentText.isEmpty ? optionText : "\(currentText), \(optionText)"
         chipAssistant.updateGoalText(newText)
         
-        // Mark this chip as completed by inserting its prompt
-        chipAssistant.insertPromptForChip(type: chip.type)
+        // Directly mark the chip as completed with the selected option
+        chipAssistant.markChipAsCompleted(type: chip.type, with: option)
         
         // Provide haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)

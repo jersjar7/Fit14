@@ -197,7 +197,6 @@ extension GoalInputView {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 100)
             .padding(.horizontal, 8)
             .padding(.vertical, 8)
             .background(
