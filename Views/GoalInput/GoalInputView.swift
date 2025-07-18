@@ -52,16 +52,19 @@ struct GoalInputView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingHelpSheet = true
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "questionmark.circle")
-                            Text("Tips")
-                                .font(.caption)
+                // Only show Tips button when NOT in focus mode
+                if !isInFocusMode {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            showingHelpSheet = true
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "questionmark.circle")
+                                Text("Tips")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(Color.blue)
                         }
-                        .foregroundColor(Color.blue)
                     }
                 }
             }
@@ -143,40 +146,38 @@ struct GoalInputView: View {
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 0.3), value: isInFocusMode)
             
-            // Centered Modal
-            VStack {
-                Spacer()
-                
-                // Focused Modal Container
-                VStack(spacing: 24) {
-                    // Header in focus mode
-                    focusModeHeader
-                    
-                    // Text Editor Section
-                    focusedTextEditorSection
-                    
-                    // Start Date Section
-                    enhancedStartDateSection
-                    
-                    // Essential Information Section
-                    enhancedEssentialInformationSection
+            // Responsive modal with proper sizing
+            GeometryReader { geometry in
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Your existing content
+                        focusModeHeader
+                        focusedTextEditorSection
+                        enhancedStartDateSection
+                        enhancedEssentialInformationSection
+                    }
+                    .padding(24)
+                    .frame(minHeight: min(geometry.size.height * 0.6, 600))
                 }
-                .padding(24)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
                         .fill(Color(.systemBackground))
                         .shadow(color: .black.opacity(0.2), radius: 30, x: 0, y: 20)
                 )
-                .padding(.horizontal, 20)
+                .frame(
+                    maxWidth: min(geometry.size.width - 40, 400),
+                    maxHeight: geometry.size.height * 0.85
+                )
+                .position(
+                    x: geometry.size.width / 2,
+                    y: geometry.size.height / 2
+                )
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.85).combined(with: .opacity),
                     removal: .scale(scale: 0.9).combined(with: .opacity)
                 ))
-                
-                Spacer()
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isInFocusMode)
     }
     
     // MARK: - Enhanced Hint Text
