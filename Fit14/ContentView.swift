@@ -280,12 +280,12 @@ struct OnboardingFlowPreview: View {
     .environmentObject(WorkoutPlanViewModel())
 }
 
-// 🎯 NEW: Complete Onboarding Flow Preview
+// 🎯 Complete Onboarding Flow Preview
 #Preview("🚀 Full Onboarding Flow") {
     OnboardingFlowPreview()
 }
 
-// 🎯 NEW: Individual Onboarding Components
+// 🎯 Individual Onboarding Components (Swipe-based)
 #Preview("💫 Splash Screen Only") {
     SplashScreen {
         print("Splash completed")
@@ -298,64 +298,24 @@ struct OnboardingFlowPreview: View {
 
 #Preview("🎉 Welcome Page") {
     WelcomeOnboardingPage()
-        .floatingNavigation(
-            currentPage: 0,
-            totalPages: 6,
-            onNext: { print("Next tapped") },
-            onSkip: { print("Skip tapped") }
-        )
 }
 
 #Preview("⚙️ How It Works Page") {
     HowItWorksOnboardingPage()
-        .floatingNavigation(
-            currentPage: 1,
-            totalPages: 6,
-            onNext: { print("Next tapped") },
-            onBack: { print("Back tapped") },
-            onSkip: { print("Skip tapped") }
-        )
 }
 
 #Preview("🎯 Goal Flexibility Page") {
     GoalFlexibilityOnboardingPage()
-        .floatingNavigation(
-            currentPage: 2,
-            totalPages: 6,
-            onNext: { print("Next tapped") },
-            onBack: { print("Back tapped") },
-            onSkip: { print("Skip tapped") }
-        )
 }
 
 #Preview("🧠 Personalization Page") {
     PersonalizationOnboardingPage()
-        .floatingNavigation(
-            currentPage: 3,
-            totalPages: 6,
-            onNext: { print("Next tapped") },
-            onBack: { print("Back tapped") },
-            onSkip: { print("Skip tapped") }
-        )
 }
 
 #Preview("📊 Progress Page") {
     ProgressOnboardingPage()
-        .floatingNavigation(
-            currentPage: 4,
-            totalPages: 6,
-            onNext: { print("Next tapped") },
-            onBack: { print("Back tapped") },
-            onSkip: { print("Skip tapped") }
-        )
 }
 
 #Preview("🔔 Permissions Page") {
-    PermissionsOnboardingPage()
-        .floatingNavigation(
-            currentPage: 5,
-            totalPages: 6,
-            onNext: { print("Get Started tapped") },
-            onBack: { print("Back tapped") }
-        )
+    PermissionsOnboardingPage(onComplete: { print("Get Started tapped") })
 }

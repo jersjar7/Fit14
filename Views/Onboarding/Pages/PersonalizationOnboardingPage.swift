@@ -44,87 +44,89 @@ struct PersonalizationOnboardingPage: View {
     ]
     
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 50)
-            
-            // Header
-            VStack(spacing: 16) {
-                Text("Deep Personalization")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Consistent top spacing
+                Spacer()
+                    .frame(minHeight: 20)
                 
-                Text("Our AI considers everything about you to create the perfect plan")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal)
-            
-            // Central AI brain visualization
-            VStack(spacing: 24) {
-                ZStack {
-                    // Central brain
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)]),
-                                center: .center,
-                                startRadius: 20,
-                                endRadius: 80
-                            )
-                        )
-                        .frame(width: 120, height: 120)
-                    
-                    Image(systemName: "brain.head.profile")
-                        .font(.system(size: 40, weight: .light))
-                        .foregroundColor(.blue)
-                    
-                    // Orbiting factor icons
-                    ForEach(Array(personalizationFactors.enumerated()), id: \.offset) { index, factor in
-                        factorOrbit(factor: factor, index: index)
-                    }
-                }
-                .frame(height: 280)
-                
-                // Selected factor details
-                VStack(spacing: 12) {
-                    Text(currentFactor.title)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(currentFactor.color)
-                    
-                    Text(currentFactor.description)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                // Header
+                VStack(spacing: 16) {
+                    Text("Deep Personalization")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
                         .multilineTextAlignment(.center)
                     
-                    HStack(spacing: 12) {
-                        ForEach(currentFactor.examples, id: \.self) { example in
-                            Text(example)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(currentFactor.color.opacity(0.2))
-                                .foregroundColor(currentFactor.color)
-                                .cornerRadius(12)
+                    Text("Our AI considers everything about you to create the perfect plan")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // Central AI brain visualization
+                VStack(spacing: 24) {
+                    ZStack {
+                        // Central brain
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)]),
+                                    center: .center,
+                                    startRadius: 20,
+                                    endRadius: 80
+                                )
+                            )
+                            .frame(width: 120, height: 120)
+                        
+                        Image(systemName: "brain.head.profile")
+                            .font(.system(size: 40, weight: .light))
+                            .foregroundColor(.blue)
+                        
+                        // Orbiting factor icons
+                        ForEach(Array(personalizationFactors.enumerated()), id: \.offset) { index, factor in
+                            factorOrbit(factor: factor, index: index)
                         }
                     }
+                    .frame(height: 280)
+                    
+                    // Selected factor details
+                    VStack(spacing: 12) {
+                        Text(currentFactor.title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(currentFactor.color)
+                        
+                        Text(currentFactor.description)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        HStack(spacing: 12) {
+                            ForEach(currentFactor.examples, id: \.self) { example in
+                                Text(example)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(currentFactor.color.opacity(0.2))
+                                    .foregroundColor(currentFactor.color)
+                                    .cornerRadius(12)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(16)
+                .padding(.horizontal, 24)
+                
+                // Bottom spacing
+                Spacer()
+                    .frame(minHeight: 60)
             }
-            .padding(.horizontal)
-            
-            Spacer()
-            
-            // FIXED: Proper bottom spacing for floating buttons
-            Spacer().frame(minHeight: 100)
         }
-        .padding(.bottom, 30)
         .onAppear {
             startAnimations()
         }

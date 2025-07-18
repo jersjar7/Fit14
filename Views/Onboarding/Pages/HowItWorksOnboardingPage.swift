@@ -14,113 +14,114 @@ struct HowItWorksOnboardingPage: View {
     @State private var isAnimatingFlow = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 50)
-            
-            // Header with subtle animation
-            VStack(spacing: 16) {
-                Text("How It Works")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .opacity(currentStep >= 0 ? 1.0 : 0.5)
-                    .animation(Animation.easeInOut(duration: 0.8), value: currentStep)
-                
-                Text("Get your personalized plan in 3 simple steps")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .opacity(currentStep >= 0 ? 1.0 : 0.5)
-                    .animation(Animation.easeInOut(duration: 0.8).delay(0.2), value: currentStep)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 25)
-            .padding(.bottom, 20)
-            
-            // Compact steps with coordinated timing
+        ScrollView {
             VStack(spacing: 0) {
-                // Step 1 - Activates immediately
-                enhancedStepView(
-                    number: 1,
-                    icon: "message.badge.filled.fill",
-                    title: "Tell Us Your Goal",
-                    description: "\"Beat my 5K PR of 25 minutes\"\n\"Do my first pull-up\"",
-                    isActive: currentStep >= 0,
-                    color: .blue,
-                    delay: 0.0  // Step 1 starts immediately
-                )
+                // Consistent top spacing
+                Spacer()
+                    .frame(minHeight: 20)
                 
-                // Flow 1 - Starts after Step 1 is established
-                compactConnectionFlow(
-                    isActive: currentStep >= 1,
-                    delay: 0.6  // Flow starts after step 1 is established
-                )
+                // Header with subtle animation
+                VStack(spacing: 16) {
+                    Text("How It Works")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .opacity(currentStep >= 0 ? 1.0 : 0.5)
+                        .animation(Animation.easeInOut(duration: 0.8), value: currentStep)
+                    
+                    Text("Get your personalized plan in 3 simple steps")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .opacity(currentStep >= 0 ? 1.0 : 0.5)
+                        .animation(Animation.easeInOut(duration: 0.8).delay(0.2), value: currentStep)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
                 
-                // Step 2 - Activates when flow 1 reaches it
-                enhancedStepView(
-                    number: 2,
-                    icon: "brain.head.profile",
-                    title: "AI Creates Your Plan",
-                    description: "Our AI considers your fitness level, time, location, and equipment",
-                    isActive: currentStep >= 1,
-                    color: .purple,
-                    delay: 1.2  // Activates when flow 1 reaches it
-                )
+                // Compact steps with coordinated timing
+                VStack(spacing: 0) {
+                    // Step 1 - Activates immediately
+                    enhancedStepView(
+                        number: 1,
+                        icon: "message.badge.filled.fill",
+                        title: "Tell Us Your Goal",
+                        description: "\"Beat my 5K PR of 25 minutes\"\n\"Do my first pull-up\"",
+                        isActive: currentStep >= 0,
+                        color: .blue,
+                        delay: 0.0  // Step 1 starts immediately
+                    )
+                    
+                    // Flow 1 - Starts after Step 1 is established
+                    compactConnectionFlow(
+                        isActive: currentStep >= 1,
+                        delay: 0.6  // Flow starts after step 1 is established
+                    )
+                    
+                    // Step 2 - Activates when flow 1 reaches it
+                    enhancedStepView(
+                        number: 2,
+                        icon: "brain.head.profile",
+                        title: "AI Creates Your Plan",
+                        description: "Our AI considers your fitness level, time, location, and equipment",
+                        isActive: currentStep >= 1,
+                        color: .purple,
+                        delay: 1.2  // Activates when flow 1 reaches it
+                    )
+                    
+                    // Flow 2 - Starts after Step 2 is established
+                    compactConnectionFlow(
+                        isActive: currentStep >= 2,
+                        delay: 1.8  // Flow starts after step 2 is established
+                    )
+                    
+                    // Step 3 - Activates when flow 2 reaches it
+                    enhancedStepView(
+                        number: 3,
+                        icon: "calendar.badge.checkmark",
+                        title: "Train for 14 Days",
+                        description: "Follow your personalized plan and track your progress daily",
+                        isActive: currentStep >= 2,
+                        color: .green,
+                        delay: 2.4  // Activates when flow 2 reaches it
+                    )
+                }
+                .padding(.horizontal, 24)
                 
-                // Flow 2 - Starts after Step 2 is established
-                compactConnectionFlow(
-                    isActive: currentStep >= 2,
-                    delay: 1.8  // Flow starts after step 2 is established
-                )
+                Spacer()
+                    .frame(minHeight: 30)
                 
-                // Step 3 - Activates when flow 2 reaches it
-                enhancedStepView(
-                    number: 3,
-                    icon: "calendar.badge.checkmark",
-                    title: "Train for 14 Days",
-                    description: "Follow your personalized plan and track your progress daily",
-                    isActive: currentStep >= 2,
-                    color: .green,
-                    delay: 2.4  // Activates when flow 2 reaches it
+                // Enhanced feature callout
+                VStack(spacing: 16) {
+                    featureRow(
+                        icon: "clock.badge.checkmark",
+                        title: "Takes under 2 minutes to set up",
+                        color: .green,
+                        isVisible: currentStep >= 2
+                    )
+                    
+                    featureRow(
+                        icon: "sparkles",
+                        title: "Every workout is unique to you",
+                        color: .blue,
+                        isVisible: currentStep >= 2
+                    )
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                 )
+                .padding(.horizontal, 24)
+                .scaleEffect(currentStep >= 2 ? 1.0 : 0.95)
+                .opacity(currentStep >= 2 ? 1.0 : 0.0)
+                .animation(Animation.spring(response: 0.6, dampingFraction: 0.8).delay(3.8), value: currentStep)
+                
+                // Bottom spacing
+                Spacer()
+                    .frame(minHeight: 60)
             }
-            .padding(.horizontal, 20)
-            .padding(.leading, 20)
-            
-            Spacer()
-            
-            // Enhanced feature callout
-            VStack(spacing: 16) {
-                featureRow(
-                    icon: "clock.badge.checkmark",
-                    title: "Takes under 2 minutes to set up",
-                    color: .green,
-                    isVisible: currentStep >= 2
-                )
-                
-                featureRow(
-                    icon: "sparkles",
-                    title: "Every workout is unique to you",
-                    color: .blue,
-                    isVisible: currentStep >= 2
-                )
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-            )
-            .padding(.horizontal,30)
-            .scaleEffect(currentStep >= 2 ? 1.0 : 0.95)
-            .opacity(currentStep >= 2 ? 1.0 : 0.0)
-            .animation(Animation.spring(response: 0.6, dampingFraction: 0.8).delay(3.8), value: currentStep)
-            
-            // Option B: Content-aware spacing
-            Spacer().frame(minHeight: 110)
-        }
-        .safeAreaInset(edge: .bottom) {
-            Color.clear.frame(height: 20)
         }
         .onAppear {
             startEnhancedAnimation()
@@ -190,7 +191,7 @@ struct HowItWorksOnboardingPage: View {
             }
             
             // Enhanced content with staggered animation
-            VStack(alignment: .leading, spacing: 8) { // Reduced spacing from 12 to 8
+            VStack(alignment: .leading, spacing: 8) {
                 Text(title)
                     .font(.title3)
                     .fontWeight(.bold)
@@ -210,14 +211,14 @@ struct HowItWorksOnboardingPage: View {
             
             Spacer()
         }
-        .padding(.vertical, 6) // Reduced from 8
+        .padding(.vertical, 6)
         .opacity(isActive ? 1.0 : 0.4)
         .animation(Animation.easeInOut(duration: 0.6).delay(delay), value: isActive)
     }
     
     // UPDATED: Much more compact connection flow
     private func compactConnectionFlow(isActive: Bool, delay: Double) -> some View {
-        VStack(spacing: 2) { // Reduced spacing
+        VStack(spacing: 2) {
             // Shorter connecting line
             Rectangle()
                 .fill(
@@ -230,7 +231,7 @@ struct HowItWorksOnboardingPage: View {
                         endPoint: .bottom
                     )
                 )
-                .frame(width: 3, height: 12) // Reduced from 20 to 12
+                .frame(width: 3, height: 12)
                 .offset(x: -15) // Align with step circles
                 .scaleEffect(x: 1.0, y: isActive ? 1.0 : 0.0, anchor: UnitPoint.top)
                 .animation(Animation.easeInOut(duration: 0.6).delay(delay), value: isActive)
@@ -259,12 +260,12 @@ struct HowItWorksOnboardingPage: View {
                         endPoint: .bottom
                     )
                 )
-                .frame(width: 3, height: 12) // Reduced from 20 to 12
+                .frame(width: 3, height: 12)
                 .offset(x: -15) // Align with step circles
                 .scaleEffect(x: 1.0, y: isActive ? 1.0 : 0.0, anchor: UnitPoint.bottom)
                 .animation(Animation.easeInOut(duration: 0.6).delay(delay + 0.6), value: isActive)
         }
-        .frame(height: 30) // Much reduced from 60
+        .frame(height: 30)
     }
     
     private func featureRow(icon: String, title: String, color: Color, isVisible: Bool) -> some View {

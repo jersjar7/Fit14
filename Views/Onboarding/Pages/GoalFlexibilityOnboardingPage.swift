@@ -40,104 +40,108 @@ struct GoalFlexibilityOnboardingPage: View {
     ]
     
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 50)
-            
-            // Header
-            VStack(spacing: 16) {
-                Text("Any Goal Works")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Consistent top spacing
+                Spacer()
+                    .frame(minHeight: 20)
                 
-                Text("Our AI adapts to create the perfect plan for your specific goal")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 25)
-            
-            // Goal selection interface
-            VStack(spacing: 20) {
-                // Goal categories
-                HStack(spacing: 16) {
-                    ForEach(Array(sampleGoals.enumerated()), id: \.offset) { index, goal in
-                        goalCategoryButton(goal: goal, index: index)
-                    }
-                }
-                .padding(.horizontal)
-                
-                // Typewriter goal display
+                // Header
                 VStack(spacing: 16) {
-                    HStack {
-                        Image(systemName: "quote.opening")
-                            .foregroundColor(.secondary)
-                            .font(.title2)
+                    Text("Any Goal Works")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Our AI adapts to create the perfect plan for your specific goal")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // Goal selection interface
+                VStack(spacing: 20) {
+                    // Goal categories
+                    HStack(spacing: 16) {
+                        ForEach(Array(sampleGoals.enumerated()), id: \.offset) { index, goal in
+                            goalCategoryButton(goal: goal, index: index)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    // Typewriter goal display
+                    VStack(spacing: 16) {
+                        HStack {
+                            Image(systemName: "quote.opening")
+                                .foregroundColor(.secondary)
+                                .font(.title2)
+                            
+                            Spacer()
+                        }
                         
-                        Spacer()
+                        Text(currentGoalText)
+                            .font(.title2)
+                            .fontWeight(.medium)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .animation(.none, value: currentGoalText) // Disable animation for typewriter effect
+                        
+                        HStack {
+                            Spacer()
+                            
+                            Image(systemName: "quote.closing")
+                                .foregroundColor(.secondary)
+                                .font(.title2)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding(.horizontal, 24)
+                    .frame(minHeight: 140)
+                }
+                
+                Spacer()
+                    .frame(minHeight: 30)
+                
+                // Key benefits callout
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Flexible & Adaptive")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    HStack {
+                        Image(systemName: "target")
+                            .foregroundColor(.blue)
+                        Text("Works for any fitness goal, from beginners to athletes")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     
-                    Text(currentGoalText)
-                        .font(.title2)
-                        .fontWeight(.medium)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .animation(.none, value: currentGoalText) // Disable animation for typewriter effect
-                    
                     HStack {
-                        Spacer()
-                        
-                        Image(systemName: "quote.closing")
-                            .foregroundColor(.secondary)
-                            .font(.title2)
+                        Image(systemName: "slider.horizontal.3")
+                            .foregroundColor(.blue)
+                        Text("Adapts to your fitness level, time, and equipment")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .padding()
                 .background(Color(.systemGray6))
                 .cornerRadius(12)
-                .padding(.horizontal)
-                .frame(minHeight: 200)
-            }
-            
-            Spacer()
-            
-            // Key benefits callout
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Flexible & Adaptive")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 24)
                 
-                HStack {
-                    Image(systemName: "target")
-                        .foregroundColor(.blue)
-                    Text("Works for any fitness goal, from beginners to athletes")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                
-                HStack {
-                    Image(systemName: "slider.horizontal.3")
-                        .foregroundColor(.blue)
-                    Text("Adapts to your fitness level, time, and equipment")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                // Bottom spacing
+                Spacer()
+                    .frame(minHeight: 60)
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            .padding(.horizontal)
-            
-            // FIXED: Proper bottom spacing for floating buttons
-            Spacer().frame(minHeight: 100)
         }
-        .padding(.bottom, 30)
         .onAppear {
             startGoalAnimation()
         }

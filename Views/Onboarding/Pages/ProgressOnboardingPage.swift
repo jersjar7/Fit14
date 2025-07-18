@@ -15,98 +15,97 @@ struct ProgressOnboardingPage: View {
     private let maxDays = 14
     
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 50)
-            
-            // Header
-            VStack(spacing: 12) {
-                Text("Track Your Journey")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Consistent top spacing
+                Spacer()
+                    .frame(minHeight: 20)
                 
-                Text("Watch your progress grow over the perfect 14-day timeframe")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 30)
-            
-            // 14-day timeline visualization
-            VStack(spacing: 8) {
-                // Progress header
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Day \(progressDay)")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.blue)
-                        
-                        Text("of 14")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                // Header
+                VStack(spacing: 16) {
+                    Text("Track Your Journey")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.center)
                     
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(Int((Double(progressDay) / Double(maxDays)) * 100))%")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.blue)
+                    Text("Watch your progress grow over the perfect 14-day timeframe")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // 14-day timeline visualization
+                VStack(spacing: 20) {
+                    // Progress header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Day \(progressDay)")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+                            
+                            Text("of 14")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                         
-                        Text("Complete")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("\(Int((Double(progressDay) / Double(maxDays)) * 100))%")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+                            
+                            Text("Complete")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                }
-                .padding(.horizontal, 30)
-                
-                // 14-day grid
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-                    ForEach(1...maxDays, id: \.self) { day in
-                        dayCell(day: day)
+                    .padding(.horizontal, 24)
+                    
+                    // 14-day grid
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                        ForEach(1...maxDays, id: \.self) { day in
+                            dayCell(day: day)
+                        }
                     }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 30)
-            }
-            .padding(.vertical)
-            
-            Spacer()
-            
-            // Progress insights
-            VStack(spacing: 20) {
-                progressBenefit(
-                    icon: "chart.line.uptrend.xyaxis",
-                    title: "Real Progress",
-                    description: "See measurable improvements in strength and endurance",
-                    color: .blue
-                )
+                .padding(.bottom, 30)
                 
-                progressBenefit(
-                    icon: "calendar.badge.checkmark",
-                    title: "Habit Formation",
-                    description: "Build sustainable fitness habits that last beyond 14 days",
-                    color: .green
-                )
+                // Progress insights
+                VStack(spacing: 20) {
+                    progressBenefit(
+                        icon: "chart.line.uptrend.xyaxis",
+                        title: "Real Progress",
+                        description: "See measurable improvements in strength and endurance",
+                        color: .blue
+                    )
+                    
+                    progressBenefit(
+                        icon: "calendar.badge.checkmark",
+                        title: "Habit Formation",
+                        description: "Build sustainable fitness habits that last beyond 14 days",
+                        color: .green
+                    )
+                    
+                    progressBenefit(
+                        icon: "trophy.fill",
+                        title: "Achievement Focus",
+                        description: "Celebrate completion and check your history",
+                        color: .orange
+                    )
+                }
+                .padding(.horizontal, 24)
                 
-                progressBenefit(
-                    icon: "trophy.fill",
-                    title: "Achievement Focus",
-                    description: "Celebrate completion and check your history",
-                    color: .orange
-                )
+                // Bottom spacing
+                Spacer()
+                    .frame(minHeight: 60)
             }
-            .padding(.horizontal, 30)
-            
-            Spacer()
-            
-            // FIXED: Proper bottom spacing for floating buttons
-            Spacer().frame(minHeight: 100)
         }
-        .padding(.bottom, 30)
         .onAppear {
             startProgressAnimation()
         }

@@ -10,31 +10,33 @@ import SwiftUI
 
 struct WelcomeOnboardingPage: View {
     @State private var isAnimating = false
+    @State private var swipeIndicatorAnimation = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 50)
-            
-            // Hero section
-            VStack(spacing: 24) {
-                // App icon placeholder
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.blue, Color.purple]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
-                    .scaleEffect(isAnimating ? 1.0 : 0.8)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isAnimating)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Consistent top spacing with other pages
+                Spacer()
+                    .frame(minHeight: 20)
                 
-                // Main title with gradient
-                VStack(spacing: 12) {
+                // Header section - positioned consistently with other pages
+                VStack(spacing: 24) {
+                    // App icon placeholder
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 100, height: 100)
+                        .scaleEffect(isAnimating ? 1.0 : 0.8)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isAnimating)
+                    
+                    // Main title - consistent positioning
                     Text("Welcome to Fit14")
-                        .font(.system(size: 40, weight: .bold, design: .rounded))
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [Color.blue, Color.purple],
@@ -43,21 +45,18 @@ struct WelcomeOnboardingPage: View {
                             )
                         )
                         .multilineTextAlignment(.center)
+                    
+                    // Value proposition
+                    Text("Get a personalized 14-day workout plan in under 2 minutes")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
                 
-                // Value proposition
-                Text("Get a personalized 14-day workout plan in under 2 minutes")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 20)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            
-            HStack(alignment: .center){
-                Spacer()
-                // Key benefits
+                // Key benefits section
                 VStack(spacing: 20) {
                     benefitRow(
                         icon: "sparkles",
@@ -77,15 +76,58 @@ struct WelcomeOnboardingPage: View {
                         description: "From PRs to first pull-ups"
                     )
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 24)
+                
+                // Bottom spacing for swipe indicator
+                Spacer()
+                    .frame(minHeight: 60)
             }
-            
-            // FIXED: Proper bottom spacing for floating buttons
-            Spacer().frame(minHeight: 100)
         }
-        .padding(.bottom, 30) // Safety padding for different screen sizes
+        .overlay(
+            // Swipe indicator in bottom right
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    
+                    HStack(spacing: 8) {
+                        Text("Swipe")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                        
+                        Image(systemName: "arrow.right")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .offset(x: swipeIndicatorAnimation ? 4 : 0)
+                            .animation(
+                                Animation.easeInOut(duration: 1.2)
+                                    .repeatForever(autoreverses: true),
+                                value: swipeIndicatorAnimation
+                            )
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    )
+                    .opacity(isAnimating ? 0.8 : 0)
+                    .animation(.easeInOut(duration: 0.8).delay(2.0), value: isAnimating)
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 40)
+            }
+        )
         .onAppear {
             isAnimating = true
+            
+            // Start swipe indicator animation after initial animations
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                swipeIndicatorAnimation = true
+            }
         }
     }
     

@@ -30,89 +30,29 @@ struct OnboardingCoordinator: View {
                     OnboardingProgressBar(currentPage: currentPage, totalPages: totalPages)
                         .padding(.top)
                     
-                    // Page content
+                    // Page content with swipe navigation
                     TabView(selection: $currentPage) {
                         WelcomeOnboardingPage()
-                            .floatingNavigation(
-                                currentPage: 0,
-                                totalPages: totalPages,
-                                onNext: nextPage,
-                                onSkip: completeOnboarding
-                            )
                             .tag(0)
                         
                         HowItWorksOnboardingPage()
-                            .floatingNavigation(
-                                currentPage: 1,
-                                totalPages: totalPages,
-                                onNext: nextPage,
-                                onBack: previousPage,
-                                onSkip: completeOnboarding
-                            )
                             .tag(1)
                         
                         GoalFlexibilityOnboardingPage()
-                            .floatingNavigation(
-                                currentPage: 2,
-                                totalPages: totalPages,
-                                onNext: nextPage,
-                                onBack: previousPage,
-                                onSkip: completeOnboarding
-                            )
                             .tag(2)
                         
                         PersonalizationOnboardingPage()
-                            .floatingNavigation(
-                                currentPage: 3,
-                                totalPages: totalPages,
-                                onNext: nextPage,
-                                onBack: previousPage,
-                                onSkip: completeOnboarding
-                            )
                             .tag(3)
                         
                         ProgressOnboardingPage()
-                            .floatingNavigation(
-                                currentPage: 4,
-                                totalPages: totalPages,
-                                onNext: nextPage,
-                                onBack: previousPage,
-                                onSkip: completeOnboarding
-                            )
                             .tag(4)
                         
-                        PermissionsOnboardingPage()
-                            .floatingNavigation(
-                                currentPage: 5,
-                                totalPages: totalPages,
-                                onNext: completeOnboarding,
-                                onBack: previousPage
-                            )
+                        PermissionsOnboardingPage(onComplete: completeOnboarding)
                             .tag(5)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .animation(.easeInOut, value: currentPage)
-                    
-                    // Remove navigation controls - each page handles its own floating buttons
                 }
-            }
-        }
-    }
-    
-    private func nextPage() {
-        if currentPage < totalPages - 1 {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                currentPage += 1
-            }
-        } else {
-            completeOnboarding()
-        }
-    }
-    
-    private func previousPage() {
-        if currentPage > 0 {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                currentPage -= 1
             }
         }
     }
