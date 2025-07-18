@@ -152,3 +152,7 @@ struct WelcomeOnboardingPage: View {
         }
     }
 }
+
+#Preview {
+    WelcomeOnboardingPage()
+}

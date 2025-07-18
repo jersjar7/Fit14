@@ -278,3 +278,9 @@ struct PermissionsOnboardingPage: View {
         }
     }
 }
+
+#Preview {
+    PermissionsOnboardingPage(onComplete: {
+        print("Get Started tapped")
+    })
+}

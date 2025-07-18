@@ -225,3 +225,7 @@ struct OnboardingGoalExample {
     let icon: String
     let color: Color
 }
+
+#Preview {
+    GoalFlexibilityOnboardingPage()
+}

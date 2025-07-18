@@ -184,3 +184,8 @@ struct PersonalizationFactor {
     let examples: [String]
     let color: Color
 }
+
+#Preview {
+    PersonalizationOnboardingPage()
+}
+

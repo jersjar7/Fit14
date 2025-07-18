@@ -307,3 +307,7 @@ struct HowItWorksOnboardingPage: View {
         }
     }
 }
+
+#Preview {
+    HowItWorksOnboardingPage()
+}
